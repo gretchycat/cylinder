@@ -1,0 +1,35 @@
+[gd_scene load_steps=8 format=3 uid="uid://bv51k8r2y1m4e"]
+
+[ext_resource type="PackedScene" path="res://scenes/cylinder_world.tscn" id="1_cylinder"]
+[ext_resource type="PackedScene" path="res://scenes/light_bar.tscn" id="2_light_bar"]
+[ext_resource type="Script" path="res://scripts/reference_objects.gd" id="3_markers"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="4_player"]
+[ext_resource type="PackedScene" path="res://scenes/ui.tscn" id="5_ui"]
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 1
+background_color = Color(0.01, 0.012, 0.018, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.12, 0.14, 0.18, 1)
+ambient_light_energy = 0.45
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.85
+glow_bloom = 0.2
+
+[node name="Main" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="CylinderWorld" parent="." instance=ExtResource("1_cylinder")]
+
+[node name="AxisLightBar" parent="." instance=ExtResource("2_light_bar")]
+
+[node name="ReferenceObjects" type="Node3D" parent="."]
+script = ExtResource("3_markers")
+
+[node name="Player" parent="." instance=ExtResource("4_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -78.8, 0)
+
+[node name="UI" parent="." instance=ExtResource("5_ui")]

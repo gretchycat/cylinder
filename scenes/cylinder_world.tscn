@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c3m7q9v1k4f8x"]
+
+[ext_resource type="Script" path="res://scripts/cylinder_generator.gd" id="1_cylinder"]
+
+[node name="CylinderWorld" type="Node3D"]
+script = ExtResource("1_cylinder")

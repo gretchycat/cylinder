@@ -1,0 +1,382 @@
+[gd_scene load_steps=7 format=3 uid="uid://b0y3t4u1e5r2w"]
+
+[ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scripts/mobile_touch_controls.gd" id="2_touch"]
+[ext_resource type="Script" path="res://scripts/artificial_horizon.gd" id="3_horizon"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.08, 0.09, 0.12, 0.78)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.25, 0.45, 0.65, 0.6)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 12.0
+content_margin_top = 10.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_joybase"]
+bg_color = Color(0.15, 0.18, 0.22, 0.4)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.35, 0.65, 0.9, 0.5)
+corner_radius_top_left = 70
+corner_radius_top_right = 70
+corner_radius_bottom_right = 70
+corner_radius_bottom_left = 70
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_joyknob"]
+bg_color = Color(0.3, 0.7, 0.95, 0.7)
+corner_radius_top_left = 25
+corner_radius_top_right = 25
+corner_radius_bottom_right = 25
+corner_radius_bottom_left = 25
+
+[node name="UI" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="Crosshair" type="ColorRect" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 2.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 0.7)
+
+[node name="TelemetryPanel" type="PanelContainer" parent="."]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 400.0
+offset_bottom = 180.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TelemetryPanel"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="TelemetryPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "O'NEILL CYLINDER TELEMETRY"
+
+[node name="ModeBadge" type="Label" parent="TelemetryPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 1, 0.4, 1)
+theme_override_font_sizes/font_size = 13
+text = "MODE: [SURFACE WALKING]"
+
+[node name="HorizonStatusLabel" type="Label" parent="TelemetryPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 1, 0.5, 1)
+theme_override_font_sizes/font_size = 12
+text = "HORIZON: [PERPENDICULAR - LOCKED]"
+
+[node name="HSeparator" type="HSeparator" parent="TelemetryPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="TelemetryLabel" type="Label" parent="TelemetryPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "GRAVITY: 1.00 G
+DISTANCE TO AXIS: 80.0 m
+ALTITUDE: 0.0 m
+VELOCITY: 0.0 m/s"
+
+[node name="HorizonContainer" type="PanelContainer" parent="."]
+offset_left = 20.0
+offset_top = 195.0
+offset_right = 190.0
+offset_bottom = 360.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HorizonContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="HorizonTitle" type="Label" parent="HorizonContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "HORIZON ATTITUDE"
+horizontal_alignment = 1
+
+[node name="ArtificialHorizon" type="Control" parent="HorizonContainer/VBoxContainer"]
+custom_minimum_size = Vector2(146, 100)
+layout_mode = 2
+script = ExtResource("3_horizon")
+
+[node name="HorizonAngleLabel" type="Label" parent="HorizonContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "ROLL: +0.0°
+RATE: 16.0/s"
+horizontal_alignment = 1
+
+[node name="HelpLabel" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 135.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(0.8, 0.85, 0.9, 0.75)
+theme_override_font_sizes/font_size = 11
+text = "CROSS-PLATFORM CONTROLS:
+WASD / Virtual Stick : Move along cylinder surface
+Space : Jump / Ascend
+Shift : Sprint / Run
+F : Toggle 3D Fly Mode (Microgravity exploration)
+Q/E or C/Space : Fly Down / Up
+T / Wobble Button : Perturb Horizon Roll (Test Self-Righting)
+R : Reset to Spawn | ESC : Mouse Capture"
+horizontal_alignment = 2
+
+[node name="ToggleControlsButton" type="Button" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -160.0
+offset_top = 145.0
+offset_right = -20.0
+offset_bottom = 180.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 12
+text = "Tuning Settings ⚙"
+
+[node name="ControlPanel" type="PanelContainer" parent="."]
+visible = false
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340.0
+offset_top = 190.0
+offset_right = -20.0
+offset_bottom = 445.0
+grow_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ControlPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PanelTitle" type="Label" parent="ControlPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 13
+text = "LIVE SYSTEM TUNING"
+
+[node name="HBoxPreset" type="VBoxContainer" parent="ControlPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ControlPanel/VBoxContainer/HBoxPreset"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Lighting Preset:"
+
+[node name="OptionButton" type="OptionButton" parent="ControlPanel/VBoxContainer/HBoxPreset"]
+layout_mode = 2
+
+[node name="HBoxIntensity" type="VBoxContainer" parent="ControlPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="ControlPanel/VBoxContainer/HBoxIntensity"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ControlPanel/VBoxContainer/HBoxIntensity/HBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Light Bar Intensity:"
+
+[node name="ValLabel" type="Label" parent="ControlPanel/VBoxContainer/HBoxIntensity/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "1.8x"
+horizontal_alignment = 2
+
+[node name="HSlider" type="HSlider" parent="ControlPanel/VBoxContainer/HBoxIntensity"]
+layout_mode = 2
+
+[node name="HBoxGravity" type="VBoxContainer" parent="ControlPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="ControlPanel/VBoxContainer/HBoxGravity"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ControlPanel/VBoxContainer/HBoxGravity/HBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Base Surface Gravity:"
+
+[node name="ValLabel" type="Label" parent="ControlPanel/VBoxContainer/HBoxGravity/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "12.0 m/s²"
+horizontal_alignment = 2
+
+[node name="HSlider" type="HSlider" parent="ControlPanel/VBoxContainer/HBoxGravity"]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="ControlPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="WobbleTestButton" type="Button" parent="ControlPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Perturb Horizon Roll (+25°)"
+
+[node name="ResetSpawnButton" type="Button" parent="ControlPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Reset to Spawn"
+
+[node name="TouchControls" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_touch")
+
+[node name="JoystickBase" type="Panel" parent="TouchControls"]
+layout_mode = 0
+offset_left = 60.0
+offset_top = 520.0
+offset_right = 200.0
+offset_bottom = 660.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_joybase")
+
+[node name="Knob" type="Panel" parent="TouchControls/JoystickBase"]
+layout_mode = 0
+offset_left = 45.0
+offset_top = 45.0
+offset_right = 95.0
+offset_bottom = 95.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_joyknob")
+
+[node name="ActionButtons" type="Control" parent="TouchControls"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -320.0
+offset_top = -240.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="JumpButton" type="Button" parent="TouchControls/ActionButtons"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -90.0
+offset_top = -90.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 15
+text = "JUMP"
+
+[node name="FlyButton" type="Button" parent="TouchControls/ActionButtons"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -190.0
+offset_top = -90.0
+offset_right = -105.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 13
+text = "FLY: OFF"
+
+[node name="SprintButton" type="Button" parent="TouchControls/ActionButtons"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -90.0
+offset_top = -160.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 13
+text = "SPRINT"
+
+[node name="WobbleButton" type="Button" parent="TouchControls/ActionButtons"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -190.0
+offset_top = -160.0
+offset_right = -105.0
+offset_bottom = -105.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 11
+text = "WOBBLE"
+
+[node name="FlyUpButton" type="Button" parent="TouchControls/ActionButtons"]
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -285.0
+offset_top = -160.0
+offset_right = -205.0
+offset_bottom = -105.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 12
+text = "FLY UP"
+
+[node name="FlyDownButton" type="Button" parent="TouchControls/ActionButtons"]
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -285.0
+offset_top = -90.0
+offset_right = -205.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 12
+text = "FLY DN"

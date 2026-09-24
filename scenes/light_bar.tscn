@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://d2k7h5v2b4e8y"]
+
+[ext_resource type="Script" path="res://scripts/light_bar.gd" id="1_light_bar"]
+
+[node name="AxisLightBar" type="Node3D" groups=["light_bar"]]
+script = ExtResource("1_light_bar")
