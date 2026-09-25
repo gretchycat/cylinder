@@ -1,27 +1,41 @@
 class_name HUD
 extends CanvasLayer
 
+const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
+
 @export var player: PlayerController
 @export var light_bar: AxisLightBar
 
-# UI Node References
-@onready var telemetry_label: Label = $TelemetryPanel/VBoxContainer/TelemetryLabel
-@onready var mode_badge: Label = $TelemetryPanel/VBoxContainer/ModeBadge
-@onready var horizon_status_label: Label = $TelemetryPanel/VBoxContainer/HorizonStatusLabel
-@onready var artificial_horizon: Control = get_node_or_null("HorizonContainer/VBoxContainer/ArtificialHorizon")
-@onready var horizon_angle_label: Label = get_node_or_null("HorizonContainer/VBoxContainer/HorizonAngleLabel")
+# Root Container for Adaptive Scaling
+@onready var ui_root: Control = $UIRoot
 
-@onready var light_preset_option: OptionButton = $ControlPanel/VBoxContainer/HBoxPreset/OptionButton
-@onready var light_intensity_slider: HSlider = $ControlPanel/VBoxContainer/HBoxIntensity/HSlider
-@onready var light_intensity_val: Label = $ControlPanel/VBoxContainer/HBoxIntensity/HBox/ValLabel
-@onready var gravity_slider: HSlider = $ControlPanel/VBoxContainer/HBoxGravity/HSlider
-@onready var gravity_val: Label = $ControlPanel/VBoxContainer/HBoxGravity/HBox/ValLabel
-@onready var toggle_controls_btn: Button = $ToggleControlsButton
-@onready var control_panel: PanelContainer = $ControlPanel
-@onready var touch_controls: MobileTouchControls = $TouchControls
+# UI Node References (under UIRoot)
+@onready var telemetry_label: Label = $UIRoot/TelemetryPanel/VBoxContainer/TelemetryLabel
+@onready var mode_badge: Label = $UIRoot/TelemetryPanel/VBoxContainer/ModeBadge
+@onready var horizon_status_label: Label = $UIRoot/TelemetryPanel/VBoxContainer/HorizonStatusLabel
+@onready var artificial_horizon: Control = get_node_or_null("UIRoot/HorizonContainer/VBoxContainer/ArtificialHorizon")
+@onready var horizon_angle_label: Label = get_node_or_null("UIRoot/HorizonContainer/VBoxContainer/HorizonAngleLabel")
 
-@onready var wobble_test_btn: Button = $ControlPanel/VBoxContainer/WobbleTestButton
-@onready var reset_spawn_btn: Button = $ControlPanel/VBoxContainer/ResetSpawnButton
+@onready var light_preset_option: OptionButton = $UIRoot/ControlPanel/VBoxContainer/HBoxPreset/OptionButton
+@onready var light_intensity_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxIntensity/HSlider
+@onready var light_intensity_val: Label = $UIRoot/ControlPanel/VBoxContainer/HBoxIntensity/HBox/ValLabel
+@onready var gravity_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxGravity/HSlider
+@onready var gravity_val: Label = $UIRoot/ControlPanel/VBoxContainer/HBoxGravity/HBox/ValLabel
+@onready var toggle_controls_btn: Button = $UIRoot/ToggleControlsButton
+@onready var control_panel: PanelContainer = $UIRoot/ControlPanel
+@onready var touch_controls: MobileTouchControls = $UIRoot/TouchControls
+
+@onready var wobble_test_btn: Button = $UIRoot/ControlPanel/VBoxContainer/WobbleTestButton
+@onready var reset_spawn_btn: Button = $UIRoot/ControlPanel/VBoxContainer/ResetSpawnButton
+
+# UI Scaling Controls
+@onready var scale_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxScale/HSlider
+@onready var scale_val: Label = $UIRoot/ControlPanel/VBoxContainer/HBoxScale/HBox/ValLabel
+@onready var reset_scale_btn: Button = $UIRoot/ControlPanel/VBoxContainer/HBoxScale/ResetScaleButton
+
+var current_ui_scale: float = 1.0
+var is_scale_auto: bool = true
+var auto_scale_info: Dictionary = {}
 
 func _ready() -> void:
 	if not player:
@@ -32,6 +46,7 @@ func _ready() -> void:
 	if player:
 		player.telemetry_updated.connect(_on_telemetry_updated)
 
+	_setup_ui_scaling()
 	_setup_control_panel()
 
 	if toggle_controls_btn:
@@ -41,6 +56,62 @@ func _ready() -> void:
 		wobble_test_btn.pressed.connect(_on_wobble_test_pressed)
 	if reset_spawn_btn:
 		reset_spawn_btn.pressed.connect(_on_reset_spawn_pressed)
+
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+
+func _setup_ui_scaling() -> void:
+	auto_scale_info = UIScaleManager.calculate_intelligent_scale()
+	var saved_pref = UIScaleManager.load_user_scale()
+
+	if saved_pref.get("has_saved", false) and not saved_pref.get("is_auto", true):
+		is_scale_auto = false
+		apply_ui_scale(saved_pref.get("scale", auto_scale_info["scale"]), false)
+	else:
+		is_scale_auto = true
+		apply_ui_scale(auto_scale_info["scale"], true)
+
+	if scale_slider:
+		scale_slider.value_changed.connect(_on_scale_slider_changed)
+	if reset_scale_btn:
+		reset_scale_btn.pressed.connect(_on_reset_scale_pressed)
+
+func apply_ui_scale(target_scale: float, auto_mode: bool) -> void:
+	current_ui_scale = clampf(target_scale, 0.75, 2.75)
+	is_scale_auto = auto_mode
+
+	if ui_root:
+		ui_root.scale = Vector2(current_ui_scale, current_ui_scale)
+		var vp_size = get_viewport().get_visible_rect().size
+		ui_root.size = vp_size / current_ui_scale
+
+	if touch_controls:
+		touch_controls.ui_scale = current_ui_scale
+
+	_update_scale_slider_ui()
+	UIScaleManager.save_user_scale(current_ui_scale, is_scale_auto)
+
+func _update_scale_slider_ui() -> void:
+	if scale_slider and not is_equal_approx(scale_slider.value, current_ui_scale):
+		scale_slider.set_value_no_signal(current_ui_scale)
+
+	if scale_val:
+		var mode_str = auto_scale_info.get("device_type", "Auto") if is_scale_auto else "Custom"
+		scale_val.text = "%.2fx [%s]" % [current_ui_scale, mode_str]
+
+func _on_scale_slider_changed(value: float) -> void:
+	apply_ui_scale(value, false)
+
+func _on_reset_scale_pressed() -> void:
+	auto_scale_info = UIScaleManager.calculate_intelligent_scale()
+	apply_ui_scale(auto_scale_info["scale"], true)
+
+func _on_viewport_size_changed() -> void:
+	if is_scale_auto:
+		auto_scale_info = UIScaleManager.calculate_intelligent_scale()
+		apply_ui_scale(auto_scale_info["scale"], true)
+	elif ui_root:
+		var vp_size = get_viewport().get_visible_rect().size
+		ui_root.size = vp_size / current_ui_scale
 
 func _setup_control_panel() -> void:
 	if light_preset_option:
@@ -131,7 +202,7 @@ func _on_telemetry_updated(data: Dictionary) -> void:
 		artificial_horizon.locomotion_state = locomotion_state
 
 	if horizon_angle_label:
-		horizon_angle_label.text = "HORIZON ROLL: %+.1f°\nRIGHTING RATE: %.1f/s" % [wobble_deg, correction_rate]
+		horizon_angle_label.text = "ROLL: %+.1f°\nRATE: %.1f/s" % [wobble_deg, correction_rate]
 
 func _on_light_preset_selected(index: int) -> void:
 	if not light_bar:

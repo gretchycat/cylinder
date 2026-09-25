@@ -5,6 +5,8 @@ extends Control
 @export var joystick_radius: float = 70.0
 @export var touch_look_sensitivity: float = 0.0035
 
+var ui_scale: float = 1.0
+
 # Virtual joystick state
 var joystick_touch_id: int = -1
 var joystick_center: Vector2 = Vector2.ZERO
@@ -70,14 +72,14 @@ func _handle_touch_start(id: int, pos: Vector2) -> void:
 		joystick_center = pos
 		joystick_knob_pos = pos
 		if joystick_base:
-			joystick_base.global_position = pos - Vector2(joystick_radius, joystick_radius)
+			var scaled_rad = joystick_radius * ui_scale
+			joystick_base.global_position = pos - Vector2(scaled_rad, scaled_rad)
 			joystick_base.visible = true
 			if joystick_knob:
 				joystick_knob.position = Vector2(joystick_radius, joystick_radius) - joystick_knob.size * 0.5
 
 	# Right side of screen: Camera Look
 	elif pos.x >= screen_width * 0.45 and look_touch_id == -1:
-		# Check if clicking on action buttons
 		if not _is_pos_inside_action_buttons(pos):
 			look_touch_id = id
 			last_look_pos = pos
@@ -85,15 +87,16 @@ func _handle_touch_start(id: int, pos: Vector2) -> void:
 func _handle_touch_drag(id: int, pos: Vector2, rel: Vector2) -> void:
 	if id == joystick_touch_id and joystick_active:
 		var offset = pos - joystick_center
+		var active_radius = joystick_radius * ui_scale
 		var dist = offset.length()
-		if dist > joystick_radius:
-			offset = offset.normalized() * joystick_radius
+		if dist > active_radius:
+			offset = offset.normalized() * active_radius
 		joystick_knob_pos = joystick_center + offset
 
 		if joystick_knob:
-			joystick_knob.position = Vector2(joystick_radius, joystick_radius) + offset - joystick_knob.size * 0.5
+			joystick_knob.position = Vector2(joystick_radius, joystick_radius) + (offset / ui_scale) - joystick_knob.size * 0.5
 
-		var input_vec = offset / joystick_radius
+		var input_vec = offset / active_radius
 		player.input_axis = Vector2(input_vec.x, input_vec.y)
 
 	elif id == look_touch_id:
@@ -112,7 +115,8 @@ func _reset_joystick() -> void:
 	if player:
 		player.input_axis = Vector2.ZERO
 	if joystick_base:
-		joystick_base.position = Vector2(80, get_viewport_rect().size.y - 180)
+		var vp_h = get_viewport_rect().size.y / ui_scale
+		joystick_base.position = Vector2(60, vp_h - 180)
 		if joystick_knob:
 			joystick_knob.position = Vector2(joystick_radius, joystick_radius) - joystick_knob.size * 0.5
 
