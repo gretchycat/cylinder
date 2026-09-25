@@ -260,15 +260,19 @@ func _init() -> void:
 	test_check(is_zero_approx(light_bar.global_intensity_multiplier), "Intensity multiplier at 0.0 verified")
 	test_check(is_zero_approx(sun_a.light_energy), "DaylightSunA scales down to pitch black (0.0 energy)")
 	test_check(is_zero_approx(env_node.environment.ambient_light_energy), "Ambient light scales down to pitch black (0.0 energy)")
+	test_check(is_zero_approx(env_node.environment.fog_light_energy), "Fog light energy scales down to pitch black (0.0 energy)")
 
 	hud_node._on_light_intensity_changed(3.5)
 	test_check(is_equal_approx(light_bar.global_intensity_multiplier, 3.5), "Intensity multiplier at 3.5 verified")
 	test_check(is_equal_approx(sun_a.light_energy, 1.8), "DaylightSunA scales to 1.8 at nominal daylight (3.5x)")
 	test_check(is_equal_approx(env_node.environment.ambient_light_energy, 1.0), "Ambient light scales to 1.0 at nominal daylight (3.5x)")
+	test_check(is_equal_approx(env_node.environment.fog_light_energy, 1.0), "Fog light energy scales to 1.0 at nominal daylight (3.5x)")
 
 	# Verify HUD preset dropdown mappings
 	hud_node._on_light_preset_selected(0)
 	test_check(light_bar.preset == AxisLightBar.LightingPreset.UNIFORM, "HUD item 0 activates Uniform Daylight preset")
+	test_check(env_node.environment.fog_light_color.b > env_node.environment.fog_light_color.r, "Uniform Daylight fog reflects cyan/blue sky tint")
+
 	hud_node._on_light_preset_selected(1)
 	test_check(light_bar.preset == AxisLightBar.LightingPreset.GRADIENT, "HUD item 1 activates Gradient (Sunrise/Twilight) preset")
 	hud_node._on_light_preset_selected(2)
@@ -277,6 +281,11 @@ func _init() -> void:
 	test_check(light_bar.preset == AxisLightBar.LightingPreset.NEON_AURORA, "HUD item 3 activates Neon Aurora preset")
 	hud_node._on_light_preset_selected(4)
 	test_check(light_bar.preset == AxisLightBar.LightingPreset.WARM_SUNSET, "HUD item 4 activates Warm Sunset preset")
+	test_check(env_node.environment.fog_light_color.r > env_node.environment.fog_light_color.b, "Warm Sunset fog reflects warm sunset amber/gold tint")
+
+	# Return to nominal Uniform Daylight for subsequent verification tests
+	hud_node._on_light_preset_selected(0)
+	test_check(light_bar.preset == AxisLightBar.LightingPreset.UNIFORM, "HUD resets to Uniform Daylight")
 
 	print("[PASS] Test 7: Axial lighting system, dynamic intensity slider, and preset gradients verified.")
 

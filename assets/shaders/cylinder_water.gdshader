@@ -73,16 +73,20 @@ void fragment() {
 	float final_alpha = clamp(base_alpha + fresnel * 0.25, 0.35, 0.95);
 
 	// Axial lighting spectrum & time-of-day gradient along the 18 km cylinder
+	vec3 target_air_color = air_color.rgb;
 	if (axial_light_enabled > 0.5) {
 		float t_z = clamp((world_pos.z + cylinder_length * 0.5) / cylinder_length, 0.0, 1.0);
 		vec4 axial_light = texture(axial_light_lut, vec2(t_z, 0.5));
-		final_color *= axial_light.rgb * mix(0.35, 1.15, clamp(axial_light.a, 0.0, 1.0));
+		vec3 axial_col = axial_light.rgb;
+		float axial_lum = clamp(axial_light.a, 0.0, 1.5);
+		final_color *= axial_col * mix(0.35, 1.15, clamp(axial_lum, 0.0, 1.0));
+		target_air_color = air_color.rgb * mix(vec3(1.0), axial_col, 0.65) * mix(0.10, 1.00, clamp(axial_lum, 0.0, 1.0));
 	}
 
 	// Atmospheric aerial perspective: tint distant views across the 8 km cylinder
 	float air_factor = clamp((dist_to_cam - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
 	float air_scatter = 1.0 - exp(-air_factor * 1.8);
-	final_color = mix(final_color, air_color.rgb, air_scatter * air_density);
+	final_color = mix(final_color, target_air_color, air_scatter * air_density);
 	final_alpha = mix(final_alpha, 0.98, air_scatter * air_density * 0.7);
 
 	ALBEDO = final_color;

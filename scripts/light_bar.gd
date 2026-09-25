@@ -77,12 +77,16 @@ var lut_image: Image = null
 var lut_texture: ImageTexture = null
 
 var wave_time: float = 0.0
+var current_avg_color: Color = Color(1.0, 0.98, 0.95)
+var current_avg_intensity: float = 3.5
+var last_cam_z: float = -99999.0
 
 func _ready() -> void:
 	add_to_group("light_bar")
 	_find_global_lighting()
 	rebuild_light_bar()
 	_apply_lut_to_materials.call_deferred()
+	_sync_fog_and_atmosphere.call_deferred()
 
 func _find_global_lighting() -> void:
 	if not is_inside_tree():
@@ -196,6 +200,11 @@ func _process(delta: float) -> void:
 	if preset == LightingPreset.DAY_NIGHT_WAVE or preset == LightingPreset.NEON_AURORA:
 		wave_time += delta * wave_speed
 		_update_animated_wave()
+	elif preset == LightingPreset.GRADIENT:
+		var cam_z = _get_camera_z()
+		if absf(cam_z - last_cam_z) > 15.0:
+			last_cam_z = cam_z
+			_sync_fog_and_atmosphere()
 
 func _apply_current_preset() -> void:
 	if segment_colors.size() != num_segments:
@@ -318,6 +327,9 @@ func _refresh_all_segments() -> void:
 		avg_col /= float(count)
 		avg_intensity /= float(count)
 
+	current_avg_color = avg_col
+	current_avg_intensity = avg_intensity
+
 	# Global master intensity scaling (nominal full daylight is at global_intensity_multiplier = 3.5)
 	var intensity_norm = global_intensity_multiplier / 3.5
 
@@ -341,6 +353,9 @@ func _refresh_all_segments() -> void:
 		var env = world_environment.environment
 		env.ambient_light_color = avg_col
 		env.ambient_light_energy = 1.0 * intensity_norm
+
+	# Synchronize depth fog and material air tint with current light level and color
+	_sync_fog_and_atmosphere()
 
 	_update_axial_lut()
 
@@ -374,6 +389,86 @@ func _apply_lut_to_materials() -> void:
 		if cylinder_world.water_material is ShaderMaterial:
 			cylinder_world.water_material.set_shader_parameter("axial_light_lut", lut_texture)
 			cylinder_world.water_material.set_shader_parameter("cylinder_length", bar_length)
+
+func _get_camera_z() -> float:
+	if not is_inside_tree():
+		return 0.0
+	var viewport = get_viewport()
+	if viewport:
+		var cam = viewport.get_camera_3d()
+		if cam:
+			return cam.global_position.z
+	return 0.0
+
+func get_light_at_z(z: float) -> Dictionary:
+	if num_segments <= 0 or segment_colors.is_empty():
+		return {"color": Color(1.0, 0.98, 0.95), "intensity": 3.5}
+	var half_len = bar_length * 0.5
+	var t = clampf((z + half_len) / bar_length, 0.0, 1.0)
+	var seg_idx = t * float(num_segments - 1)
+	var idx0 = clampi(int(floor(seg_idx)), 0, num_segments - 1)
+	var idx1 = clampi(int(ceil(seg_idx)), 0, num_segments - 1)
+	var frac = seg_idx - float(idx0)
+	var col = segment_colors[idx0].lerp(segment_colors[idx1], frac)
+	var inten = lerpf(segment_intensities[idx0], segment_intensities[idx1], frac)
+	return {"color": col, "intensity": inten}
+
+func get_effective_fog_properties() -> Dictionary:
+	var intensity_norm = global_intensity_multiplier / 3.5
+
+	var effective_light_col = current_avg_color
+	var effective_intensity = current_avg_intensity
+
+	if preset == LightingPreset.GRADIENT:
+		var cam_z = _get_camera_z()
+		var local_light = get_light_at_z(cam_z)
+		effective_light_col = current_avg_color.lerp(local_light.color, 0.65)
+		effective_intensity = lerpf(current_avg_intensity, local_light.intensity, 0.65)
+
+	var local_norm = (effective_intensity / 3.5) * intensity_norm
+
+	# Atmospheric Rayleigh scattered fog tint calculated from current light color
+	# In nominal daylight (Color(1.0, 0.98, 0.95)), this yields exactly Color(0.52, 0.72, 0.88, 1.0)
+	var light_r_ratio = clampf(effective_light_col.r / 1.00, 0.0, 3.0)
+	var light_g_ratio = clampf(effective_light_col.g / 0.98, 0.0, 3.0)
+	var light_b_ratio = clampf(effective_light_col.b / 0.95, 0.0, 3.0)
+
+	var fog_col = Color(
+		clampf(0.52 * light_r_ratio, 0.0, 1.0),
+		clampf(0.72 * light_g_ratio, 0.0, 1.0),
+		clampf(0.88 * light_b_ratio, 0.0, 1.0),
+		1.0
+	)
+	var fog_energy = 1.0 * intensity_norm
+
+	return {
+		"fog_color": fog_col,
+		"fog_energy": fog_energy,
+		"light_color": effective_light_col,
+		"intensity_norm": intensity_norm
+	}
+
+func _sync_fog_and_atmosphere() -> void:
+	_find_global_lighting()
+	var fog_props = get_effective_fog_properties()
+	var fog_col = fog_props["fog_color"] as Color
+	var fog_energy = fog_props["fog_energy"] as float
+	var intensity_norm = fog_props["intensity_norm"] as float
+
+	if world_environment and world_environment.environment:
+		var env = world_environment.environment
+		env.fog_light_color = fog_col
+		env.fog_light_energy = fog_energy
+
+	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
+	if cylinder_world:
+		var shader_air_col = Color(
+			clampf(fog_col.r * intensity_norm, 0.0, 1.0),
+			clampf(fog_col.g * intensity_norm, 0.0, 1.0),
+			clampf(fog_col.b * intensity_norm, 0.0, 1.0),
+			1.0
+		)
+		cylinder_world.air_color = shader_air_col
 
 func _update_light_ranges() -> void:
 	for light in light_nodes:
