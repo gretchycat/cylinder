@@ -199,9 +199,9 @@ func generate_default_rpg_map() -> void:
 			var raw_height = (h1 + h2 + h3 + h4 + 0.52)
 
 			# 2. Water river channel & lake (elevation depressed below 20 m)
-			var river_center_angle = PI + sin(z_norm * PI * 2.0) * 0.55
+			var river_center_angle = 0.5 * PI + sin(z_norm * PI * 2.0) * 0.55
 			var angle_dist_river = absf(wrapf(angle - river_center_angle, -PI, PI))
-			var lake_dist_sq = ((angle - PI) ** 2 + (z_norm * 2.5) ** 2) / 0.35
+			var lake_dist_sq = ((angle - 0.5 * PI) ** 2 + (z_norm * 2.5) ** 2) / 0.35
 			var lake_factor = exp(-lake_dist_sq)
 
 			var river_factor = clampf(1.0 - (angle_dist_river / 0.32), 0.0, 1.0)

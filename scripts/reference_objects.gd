@@ -56,11 +56,20 @@ func _spawn_reference_rings() -> void:
 	]
 
 	var r_ball = 25.0
+	var spawn_theta = -PI * 0.5
+	var spawn_z = 0.0
+	var cyl_world = get_parent().get_node_or_null("CylinderWorld") if get_parent() else null
+	if cyl_world and cyl_world.has_method("find_safe_spawn_point"):
+		var spawn_info = cyl_world.find_safe_spawn_point()
+		spawn_theta = spawn_info["theta"]
+		spawn_z = spawn_info["z"]
+
 	for z in z_positions:
 		for i in range(8):
-			if is_equal_approx(z, 0.0) and i == 6:
-				continue # Keep player spawn area at z=0, deg 270 clear
 			var theta = float(i) * (TAU / 8.0)
+			# Keep player spawn area clear
+			if absf(wrapf(theta - spawn_theta, -PI, PI)) < 0.25 and absf(z - spawn_z) < 75.0:
+				continue
 			var col = ring_colors[i]
 			var elev = _get_terrain_elevation(theta, z)
 			var dist = cylinder_radius - elev - r_ball
@@ -174,11 +183,23 @@ func _spawn_scattered_spheres() -> void:
 		add_child(body)
 
 func _spawn_interactive_physics_balls() -> void:
-	# Add physics balls safely ahead of spawn at z ≈ -45m
-	var spawn_z_start = -45.0
+	var spawn_theta = -PI * 0.5
+	var spawn_z = 0.0
+
+	var cyl_world = get_parent().get_node_or_null("CylinderWorld") if get_parent() else null
+	if not cyl_world:
+		cyl_world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
+
+	if cyl_world and cyl_world.has_method("find_safe_spawn_point"):
+		var spawn_info = cyl_world.find_safe_spawn_point()
+		spawn_theta = spawn_info["theta"]
+		spawn_z = spawn_info["z"]
+
+	# Add physics balls safely ahead of spawn in -Z direction
+	var spawn_z_start = spawn_z - 45.0
 	for i in range(6):
 		var r_ball = 3.0
-		var theta = -PI * 0.5 + float(i - 2.5) * 0.005
+		var theta = spawn_theta + float(i - 2.5) * 0.005
 		var z = spawn_z_start + float(i) * 8.0
 		var elev = _get_terrain_elevation(theta, z)
 		var dist = cylinder_radius - elev - r_ball - 0.5

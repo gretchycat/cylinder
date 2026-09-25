@@ -284,6 +284,36 @@ func _init() -> void:
 	var elev_sample_spawn = cylinder_world.get_elevation_at(-PI * 0.5, 0.0)
 	print("Elevation at player spawn: %.2f m (variance range: 0.0 - 100.0 m)" % elev_sample_spawn)
 	test_check(elev_sample_spawn >= 0.0 and elev_sample_spawn <= 100.0, "Elevation must be within 0-100 m variance range")
+	test_check(elev_sample_spawn > cylinder_world.water_level, "Initial player location must be somewhere on the terrain that is above sea level (> 20.0 m)")
+
+	# Verify find_safe_spawn_point API
+	var spawn_info = cylinder_world.find_safe_spawn_point(-PI * 0.5, 0.0, 2.0)
+	print("Safe spawn point info: elevation=%.2f m, terrain_type=%d, clearance_above_sea=%.2f m, is_above_sea_level=%s" % [
+		spawn_info["elevation"], spawn_info["terrain_type"], spawn_info["clearance_above_sea"], spawn_info["is_above_sea_level"]
+	])
+	test_check(spawn_info["is_above_sea_level"], "Safe spawn point must be above sea level")
+	test_check(spawn_info["elevation"] > cylinder_world.water_level, "Spawn elevation must be strictly above water level")
+	test_check(spawn_info["clearance_above_sea"] >= 2.0, "Spawn clearance above sea level must meet requested minimum clearance")
+
+	# Test automatic relocation when a submerged/underwater location is requested
+	# Find a known water location (e.g. river channel around u=0.25 => theta = 0.25 * TAU)
+	var water_theta = 0.25 * TAU
+	var water_z = 0.0
+	var water_elev = cylinder_world.get_elevation_at(water_theta, water_z)
+	if water_elev < cylinder_world.water_level:
+		var relocated_spawn = cylinder_world.find_safe_spawn_point(water_theta, water_z, 2.0)
+		print("Requested submerged location (elev=%.2f m), relocated to: elev=%.2f m, above_sea=%s" % [
+			water_elev, relocated_spawn["elevation"], relocated_spawn["is_above_sea_level"]
+		])
+		test_check(relocated_spawn["is_above_sea_level"], "Underwater spawn requests must be safely relocated above sea level")
+		test_check(relocated_spawn["elevation"] > cylinder_world.water_level, "Relocated spawn must be strictly above sea level")
+
+	# Verify player's active position is above sea level
+	player.reset_to_spawn()
+	var player_r = Vector3(player.global_position.x, player.global_position.y, 0.0).length()
+	var water_radius = cylinder_world.radius - cylinder_world.water_level
+	print("Player radial distance from axis: %.2f m (water surface radius: %.2f m)" % [player_r, water_radius])
+	test_check(player_r < water_radius, "Player must spawn inside the cylinder dry land radius, above the water level radius")
 
 	# Verify loading from PNG image maps
 	var terrain_mgr = cylinder_world.terrain_manager

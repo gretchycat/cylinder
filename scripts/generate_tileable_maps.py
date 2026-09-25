@@ -63,7 +63,7 @@ def generate_tileable_maps(
 
     # River parameters (seamless periodic meandering along vertical axis)
     river_phase = rng.random() * math.tau
-    river_amp = 0.22 # fraction of width
+    river_amp = 0.12 # fraction of width
 
     # Height values cache for verification
     elev_grid = [[0.0 for _ in range(width)] for _ in range(height)]
@@ -113,8 +113,8 @@ def generate_tileable_maps(
 
             # 2. Seamless River and Lake Basins (elevation depressed below water_level)
             # Integer frequencies in phi guarantee seamless vertical wrapping across the top/bottom boundary
-            river_center_u = 0.5 + river_amp * math.sin(1.0 * phi + river_phase) \
-                                + 0.08 * math.sin(2.0 * phi + 1.2)
+            river_center_u = 0.25 + river_amp * math.sin(1.0 * phi + river_phase) \
+                                + 0.05 * math.sin(2.0 * phi + 1.2)
 
             # Circular distance along horizontal axis
             du = abs(u - river_center_u)

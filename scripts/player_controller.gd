@@ -27,6 +27,11 @@ signal telemetry_updated(data: Dictionary)
 @export var mouse_sensitivity: float = 0.0025
 @export var touch_sensitivity: float = 0.004
 
+@export_category("Spawn Location")
+@export var preferred_spawn_theta: float = -PI * 0.5
+@export var preferred_spawn_z: float = 0.0
+@export var min_elevation_above_sea: float = 2.0
+
 var is_flying: bool = false
 var is_sprinting: bool = false
 var mobile_sprint_active: bool = false
@@ -270,26 +275,39 @@ func toggle_fly_mode() -> void:
 			velocity -= global_basis.y * v_up
 
 func reset_to_spawn() -> void:
-	# Bottom of cylinder at z = 0, facing -Z
-	var surface_r = cylinder_radius
 	var cyl_world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
 	if not cyl_world and get_parent():
 		cyl_world = get_parent().get_node_or_null("CylinderWorld")
-	if cyl_world and cyl_world.has_method("get_surface_radius_at"):
-		surface_r = cyl_world.get_surface_radius_at(-PI * 0.5, 0.0)
-	elif cyl_world and cyl_world.has_method("get_elevation_at"):
-		surface_r = cylinder_radius - cyl_world.get_elevation_at(-PI * 0.5, 0.0)
 
-	# Capsule has height 1.8m (half-height 0.9m)
-	var spawn_r = surface_r - 0.92
+	if cyl_world and cyl_world.has_method("find_safe_spawn_point"):
+		var spawn_info = cyl_world.find_safe_spawn_point(preferred_spawn_theta, preferred_spawn_z, min_elevation_above_sea)
+		global_position = spawn_info["position"]
+		global_basis = spawn_info["basis"]
+	else:
+		# Fallback if no CylinderWorld is present
+		var surface_r = cylinder_radius
+		if cyl_world and cyl_world.has_method("get_surface_radius_at"):
+			surface_r = cyl_world.get_surface_radius_at(preferred_spawn_theta, preferred_spawn_z)
+		elif cyl_world and cyl_world.has_method("get_elevation_at"):
+			surface_r = cylinder_radius - cyl_world.get_elevation_at(preferred_spawn_theta, preferred_spawn_z)
 
-	global_position = Vector3(0.0, -spawn_r, 0.0)
-	global_basis = Basis.IDENTITY # At (0, -R, 0), local Up is +Y
+		var spawn_r = surface_r - 0.95
+		global_position = Vector3(spawn_r * cos(preferred_spawn_theta), spawn_r * sin(preferred_spawn_theta), preferred_spawn_z)
+		var up = Vector3(-cos(preferred_spawn_theta), -sin(preferred_spawn_theta), 0.0)
+		var back = Vector3(0.0, 0.0, 1.0)
+		var right = up.cross(back).normalized()
+		global_basis = Basis(right, up, back).orthonormalized()
+
 	pitch = 0.0
 	wobble_roll = 0.0
 	wobble_velocity = 0.0
 	head.rotation = Vector3.ZERO
 	velocity = Vector3.ZERO
+
+var last_telemetry: Dictionary = {}
+
+func get_telemetry() -> Dictionary:
+	return last_telemetry
 
 func _emit_telemetry() -> void:
 	var radial = Vector3(global_position.x, global_position.y, 0.0)
@@ -324,4 +342,5 @@ func _emit_telemetry() -> void:
 		"wobble_correction_rate": correction_rate,
 		"pitch_deg": rad_to_deg(pitch)
 	}
+	last_telemetry = telemetry
 	telemetry_updated.emit(telemetry)

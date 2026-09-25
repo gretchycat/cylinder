@@ -78,6 +78,7 @@ var static_body: StaticBody3D
 var collision_shape: CollisionShape3D
 
 func _ready() -> void:
+	add_to_group("cylinder_world")
 	if not terrain_manager:
 		_initialize_terrain_manager()
 	generate_cylinder()
@@ -101,6 +102,145 @@ func get_terrain_type_at(theta: float, z: float) -> int:
 
 func get_surface_radius_at(theta: float, z: float) -> float:
 	return radius - get_elevation_at(theta, z)
+
+## Find a spawn location guaranteed to be on terrain above sea level.
+## If preferred (theta, z) is already above sea level (water_level + min_clearance), it is used.
+## Otherwise, the terrain grid is searched for the nearest dry land above sea level.
+func find_safe_spawn_point(preferred_theta: float = -PI * 0.5, preferred_z: float = 0.0, min_clearance: float = 2.0) -> Dictionary:
+	if not terrain_manager:
+		_initialize_terrain_manager()
+
+	var required_elevation = water_level + maxf(min_clearance, 0.5)
+
+	# 1. Test preferred location first
+	var pref_elev = get_elevation_at(preferred_theta, preferred_z)
+	var pref_type = get_terrain_type_at(preferred_theta, preferred_z)
+	if pref_elev >= required_elevation and pref_type != TerrainManagerClass.TerrainType.WATER:
+		return _build_spawn_info(preferred_theta, preferred_z, pref_elev, pref_type)
+
+	# 2. Search grid for nearest terrain cell above sea level
+	var grid_u = terrain_manager.grid_u
+	var grid_v = terrain_manager.grid_v
+	var elev_data = terrain_manager.elevation_data
+	var terr_data = terrain_manager.terrain_data
+
+	if elev_data.is_empty():
+		return _build_spawn_info(preferred_theta, preferred_z, water_level + 5.0, TerrainManagerClass.TerrainType.GRASS)
+
+	var target_u = fposmod(preferred_theta, TAU) / TAU
+	var target_v = clampf((preferred_z + cylinder_length * 0.5) / maxf(cylinder_length, 1.0), 0.0, 1.0)
+	var cx = int(target_u * float(grid_u)) % grid_u
+	var cy = clampi(int(target_v * float(grid_v - 1)), 0, grid_v - 1)
+
+	var best_x: int = -1
+	var best_y: int = -1
+	var best_dist_sq: float = INF
+	var best_elev: float = 0.0
+	var best_type: int = TerrainManagerClass.TerrainType.GRASS
+
+	var max_ring = maxi(grid_u, grid_v)
+	var found_in_ring = false
+
+	for r in range(1, max_ring):
+		# Top and bottom edges of search box
+		for dx in range(-r, r + 1):
+			for dy in [-r, r]:
+				var x = (cx + dx) % grid_u
+				if x < 0: x += grid_u
+				var y = cy + dy
+				if y >= 0 and y < grid_v:
+					var idx = y * grid_u + x
+					var e = elev_data[idx]
+					var t = terr_data[idx] if idx < terr_data.size() else 3
+					if e >= required_elevation and t != TerrainManagerClass.TerrainType.WATER:
+						var dz = (float(y - cy) / float(grid_v - 1)) * cylinder_length
+						var du = absf(float(x - cx) / float(grid_u))
+						if du > 0.5: du = 1.0 - du
+						var dx_m = du * (TAU * radius)
+						var dist_sq = dz * dz + dx_m * dx_m
+						if dist_sq < best_dist_sq:
+							best_dist_sq = dist_sq
+							best_x = x
+							best_y = y
+							best_elev = e
+							best_type = t
+						found_in_ring = true
+
+		# Left and right edges of search box
+		for dy in range(-r + 1, r):
+			for dx in [-r, r]:
+				var x = (cx + dx) % grid_u
+				if x < 0: x += grid_u
+				var y = cy + dy
+				if y >= 0 and y < grid_v:
+					var idx = y * grid_u + x
+					var e = elev_data[idx]
+					var t = terr_data[idx] if idx < terr_data.size() else 3
+					if e >= required_elevation and t != TerrainManagerClass.TerrainType.WATER:
+						var dz = (float(y - cy) / float(grid_v - 1)) * cylinder_length
+						var du = absf(float(x - cx) / float(grid_u))
+						if du > 0.5: du = 1.0 - du
+						var dx_m = du * (TAU * radius)
+						var dist_sq = dz * dz + dx_m * dx_m
+						if dist_sq < best_dist_sq:
+							best_dist_sq = dist_sq
+							best_x = x
+							best_y = y
+							best_elev = e
+							best_type = t
+						found_in_ring = true
+
+		if found_in_ring:
+			break
+
+	if best_x >= 0 and best_y >= 0:
+		var u_best = float(best_x) / float(grid_u)
+		var v_best = float(best_y) / float(grid_v - 1)
+		var theta_best = u_best * TAU
+		var z_best = (v_best - 0.5) * cylinder_length
+		var final_elev = get_elevation_at(theta_best, z_best)
+		return _build_spawn_info(theta_best, z_best, final_elev, best_type)
+
+	# Global fallback: scan all cells for highest point
+	var highest_elev = -1.0
+	var highest_idx = 0
+	for i in range(elev_data.size()):
+		if elev_data[i] > highest_elev:
+			highest_elev = elev_data[i]
+			highest_idx = i
+
+	var fall_x = highest_idx % grid_u
+	var fall_y = highest_idx / grid_u
+	var fall_theta = (float(fall_x) / float(grid_u)) * TAU
+	var fall_z = (float(fall_y) / float(grid_v - 1) - 0.5) * cylinder_length
+	return _build_spawn_info(fall_theta, fall_z, highest_elev, TerrainManagerClass.TerrainType.GRASS)
+
+func _build_spawn_info(theta: float, z: float, elev: float, terrain_type: int) -> Dictionary:
+	var surface_r = radius - elev
+	# Clearance for character capsule (height 1.8m, half-height 0.9m + small margin 0.05m)
+	var spawn_r = surface_r - 0.95
+
+	var pos = Vector3(spawn_r * cos(theta), spawn_r * sin(theta), z)
+
+	# Local coordinate frame:
+	# Inward local Up towards axis:
+	var up = Vector3(-cos(theta), -sin(theta), 0.0)
+	# Looking down -Z along cylinder axis:
+	var back = Vector3(0.0, 0.0, 1.0)
+	var right = up.cross(back).normalized()
+	var basis = Basis(right, up, back).orthonormalized()
+
+	return {
+		"position": pos,
+		"basis": basis,
+		"theta": theta,
+		"z": z,
+		"elevation": elev,
+		"terrain_type": terrain_type,
+		"surface_radius": surface_r,
+		"is_above_sea_level": elev > water_level,
+		"clearance_above_sea": elev - water_level
+	}
 
 func generate_cylinder() -> void:
 	if not terrain_manager:
