@@ -232,13 +232,53 @@ func _init() -> void:
 	test_check(wobble_after_25f_surface < wobble_after_20f_zerog * 0.25, "Correction at surface gravity must be far stronger than in zero-g")
 	print("[PASS] Test 6: Horizon wobble self-righting proportionally to gravity verified.")
 
-	# --- TEST 7: Lighting Extents & Visuals ---
+	# --- TEST 7: Axial Lighting System ---
 	print("\n--- TEST 7: Axial Lighting System ---")
 	light_bar.preset = AxisLightBar.LightingPreset.GRADIENT
 	light_bar.set_extent_gradient(Color.ORANGE, Color.CYAN, 2.5, 1.0)
 	test_check(light_bar.segment_colors[0] == Color.ORANGE, "First segment color verified")
 	test_check(light_bar.segment_colors[light_bar.num_segments - 1] == Color.CYAN, "Last segment color verified")
-	print("[PASS] Test 7: Axial lighting system verified.")
+
+	# Verify multi-stop Sunrise to Twilight gradient preset
+	light_bar.preset = AxisLightBar.LightingPreset.GRADIENT
+	test_check(light_bar.segment_colors[0].r > 0.8 and light_bar.segment_colors[0].b < 0.35, "Dawn golden orange segment verified")
+	test_check(light_bar.segment_colors[light_bar.num_segments - 1].b > 0.3, "Twilight sapphire night segment verified")
+
+	# Verify axial LUT texture creation and dispatch to materials
+	var terr_mat = cylinder_world.surface_material as ShaderMaterial
+	var water_mat = cylinder_world.water_material as ShaderMaterial
+	test_check(terr_mat != null and terr_mat.get_shader_parameter("axial_light_lut") != null, "Terrain material receives axial_light_lut texture")
+	test_check(water_mat != null and water_mat.get_shader_parameter("axial_light_lut") != null, "Water material receives axial_light_lut texture")
+
+	# Verify dynamic master intensity slider (pitch black 0.0 to full daylight 3.5 to max 5.0)
+	var sun_a = root_node.get_node_or_null("DaylightSunA") as DirectionalLight3D
+	var env_node = root_node.get_node_or_null("WorldEnvironment") as WorldEnvironment
+	var hud_node = root_node.get_node_or_null("UI") as HUD
+	test_check(sun_a != null and env_node != null and hud_node != null, "Sun, environment, and HUD nodes exist")
+
+	hud_node._on_light_intensity_changed(0.0)
+	test_check(is_zero_approx(light_bar.global_intensity_multiplier), "Intensity multiplier at 0.0 verified")
+	test_check(is_zero_approx(sun_a.light_energy), "DaylightSunA scales down to pitch black (0.0 energy)")
+	test_check(is_zero_approx(env_node.environment.ambient_light_energy), "Ambient light scales down to pitch black (0.0 energy)")
+
+	hud_node._on_light_intensity_changed(3.5)
+	test_check(is_equal_approx(light_bar.global_intensity_multiplier, 3.5), "Intensity multiplier at 3.5 verified")
+	test_check(is_equal_approx(sun_a.light_energy, 1.8), "DaylightSunA scales to 1.8 at nominal daylight (3.5x)")
+	test_check(is_equal_approx(env_node.environment.ambient_light_energy, 1.0), "Ambient light scales to 1.0 at nominal daylight (3.5x)")
+
+	# Verify HUD preset dropdown mappings
+	hud_node._on_light_preset_selected(0)
+	test_check(light_bar.preset == AxisLightBar.LightingPreset.UNIFORM, "HUD item 0 activates Uniform Daylight preset")
+	hud_node._on_light_preset_selected(1)
+	test_check(light_bar.preset == AxisLightBar.LightingPreset.GRADIENT, "HUD item 1 activates Gradient (Sunrise/Twilight) preset")
+	hud_node._on_light_preset_selected(2)
+	test_check(light_bar.preset == AxisLightBar.LightingPreset.DAY_NIGHT_WAVE, "HUD item 2 activates Day/Night Wave preset")
+	hud_node._on_light_preset_selected(3)
+	test_check(light_bar.preset == AxisLightBar.LightingPreset.NEON_AURORA, "HUD item 3 activates Neon Aurora preset")
+	hud_node._on_light_preset_selected(4)
+	test_check(light_bar.preset == AxisLightBar.LightingPreset.WARM_SUNSET, "HUD item 4 activates Warm Sunset preset")
+
+	print("[PASS] Test 7: Axial lighting system, dynamic intensity slider, and preset gradients verified.")
 
 	# --- TEST 8: Standard Controls (Joystick Movement vs Screen Drag Look) ---
 	print("\n--- TEST 8: Standard Controls (Joystick Movement vs Screen Drag Look) ---")
@@ -256,7 +296,7 @@ func _init() -> void:
 	])
 
 	# Verify joystick stays on screen across UI scales
-	var hud_node = root_node.get_node_or_null("UI")
+	hud_node = root_node.get_node_or_null("UI")
 	if hud_node and hud_node.has_method("apply_ui_scale"):
 		hud_node.apply_ui_scale(1.5, false)
 		var vp_h = root_node.get_viewport().get_visible_rect().size.y

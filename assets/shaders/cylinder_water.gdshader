@@ -17,6 +17,9 @@ uniform float air_density : hint_range(0.0, 1.0) = 0.65;
 uniform float air_distance_min = 200.0;
 uniform float air_distance_max = 18000.0;
 
+uniform sampler2D axial_light_lut : hint_default_white, filter_linear, repeat_disable;
+uniform float axial_light_enabled = 1.0;
+
 varying vec3 world_pos;
 varying vec2 map_uv;
 
@@ -68,6 +71,13 @@ void fragment() {
 	// Depth-dependent volume opacity: shoreline is transparent, deep water is rich and dense
 	float base_alpha = mix(shallow_color.a, deep_color.a, depth_norm);
 	float final_alpha = clamp(base_alpha + fresnel * 0.25, 0.35, 0.95);
+
+	// Axial lighting spectrum & time-of-day gradient along the 18 km cylinder
+	if (axial_light_enabled > 0.5) {
+		float t_z = clamp((world_pos.z + cylinder_length * 0.5) / cylinder_length, 0.0, 1.0);
+		vec4 axial_light = texture(axial_light_lut, vec2(t_z, 0.5));
+		final_color *= axial_light.rgb * mix(0.35, 1.15, clamp(axial_light.a, 0.0, 1.0));
+	}
 
 	// Atmospheric aerial perspective: tint distant views across the 8 km cylinder
 	float air_factor = clamp((dist_to_cam - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);

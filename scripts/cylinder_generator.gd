@@ -115,6 +115,9 @@ func _ready() -> void:
 	if not terrain_manager:
 		_initialize_terrain_manager()
 	generate_cylinder()
+	var light_bar = get_tree().get_first_node_in_group("light_bar")
+	if light_bar and light_bar.has_method("_apply_lut_to_materials"):
+		light_bar._apply_lut_to_materials()
 
 func _initialize_terrain_manager() -> void:
 	terrain_manager = TerrainManagerClass.new(512, 256, elevation_variance, water_level)
@@ -342,6 +345,7 @@ func _create_terrain_material() -> ShaderMaterial:
 	mat.set_shader_parameter("tex_dirt_to_grass", load("res://assets/textures/terrain/dirt_to_grass.png"))
 	mat.set_shader_parameter("tex_road_edge", load("res://assets/textures/terrain/road_edge.png"))
 	mat.set_shader_parameter("cylinder_radius", radius)
+	mat.set_shader_parameter("cylinder_length", cylinder_length)
 	mat.set_shader_parameter("water_level", water_level)
 	mat.set_shader_parameter("max_elevation", elevation_variance)
 	mat.set_shader_parameter("air_color", air_color)

@@ -131,18 +131,28 @@ func _on_viewport_size_changed() -> void:
 func _setup_control_panel() -> void:
 	if light_preset_option:
 		light_preset_option.clear()
-		light_preset_option.add_item("Gradient (Sunrise/Twilight)", 0)
-		light_preset_option.add_item("Day/Night Wave (Animated)", 1)
-		light_preset_option.add_item("Neon Aurora (Animated)", 2)
-		light_preset_option.add_item("Warm Sunset", 3)
-		light_preset_option.add_item("Uniform Daylight", 4)
+		light_preset_option.add_item("Uniform Daylight", 0)
+		light_preset_option.add_item("Gradient (Sunrise/Twilight)", 1)
+		light_preset_option.add_item("Day/Night Wave (Animated)", 2)
+		light_preset_option.add_item("Neon Aurora (Animated)", 3)
+		light_preset_option.add_item("Warm Sunset", 4)
+
+		var cur_sel = 0
+		if light_bar:
+			match light_bar.preset:
+				AxisLightBar.LightingPreset.UNIFORM: cur_sel = 0
+				AxisLightBar.LightingPreset.GRADIENT: cur_sel = 1
+				AxisLightBar.LightingPreset.DAY_NIGHT_WAVE: cur_sel = 2
+				AxisLightBar.LightingPreset.NEON_AURORA: cur_sel = 3
+				AxisLightBar.LightingPreset.WARM_SUNSET: cur_sel = 4
+		light_preset_option.select(cur_sel)
 		light_preset_option.item_selected.connect(_on_light_preset_selected)
 
 	if light_intensity_slider:
 		light_intensity_slider.min_value = 0.0
 		light_intensity_slider.max_value = 5.0
 		light_intensity_slider.step = 0.1
-		light_intensity_slider.value = light_bar.global_intensity_multiplier if light_bar else 1.8
+		light_intensity_slider.value = light_bar.global_intensity_multiplier if light_bar else 3.5
 		light_intensity_slider.value_changed.connect(_on_light_intensity_changed)
 		if light_intensity_val:
 			light_intensity_val.text = "%.1fx" % light_intensity_slider.value
@@ -233,15 +243,15 @@ func _on_light_preset_selected(index: int) -> void:
 		return
 	match index:
 		0:
-			light_bar.preset = AxisLightBar.LightingPreset.GRADIENT
-		1:
-			light_bar.preset = AxisLightBar.LightingPreset.DAY_NIGHT_WAVE
-		2:
-			light_bar.preset = AxisLightBar.LightingPreset.NEON_AURORA
-		3:
-			light_bar.preset = AxisLightBar.LightingPreset.WARM_SUNSET
-		4:
 			light_bar.preset = AxisLightBar.LightingPreset.UNIFORM
+		1:
+			light_bar.preset = AxisLightBar.LightingPreset.GRADIENT
+		2:
+			light_bar.preset = AxisLightBar.LightingPreset.DAY_NIGHT_WAVE
+		3:
+			light_bar.preset = AxisLightBar.LightingPreset.NEON_AURORA
+		4:
+			light_bar.preset = AxisLightBar.LightingPreset.WARM_SUNSET
 
 func _on_light_intensity_changed(value: float) -> void:
 	if light_bar:

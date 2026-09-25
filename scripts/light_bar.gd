@@ -38,6 +38,8 @@ enum LightingPreset {
 @export_category("Lighting Control - Max On Full Illumination")
 @export var preset: LightingPreset = LightingPreset.UNIFORM:
 	set(val):
+		if preset != val:
+			use_custom_extent = false
 		preset = val
 		_apply_current_preset()
 
@@ -60,15 +62,37 @@ enum LightingPreset {
 # Internal segment data
 var segment_colors: Array[Color] = []
 var segment_intensities: Array[float] = []
+var use_custom_extent: bool = false
 
 var segment_nodes: Array[MeshInstance3D] = []
 var light_nodes: Array[OmniLight3D] = []
 var truss_node: MeshInstance3D
 
+var sun_lights: Array[DirectionalLight3D] = []
+var world_environment: WorldEnvironment = null
+
+var lut_image: Image = null
+var lut_texture: ImageTexture = null
+
 var wave_time: float = 0.0
 
 func _ready() -> void:
+	add_to_group("light_bar")
+	_find_global_lighting()
 	rebuild_light_bar()
+	_apply_lut_to_materials.call_deferred()
+
+func _find_global_lighting() -> void:
+	if not is_inside_tree():
+		return
+	sun_lights.clear()
+	var parent_node = get_parent()
+	if parent_node:
+		for child in parent_node.get_children():
+			if child is DirectionalLight3D:
+				sun_lights.append(child)
+			elif child is WorldEnvironment:
+				world_environment = child
 
 func rebuild_light_bar() -> void:
 	# Clear existing children
@@ -157,28 +181,59 @@ func _apply_current_preset() -> void:
 	match preset:
 		LightingPreset.UNIFORM:
 			for i in range(num_segments):
-				segment_colors[i] = start_color
-				segment_intensities[i] = start_intensity
+				segment_colors[i] = Color(1.0, 0.98, 0.95)
+				segment_intensities[i] = 3.5
 
 		LightingPreset.GRADIENT:
-			for i in range(num_segments):
-				var t = float(i) / max(float(num_segments - 1), 1.0)
-				segment_colors[i] = start_color.lerp(end_color, t)
-				segment_intensities[i] = lerpf(start_intensity, end_intensity, t)
+			if use_custom_extent:
+				for i in range(num_segments):
+					var t = float(i) / max(float(num_segments - 1), 1.0)
+					segment_colors[i] = start_color.lerp(end_color, t)
+					segment_intensities[i] = lerpf(start_intensity, end_intensity, t)
+			else:
+				# Spectacular Sunrise to Twilight gradient along the 18 km cylinder
+				var col_dawn = Color(1.0, 0.52, 0.18)     # Dawn Golden Orange
+				var col_morning = Color(1.0, 0.88, 0.65)  # Warm Morning Gold
+				var col_noon = Color(0.98, 0.98, 1.0)     # Clean High Noon
+				var col_dusk = Color(0.65, 0.35, 0.75)    # Evening Dusk Violet
+				var col_night = Color(0.08, 0.16, 0.38)   # Deep Twilight Sapphire
+
+				for i in range(num_segments):
+					var t = float(i) / max(float(num_segments - 1), 1.0)
+					var col: Color
+					var intensity: float
+					if t < 0.25:
+						col = col_dawn.lerp(col_morning, t / 0.25)
+						intensity = lerpf(2.5, 3.5, t / 0.25)
+					elif t < 0.55:
+						col = col_morning.lerp(col_noon, (t - 0.25) / 0.30)
+						intensity = 3.5
+					elif t < 0.80:
+						col = col_noon.lerp(col_dusk, (t - 0.55) / 0.25)
+						intensity = lerpf(3.5, 2.0, (t - 0.55) / 0.25)
+					else:
+						col = col_dusk.lerp(col_night, (t - 0.80) / 0.20)
+						intensity = lerpf(2.0, 0.5, (t - 0.80) / 0.20)
+
+					segment_colors[i] = col
+					segment_intensities[i] = intensity
 
 		LightingPreset.WARM_SUNSET:
-			var sunset_start = Color(1.0, 0.45, 0.15)
-			var sunset_mid = Color(1.0, 0.85, 0.5)
-			var sunset_end = Color(0.2, 0.4, 0.9)
+			var sunset_amber = Color(1.0, 0.48, 0.15)
+			var sunset_gold = Color(1.0, 0.85, 0.45)
+			var sunset_crimson = Color(0.92, 0.25, 0.35)
+			var sunset_twilight = Color(0.18, 0.28, 0.75)
 			for i in range(num_segments):
 				var t = float(i) / max(float(num_segments - 1), 1.0)
 				var col: Color
-				if t < 0.5:
-					col = sunset_start.lerp(sunset_mid, t * 2.0)
+				if t < 0.35:
+					col = sunset_amber.lerp(sunset_gold, t / 0.35)
+				elif t < 0.70:
+					col = sunset_gold.lerp(sunset_crimson, (t - 0.35) / 0.35)
 				else:
-					col = sunset_mid.lerp(sunset_end, (t - 0.5) * 2.0)
+					col = sunset_crimson.lerp(sunset_twilight, (t - 0.70) / 0.30)
 				segment_colors[i] = col
-				segment_intensities[i] = lerpf(3.5, 2.0, t)
+				segment_intensities[i] = lerpf(3.5, 1.8, t)
 
 		LightingPreset.NEON_AURORA, LightingPreset.DAY_NIGHT_WAVE:
 			_update_animated_wave()
@@ -193,21 +248,29 @@ func _update_animated_wave() -> void:
 
 		if preset == LightingPreset.DAY_NIGHT_WAVE:
 			var wave_factor = (sin(phase) + 1.0) * 0.5
-			var col = start_color.lerp(end_color, wave_factor)
-			var intensity = lerpf(1.0, 4.0, wave_factor)
+			var col_night = Color(0.08, 0.16, 0.42)
+			var col_day = Color(1.0, 0.96, 0.90)
+			var col = col_night.lerp(col_day, wave_factor)
+			var intensity = lerpf(0.2, 4.0, wave_factor)
 			segment_colors[i] = col
 			segment_intensities[i] = intensity
 		elif preset == LightingPreset.NEON_AURORA:
 			var hue = fposmod(t + wave_time * 0.2, 1.0)
-			var col = Color.from_hsv(hue, 0.8, 1.0)
-			var intensity = 2.0 + 1.2 * sin(phase)
+			var col = Color.from_hsv(hue, 0.85, 1.0)
+			var intensity = 2.0 + 1.5 * sin(phase)
 			segment_colors[i] = col
 			segment_intensities[i] = intensity
 
 	_refresh_all_segments()
 
 func _refresh_all_segments() -> void:
-	for i in range(min(segment_nodes.size(), num_segments)):
+	_find_global_lighting()
+
+	var avg_col = Color.BLACK
+	var avg_intensity = 0.0
+	var count = min(segment_nodes.size(), num_segments)
+
+	for i in range(count):
 		var col = segment_colors[i]
 		var energy = segment_intensities[i] * global_intensity_multiplier
 
@@ -224,6 +287,60 @@ func _refresh_all_segments() -> void:
 			var light = light_nodes[i]
 			light.light_color = col
 			light.light_energy = energy
+
+		avg_col += col
+		avg_intensity += segment_intensities[i]
+
+	if count > 0:
+		avg_col /= float(count)
+		avg_intensity /= float(count)
+
+	# Global master intensity scaling (nominal full daylight is at global_intensity_multiplier = 3.5)
+	var intensity_norm = global_intensity_multiplier / 3.5
+
+	# Synchronize scene directional sun lights with intensity and preset color
+	for sun in sun_lights:
+		sun.light_color = avg_col
+		sun.light_energy = 1.8 * intensity_norm
+
+	# Synchronize scene ambient lighting with intensity and preset color
+	if world_environment and world_environment.environment:
+		var env = world_environment.environment
+		env.ambient_light_color = avg_col
+		env.ambient_light_energy = 1.0 * intensity_norm
+
+	_update_axial_lut()
+
+func _update_axial_lut() -> void:
+	if num_segments <= 0 or segment_colors.size() < num_segments:
+		return
+	if not lut_image or lut_image.get_width() != num_segments:
+		lut_image = Image.create(num_segments, 1, false, Image.FORMAT_RGBA8)
+		lut_texture = null
+
+	for i in range(num_segments):
+		var c = segment_colors[i]
+		var intensity_factor = clampf(segment_intensities[i] / 3.5, 0.05, 1.5)
+		lut_image.set_pixel(i, 0, Color(c.r, c.g, c.b, intensity_factor))
+
+	if not lut_texture:
+		lut_texture = ImageTexture.create_from_image(lut_image)
+	else:
+		lut_texture.update(lut_image)
+
+	_apply_lut_to_materials()
+
+func _apply_lut_to_materials() -> void:
+	if not is_inside_tree() or not lut_texture:
+		return
+	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator
+	if cylinder_world:
+		if cylinder_world.surface_material is ShaderMaterial:
+			cylinder_world.surface_material.set_shader_parameter("axial_light_lut", lut_texture)
+			cylinder_world.surface_material.set_shader_parameter("cylinder_length", bar_length)
+		if cylinder_world.water_material is ShaderMaterial:
+			cylinder_world.water_material.set_shader_parameter("axial_light_lut", lut_texture)
+			cylinder_world.water_material.set_shader_parameter("cylinder_length", bar_length)
 
 func _update_light_ranges() -> void:
 	for light in light_nodes:
@@ -252,4 +369,5 @@ func set_extent_gradient(col_a: Color, col_b: Color, intensity_a: float, intensi
 	start_intensity = intensity_a
 	end_intensity = intensity_b
 	preset = LightingPreset.GRADIENT
+	use_custom_extent = true
 	_apply_current_preset()

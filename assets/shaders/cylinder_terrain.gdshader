@@ -20,6 +20,10 @@ uniform float air_density : hint_range(0.0, 1.0) = 0.65;
 uniform float air_distance_min = 200.0;
 uniform float air_distance_max = 18000.0;
 
+uniform sampler2D axial_light_lut : hint_default_white, filter_linear, repeat_disable;
+uniform float cylinder_length = 18000.0;
+uniform float axial_light_enabled = 1.0;
+
 varying vec3 world_pos;
 varying vec4 vert_attr; // r: elevation_ratio (0..1), g: terrain_type_id (0..8), b: is_end_cap (0..1)
 
@@ -154,6 +158,15 @@ void fragment() {
 		final_color += caustic_color * (pow(caustics, 3.2) * 0.38 * (1.0 - depth_norm * 0.75));
 
 		roughness_val = mix(roughness_val, 0.25, depth_norm * 0.5);
+	}
+
+	// Axial lighting spectrum & time-of-day gradient along the 18 km cylinder
+	if (axial_light_enabled > 0.5) {
+		float t_z = clamp((world_pos.z + cylinder_length * 0.5) / cylinder_length, 0.0, 1.0);
+		vec4 axial_light = texture(axial_light_lut, vec2(t_z, 0.5));
+		vec3 axial_col = axial_light.rgb;
+		float axial_lum = axial_light.a;
+		final_color *= axial_col * mix(0.35, 1.15, clamp(axial_lum, 0.0, 1.0));
 	}
 
 	// Distance perspective: Check if camera itself is submerged underwater
