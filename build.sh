@@ -46,7 +46,17 @@ cmd_run() {
 cmd_test() {
     check_godot
     echo "[TEST] Running automated test suite in headless mode..."
-    "$GODOT_BIN" --headless -s scripts/test_simulation.gd
+    if command -v timeout >/dev/null 2>&1; then
+        timeout 25s "$GODOT_BIN" --headless -s scripts/test_simulation.gd
+        local exit_code=$?
+        if [ $exit_code -eq 124 ]; then
+            echo "[ERROR] Test suite timed out after 25 seconds!"
+            exit 124
+        fi
+        return $exit_code
+    else
+        "$GODOT_BIN" --headless -s scripts/test_simulation.gd
+    fi
 }
 
 cmd_android() {
