@@ -104,7 +104,6 @@ void fragment() {
 		vec4 axial_light = texture(axial_light_lut, vec2(t_z, 0.5));
 		axial_col = axial_light.rgb;
 		axial_lum = clamp(axial_light.a, 0.0, 1.5);
-		final_color *= axial_col * mix(0.35, 1.15, clamp(axial_lum, 0.0, 1.0));
 		target_air_color = air_color.rgb * mix(vec3(1.0), axial_col, 0.65) * mix(0.10, 1.00, clamp(axial_lum, 0.0, 1.0));
 	}
 

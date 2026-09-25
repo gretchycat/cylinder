@@ -195,15 +195,6 @@ void fragment() {
 		roughness_val = mix(roughness_val, 0.25, depth_norm * 0.5);
 	}
 
-	// Axial lighting spectrum & time-of-day gradient along the 18 km cylinder
-	if (axial_light_enabled > 0.5) {
-		float t_z = clamp((world_pos.z + cylinder_length * 0.5) / cylinder_length, 0.0, 1.0);
-		vec4 axial_light = texture(axial_light_lut, vec2(t_z, 0.5));
-		vec3 axial_col = axial_light.rgb;
-		float axial_lum = axial_light.a;
-		final_color *= axial_col * mix(0.35, 1.15, clamp(axial_lum, 0.0, 1.0));
-	}
-
 	// Distance perspective: Check if camera itself is submerged underwater
 	float cam_dist = length(world_pos - CAMERA_POSITION_WORLD);
 	float cam_r = length(CAMERA_POSITION_WORLD.xy);
