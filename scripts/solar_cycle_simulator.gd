@@ -122,38 +122,25 @@ static func get_solar_lighting_at_elevation(elevation_deg: float, is_morning: bo
 		fog_col = fog_twilight.lerp(fog_horizon, t)
 		phase = "Civil Twilight (Dawn)" if is_morning else "Civil Twilight (Dusk)"
 
-	elif elevation_deg >= -12.0:
-		# Nautical Twilight (Stars appearing, deep twilight sapphire sky)
-		var t = smooth_step(-12.0, -6.0, elevation_deg)
-		var sapphire_night = Color(0.10, 0.18, 0.42)
+	elif elevation_deg >= -8.0:
+		# Nautical Twilight down to 5:28 AM threshold (-8.0° elevation at 0° latitude)
+		var t = smooth_step(-8.0, -6.0, elevation_deg)
+		var night_528am = Color(0.322, 0.306, 0.613)
 		var twilight_deep = Color(0.40, 0.35, 0.68) if is_morning else Color(0.65, 0.30, 0.65)
-		sun_col = sapphire_night.lerp(twilight_deep, t)
-		intensity = lerpf(0.02, 0.15, t)
+		sun_col = night_528am.lerp(twilight_deep, t)
+		intensity = lerpf(0.1163, 0.15, t)
 
-		var fog_sapphire = Color(0.08, 0.12, 0.28, 1.0)
+		var fog_528am = Color(0.228, 0.194, 0.443, 1.0)
 		var fog_twilight = Color(0.28, 0.22, 0.50, 1.0)
-		fog_col = fog_sapphire.lerp(fog_twilight, t)
-		phase = "Nautical Twilight"
-
-	elif elevation_deg >= -18.0:
-		# Astronomical Twilight (Faint sky illumination before full night)
-		var t = smooth_step(-18.0, -12.0, elevation_deg)
-		var night_indigo = Color(0.025, 0.05, 0.14)
-		var sapphire_night = Color(0.10, 0.18, 0.42)
-		sun_col = night_indigo.lerp(sapphire_night, t)
-		intensity = lerpf(0.002, 0.02, t)
-
-		var fog_night = Color(0.02, 0.03, 0.08, 1.0)
-		var fog_sapphire = Color(0.08, 0.12, 0.28, 1.0)
-		fog_col = fog_night.lerp(fog_sapphire, t)
-		phase = "Astronomical Twilight"
+		fog_col = fog_528am.lerp(fog_twilight, t)
+		phase = "Nautical Twilight (Dawn)" if is_morning else "Nautical Twilight (Dusk)"
 
 	else:
-		# Astronomical Night (True dark night / starlight spectrum)
-		sun_col = Color(0.015, 0.025, 0.06)
-		intensity = 0.001
-		fog_col = Color(0.01, 0.015, 0.03, 1.0)
-		phase = "Night (Starlight)"
+		# Darkest Night floor: locked to 5:28 AM at 0° latitude
+		sun_col = Color(0.322, 0.306, 0.613)
+		intensity = 0.1163
+		fog_col = Color(0.228, 0.194, 0.443, 1.0)
+		phase = "Night (5:28 AM Level)"
 
 	return {
 		"sun_color": sun_col,
