@@ -67,6 +67,27 @@ const TerrainManagerClass = preload("res://scripts/terrain_manager.gd")
 			terrain_manager.load_terrain_from_png(terrain_map_path)
 			generate_cylinder()
 
+@export_category("Atmospheric Aerial Perspective (8 km Distance Haze)")
+@export var air_color: Color = Color(0.52, 0.72, 0.88, 1.0):
+	set(val):
+		air_color = val
+		_update_atmosphere_parameters()
+
+@export var air_density: float = 0.65:
+	set(val):
+		air_density = clampf(val, 0.0, 1.0)
+		_update_atmosphere_parameters()
+
+@export var air_distance_min: float = 200.0:
+	set(val):
+		air_distance_min = max(val, 0.0)
+		_update_atmosphere_parameters()
+
+@export var air_distance_max: float = 8000.0:
+	set(val):
+		air_distance_max = max(val, air_distance_min + 10.0)
+		_update_atmosphere_parameters()
+
 @export var surface_material: Material
 @export var water_material: Material
 
@@ -311,6 +332,10 @@ func _create_terrain_material() -> ShaderMaterial:
 	mat.set_shader_parameter("cylinder_radius", radius)
 	mat.set_shader_parameter("water_level", water_level)
 	mat.set_shader_parameter("max_elevation", elevation_variance)
+	mat.set_shader_parameter("air_color", air_color)
+	mat.set_shader_parameter("air_density", air_density)
+	mat.set_shader_parameter("air_distance_min", air_distance_min)
+	mat.set_shader_parameter("air_distance_max", air_distance_max)
 	return mat
 
 func _create_water_material() -> ShaderMaterial:
@@ -323,8 +348,24 @@ func _create_water_material() -> ShaderMaterial:
 	mat.set_shader_parameter("cylinder_length", cylinder_length)
 	mat.set_shader_parameter("water_level", water_level)
 	mat.set_shader_parameter("max_elevation", elevation_variance)
+	mat.set_shader_parameter("air_color", air_color)
+	mat.set_shader_parameter("air_density", air_density)
+	mat.set_shader_parameter("air_distance_min", air_distance_min)
+	mat.set_shader_parameter("air_distance_max", air_distance_max)
 	_update_water_material_textures(mat)
 	return mat
+
+func _update_atmosphere_parameters() -> void:
+	if surface_material is ShaderMaterial:
+		surface_material.set_shader_parameter("air_color", air_color)
+		surface_material.set_shader_parameter("air_density", air_density)
+		surface_material.set_shader_parameter("air_distance_min", air_distance_min)
+		surface_material.set_shader_parameter("air_distance_max", air_distance_max)
+	if water_material is ShaderMaterial:
+		water_material.set_shader_parameter("air_color", air_color)
+		water_material.set_shader_parameter("air_density", air_density)
+		water_material.set_shader_parameter("air_distance_min", air_distance_min)
+		water_material.set_shader_parameter("air_distance_max", air_distance_max)
 
 func _update_water_material_textures(mat: ShaderMaterial = null) -> void:
 	if not mat:
@@ -335,6 +376,10 @@ func _update_water_material_textures(mat: ShaderMaterial = null) -> void:
 	mat.set_shader_parameter("cylinder_length", cylinder_length)
 	mat.set_shader_parameter("water_level", water_level)
 	mat.set_shader_parameter("max_elevation", elevation_variance)
+	mat.set_shader_parameter("air_color", air_color)
+	mat.set_shader_parameter("air_density", air_density)
+	mat.set_shader_parameter("air_distance_min", air_distance_min)
+	mat.set_shader_parameter("air_distance_max", air_distance_max)
 
 	var elev_tex: Texture2D = null
 	if FileAccess.file_exists(elevation_map_path) or FileAccess.file_exists(ProjectSettings.globalize_path(elevation_map_path)):

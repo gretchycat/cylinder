@@ -12,6 +12,11 @@ uniform float wave_speed : hint_range(0.0, 5.0) = 0.5;
 uniform float roughness : hint_range(0.0, 1.0) = 0.06;
 uniform float specular : hint_range(0.0, 1.0) = 0.92;
 
+uniform vec4 air_color : source_color = vec4(0.52, 0.72, 0.88, 1.0);
+uniform float air_density : hint_range(0.0, 1.0) = 0.65;
+uniform float air_distance_min = 200.0;
+uniform float air_distance_max = 8000.0;
+
 varying vec3 world_pos;
 varying vec2 map_uv;
 
@@ -63,6 +68,12 @@ void fragment() {
 	// Depth-dependent volume opacity: shoreline is transparent, deep water is rich and dense
 	float base_alpha = mix(shallow_color.a, deep_color.a, depth_norm);
 	float final_alpha = clamp(base_alpha + fresnel * 0.25, 0.35, 0.95);
+
+	// Atmospheric aerial perspective: tint distant views across the 8 km cylinder
+	float air_factor = clamp((dist_to_cam - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
+	float air_scatter = 1.0 - exp(-air_factor * 1.8);
+	final_color = mix(final_color, air_color.rgb, air_scatter * air_density);
+	final_alpha = mix(final_alpha, 0.98, air_scatter * air_density * 0.7);
 
 	ALBEDO = final_color;
 	NORMAL = ripple_norm;

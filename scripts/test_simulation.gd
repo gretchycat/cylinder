@@ -365,7 +365,33 @@ func _init() -> void:
 	test_check(light_bar.global_intensity_multiplier >= 3.0, "Max On lighting intensity must be at full illumination level (>= 3.0)")
 	for light in light_bar.light_nodes:
 		test_check(light.omni_range >= 6000.0, "Axial omni light range must cover 4 km radial distance")
-	print("[PASS] Test 10: Max On daylight lighting level and 8 km cylinder scale verified.")
+
+	# Verify 8 km atmospheric air tinting across cylinder materials and WorldEnvironment
+	var world_env = root_node.get_node_or_null("WorldEnvironment") as WorldEnvironment
+	test_check(world_env != null and world_env.environment != null, "WorldEnvironment must exist with configured Environment")
+	test_check(world_env.environment.fog_enabled, "Depth fog must be enabled for atmospheric aerial perspective")
+	test_check(world_env.environment.fog_mode == Environment.FOG_MODE_DEPTH, "Fog mode must be depth-based (FOG_MODE_DEPTH)")
+	test_check(world_env.environment.fog_depth_end == 8000.0, "Fog depth end must reach 8 km across the cylinder")
+	print("WorldEnvironment depth fog verified: light_color=%s, begin=%.1f m, end=%.1f m" % [
+		world_env.environment.fog_light_color, world_env.environment.fog_depth_begin, world_env.environment.fog_depth_end
+	])
+
+	# Verify terrain and water shader air tint parameters
+	var terr_air_col = cylinder_world.surface_material.get_shader_parameter("air_color") as Color
+	var terr_air_max = cylinder_world.surface_material.get_shader_parameter("air_distance_max") as float
+	var terr_air_density = cylinder_world.surface_material.get_shader_parameter("air_density") as float
+	var water_air_col = cylinder_world.water_material.get_shader_parameter("air_color") as Color
+	var water_air_max = cylinder_world.water_material.get_shader_parameter("air_distance_max") as float
+
+	print("Terrain air tint: color=%s, density=%.2f, max_dist=%.1f m" % [terr_air_col, terr_air_density, terr_air_max])
+	print("Water air tint: color=%s, max_dist=%.1f m" % [water_air_col, water_air_max])
+
+	test_check(terr_air_col != null and terr_air_col.b > terr_air_col.r, "Terrain air color must have cyan/blue Rayleigh scattering tint")
+	test_check(terr_air_max == 8000.0, "Terrain air tint distance max must be 8 km")
+	test_check(terr_air_density > 0.0 and terr_air_density <= 1.0, "Terrain air density must be within (0, 1]")
+	test_check(water_air_col != null and water_air_max == 8000.0, "Water air tint must reach 8 km")
+
+	print("[PASS] Test 10: Max On daylight lighting level, 8 km cylinder scale, and atmospheric air tinting verified.")
 
 	print("\n=======================================================")
 	print(" ALL O'NEILL CYLINDER SIMULATION TESTS PASSED (10/10)! ")
