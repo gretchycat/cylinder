@@ -2,12 +2,15 @@
 class_name AxisLightBar
 extends Node3D
 
+const SolarCycleSimulator = preload("res://scripts/solar_cycle_simulator.gd")
+
 enum LightingPreset {
 	UNIFORM,
 	GRADIENT,
 	DAY_NIGHT_WAVE,
 	NEON_AURORA,
-	WARM_SUNSET
+	WARM_SUNSET,
+	SOLAR_CYCLE
 }
 
 @export_category("Dimensions (18 km Scale)")
@@ -35,8 +38,51 @@ enum LightingPreset {
 		if is_inside_tree():
 			rebuild_light_bar()
 
+@export_category("Solar Day/Night Cycle (Earth Latitude)")
+@export var use_real_time: bool = true:
+	set(val):
+		use_real_time = val
+		if use_real_time and is_inside_tree():
+			sync_to_system_clock()
+
+@export var earth_latitude_deg: float = 40.0:
+	set(val):
+		earth_latitude_deg = clampf(val, -90.0, 90.0)
+		if is_inside_tree():
+			_apply_current_preset()
+
+@export var time_of_day_hours: float = 12.0:
+	set(val):
+		time_of_day_hours = fposmod(val, 24.0)
+		if is_inside_tree():
+			_apply_current_preset()
+
+@export var day_of_year: int = 0: # 0 = auto from system date
+	set(val):
+		day_of_year = clampi(val, 0, 366)
+		if is_inside_tree():
+			_apply_current_preset()
+
+@export var solar_span_hours: float = 1.5:
+	set(val):
+		solar_span_hours = maxf(val, 0.0)
+		if is_inside_tree():
+			_apply_current_preset()
+
+@export var gradient_follows_solar_cycle: bool = true:
+	set(val):
+		gradient_follows_solar_cycle = val
+		if is_inside_tree():
+			_apply_current_preset()
+
+@export var uniform_follows_solar_cycle: bool = false:
+	set(val):
+		uniform_follows_solar_cycle = val
+		if is_inside_tree():
+			_apply_current_preset()
+
 @export_category("Lighting Control - Max On Full Illumination")
-@export var preset: LightingPreset = LightingPreset.UNIFORM:
+@export var preset: LightingPreset = LightingPreset.GRADIENT:
 	set(val):
 		if preset != val:
 			use_custom_extent = false
@@ -66,8 +112,6 @@ var use_custom_extent: bool = false
 
 var segment_nodes: Array[MeshInstance3D] = []
 var light_nodes: Array[OmniLight3D] = []
-var south_end_cap_light: SpotLight3D = null
-var north_end_cap_light: SpotLight3D = null
 var truss_node: MeshInstance3D
 
 var sun_lights: Array[DirectionalLight3D] = []
@@ -80,9 +124,22 @@ var wave_time: float = 0.0
 var current_avg_color: Color = Color(1.0, 0.98, 0.95)
 var current_avg_intensity: float = 3.5
 var last_cam_z: float = -99999.0
+var solar_info: Dictionary = {}
+
+func _get_effective_day_of_year() -> int:
+	if day_of_year > 0:
+		return day_of_year
+	var d_dict = Time.get_date_dict_from_system()
+	return SolarCycleSimulator.get_day_of_year(d_dict["year"], d_dict["month"], d_dict["day"])
+
+func _get_system_time_hours() -> float:
+	var t_dict = Time.get_time_dict_from_system()
+	return float(t_dict["hour"]) + float(t_dict["minute"]) / 60.0 + float(t_dict["second"]) / 3600.0
 
 func _ready() -> void:
 	add_to_group("light_bar")
+	if use_real_time:
+		time_of_day_hours = _get_system_time_hours()
 	_find_global_lighting()
 	rebuild_light_bar()
 	_apply_lut_to_materials.call_deferred()
@@ -114,7 +171,7 @@ func rebuild_light_bar() -> void:
 	var spine_mesh = CylinderMesh.new()
 	spine_mesh.top_radius = bar_radius * 0.45
 	spine_mesh.bottom_radius = bar_radius * 0.45
-	spine_mesh.height = bar_length * 1.02
+	spine_mesh.height = bar_length + cylinder_radius * 2.0 - 80.0  # Reaches into end cap poles (±half_len ± cylinder_radius)
 	spine_mesh.radial_segments = 24
 
 	var spine_mat = StandardMaterial3D.new()
@@ -173,34 +230,20 @@ func rebuild_light_bar() -> void:
 		segment_colors.append(Color.WHITE)
 		segment_intensities.append(1.0)
 
-	# 3. Axial End Cap Floodlights (illuminate hemispherical end cap bulkheads)
-	south_end_cap_light = SpotLight3D.new()
-	south_end_cap_light.name = "SouthEndCapLight"
-	south_end_cap_light.position = Vector3(0, 0, -half_len + 5.0)
-	south_end_cap_light.rotation_degrees = Vector3(0, 0, 0) # Facing -Z into South dish
-	south_end_cap_light.spot_range = cylinder_radius * 2.2
-	south_end_cap_light.spot_angle = 86.0
-	south_end_cap_light.spot_attenuation = 0.7
-	south_end_cap_light.shadow_enabled = enable_shadows
-	add_child(south_end_cap_light)
-
-	north_end_cap_light = SpotLight3D.new()
-	north_end_cap_light.name = "NorthEndCapLight"
-	north_end_cap_light.position = Vector3(0, 0, half_len - 5.0)
-	north_end_cap_light.rotation_degrees = Vector3(0, 180, 0) # Facing +Z into North dish
-	north_end_cap_light.spot_range = cylinder_radius * 2.2
-	north_end_cap_light.spot_angle = 86.0
-	north_end_cap_light.spot_attenuation = 0.7
-	north_end_cap_light.shadow_enabled = enable_shadows
-	add_child(north_end_cap_light)
-
 	_apply_current_preset()
 
 func _process(delta: float) -> void:
+	if use_real_time:
+		var cur_h = _get_system_time_hours()
+		if absf(cur_h - time_of_day_hours) > 0.0001:
+			time_of_day_hours = cur_h
+			if (preset == LightingPreset.GRADIENT and gradient_follows_solar_cycle) or preset == LightingPreset.SOLAR_CYCLE or (preset == LightingPreset.UNIFORM and uniform_follows_solar_cycle):
+				_apply_current_preset()
+
 	if preset == LightingPreset.DAY_NIGHT_WAVE or preset == LightingPreset.NEON_AURORA:
 		wave_time += delta * wave_speed
 		_update_animated_wave()
-	elif preset == LightingPreset.GRADIENT:
+	elif preset == LightingPreset.GRADIENT or preset == LightingPreset.SOLAR_CYCLE:
 		var cam_z = _get_camera_z()
 		if absf(cam_z - last_cam_z) > 15.0:
 			last_cam_z = cam_z
@@ -212,9 +255,20 @@ func _apply_current_preset() -> void:
 
 	match preset:
 		LightingPreset.UNIFORM:
-			for i in range(num_segments):
-				segment_colors[i] = Color(1.0, 0.98, 0.95)
-				segment_intensities[i] = 3.5
+			if uniform_follows_solar_cycle:
+				var p = SolarCycleSimulator.get_solar_lighting_at_time(
+					earth_latitude_deg,
+					_get_effective_day_of_year(),
+					time_of_day_hours
+				)
+				solar_info = p
+				for i in range(num_segments):
+					segment_colors[i] = p["sun_color"]
+					segment_intensities[i] = p["intensity"]
+			else:
+				for i in range(num_segments):
+					segment_colors[i] = Color(1.0, 0.98, 0.95)
+					segment_intensities[i] = 3.5
 
 		LightingPreset.GRADIENT:
 			if use_custom_extent:
@@ -222,8 +276,19 @@ func _apply_current_preset() -> void:
 					var t = float(i) / max(float(num_segments - 1), 1.0)
 					segment_colors[i] = start_color.lerp(end_color, t)
 					segment_intensities[i] = lerpf(start_intensity, end_intensity, t)
+			elif gradient_follows_solar_cycle:
+				var grad = SolarCycleSimulator.get_cylinder_axial_gradient(
+					earth_latitude_deg,
+					_get_effective_day_of_year(),
+					time_of_day_hours,
+					num_segments,
+					solar_span_hours
+				)
+				segment_colors = grad["segment_colors"]
+				segment_intensities = grad["segment_intensities"]
+				solar_info = grad
 			else:
-				# Spectacular Sunrise to Twilight gradient along the 18 km cylinder
+				# Multi-stop Sunrise to Twilight gradient along the 18 km cylinder
 				var col_dawn = Color(1.0, 0.52, 0.18)     # Dawn Golden Orange
 				var col_morning = Color(1.0, 0.88, 0.65)  # Warm Morning Gold
 				var col_noon = Color(0.98, 0.98, 1.0)     # Clean High Noon
@@ -249,6 +314,18 @@ func _apply_current_preset() -> void:
 
 					segment_colors[i] = col
 					segment_intensities[i] = intensity
+
+		LightingPreset.SOLAR_CYCLE:
+			var grad = SolarCycleSimulator.get_cylinder_axial_gradient(
+				earth_latitude_deg,
+				_get_effective_day_of_year(),
+				time_of_day_hours,
+				num_segments,
+				solar_span_hours
+			)
+			segment_colors = grad["segment_colors"]
+			segment_intensities = grad["segment_intensities"]
+			solar_info = grad
 
 		LightingPreset.WARM_SUNSET:
 			var sunset_amber = Color(1.0, 0.48, 0.15)
@@ -301,10 +378,11 @@ func _refresh_all_segments() -> void:
 	var avg_col = Color.BLACK
 	var avg_intensity = 0.0
 	var count = min(segment_nodes.size(), num_segments)
+	var intensity_norm = global_intensity_multiplier / 3.5
 
 	for i in range(count):
 		var col = segment_colors[i]
-		var energy = segment_intensities[i] * global_intensity_multiplier
+		var energy = segment_intensities[i] * intensity_norm
 
 		# Update mesh emission
 		var mesh_inst = segment_nodes[i]
@@ -324,24 +402,11 @@ func _refresh_all_segments() -> void:
 		avg_intensity += segment_intensities[i]
 
 	if count > 0:
-		avg_col /= float(count)
+		avg_col = Color(avg_col.r / float(count), avg_col.g / float(count), avg_col.b / float(count), 1.0)
 		avg_intensity /= float(count)
 
 	current_avg_color = avg_col
 	current_avg_intensity = avg_intensity
-
-	# Global master intensity scaling (nominal full daylight is at global_intensity_multiplier = 3.5)
-	var intensity_norm = global_intensity_multiplier / 3.5
-
-	# Update axial end-cap spotlights facing into hemispherical bulkheads
-	if south_end_cap_light:
-		var c_south = segment_colors[0] if segment_colors.size() > 0 else avg_col
-		south_end_cap_light.light_color = c_south
-		south_end_cap_light.light_energy = 5.0 * intensity_norm
-	if north_end_cap_light:
-		var c_north = segment_colors[-1] if segment_colors.size() > 0 else avg_col
-		north_end_cap_light.light_color = c_north
-		north_end_cap_light.light_energy = 5.0 * intensity_norm
 
 	# Synchronize scene directional sun lights with intensity and preset color
 	for sun in sun_lights:
@@ -419,7 +484,7 @@ func get_effective_fog_properties() -> Dictionary:
 	var effective_light_col = current_avg_color
 	var effective_intensity = current_avg_intensity
 
-	if preset == LightingPreset.GRADIENT:
+	if preset == LightingPreset.GRADIENT or preset == LightingPreset.SOLAR_CYCLE:
 		var cam_z = _get_camera_z()
 		var local_light = get_light_at_z(cam_z)
 		effective_light_col = current_avg_color.lerp(local_light.color, 0.65)
@@ -455,6 +520,9 @@ func _sync_fog_and_atmosphere() -> void:
 	var fog_energy = fog_props["fog_energy"] as float
 	var intensity_norm = fog_props["intensity_norm"] as float
 
+	# Declare cylinder_world once here to avoid illegal forward references below
+	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
+
 	if world_environment and world_environment.environment:
 		var env = world_environment.environment
 		env.fog_light_color = fog_col
@@ -467,8 +535,14 @@ func _sync_fog_and_atmosphere() -> void:
 		var begin_val = lerpf(600.0, 200.0, clampf(intensity_norm, 0.0, 1.0))
 		env.fog_depth_curve = curve_val
 		env.fog_depth_begin = begin_val
+		# Update end‑cap emission based on scene brightness
+		if cylinder_world and cylinder_world.surface_material is ShaderMaterial:
+			cylinder_world.surface_material.set_shader_parameter("endcap_emission_factor", intensity_norm)
+		# Hide end‑cap rib texture when lighting is very low
+		if intensity_norm < 0.05:
+			if cylinder_world and cylinder_world.surface_material is ShaderMaterial:
+				cylinder_world.surface_material.set_shader_parameter("tex_end_cap_ribs", null)
 
-	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
 	if cylinder_world:
 		var shader_air_col = Color(
 			clampf(fog_col.r * intensity_norm, 0.0, 1.0),
@@ -481,18 +555,10 @@ func _sync_fog_and_atmosphere() -> void:
 func _update_light_ranges() -> void:
 	for light in light_nodes:
 		light.omni_range = cylinder_radius * 2.0
-	if south_end_cap_light:
-		south_end_cap_light.spot_range = cylinder_radius * 2.0
-	if north_end_cap_light:
-		north_end_cap_light.spot_range = cylinder_radius * 2.0
 
 func _update_shadows() -> void:
 	for light in light_nodes:
 		light.shadow_enabled = enable_shadows
-	if south_end_cap_light:
-		south_end_cap_light.shadow_enabled = enable_shadows
-	if north_end_cap_light:
-		north_end_cap_light.shadow_enabled = enable_shadows
 
 # Public API for setting individual segment properties
 func set_segment(index: int, color: Color, intensity: float) -> void:
@@ -515,3 +581,37 @@ func set_extent_gradient(col_a: Color, col_b: Color, intensity_a: float, intensi
 	preset = LightingPreset.GRADIENT
 	use_custom_extent = true
 	_apply_current_preset()
+
+func set_time_of_day(hours: float, manual: bool = true) -> void:
+	time_of_day_hours = fposmod(hours, 24.0)
+	if manual:
+		use_real_time = false
+	_apply_current_preset()
+
+func sync_to_system_clock() -> void:
+	use_real_time = true
+	time_of_day_hours = _get_system_time_hours()
+	day_of_year = _get_effective_day_of_year()
+	_apply_current_preset()
+
+func set_earth_latitude(lat_deg: float) -> void:
+	earth_latitude_deg = clampf(lat_deg, -90.0, 90.0)
+	_apply_current_preset()
+
+func get_solar_status() -> Dictionary:
+	var doy = _get_effective_day_of_year()
+	var t = time_of_day_hours
+	var elev = SolarCycleSimulator.calculate_solar_elevation(earth_latitude_deg, doy, t)
+	var az = SolarCycleSimulator.calculate_solar_azimuth(earth_latitude_deg, doy, t)
+	var lighting = SolarCycleSimulator.get_solar_lighting_at_time(earth_latitude_deg, doy, t)
+	return {
+		"time_hours": t,
+		"latitude": earth_latitude_deg,
+		"day_of_year": doy,
+		"solar_elevation": elev,
+		"solar_azimuth": az,
+		"phase_name": lighting["phase_name"],
+		"sun_color": lighting["sun_color"],
+		"intensity": lighting["intensity"],
+		"is_real_time": use_real_time
+	}

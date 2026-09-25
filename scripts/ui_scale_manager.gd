@@ -26,13 +26,14 @@ static func calculate_intelligent_scale(custom_dpi: float = -1.0, custom_size: V
 
 	if is_phone:
 		device_type = "Android Phone" if has_mobile_feature else "Phone"
-		# Density-based scaling for small mobile screens held close (~30 cm)
+		# Increase scaling for small screens
 		var density = dpi / 160.0
-		scale_factor = clampf(density * 0.72, 1.75, 2.50)
+		scale_factor = clampf(density * 0.9, 2.0, 3.0)
 	elif is_tablet:
 		device_type = "Android Tablet" if has_mobile_feature else "Tablet"
+		# Slightly larger scaling for tablets
 		var density = dpi / 160.0
-		scale_factor = clampf(density * 0.60, 1.35, 1.85)
+		scale_factor = clampf(density * 0.75, 1.8, 2.5)
 	else:
 		if dpi > 150.0:
 			device_type = "High-DPI Desktop"

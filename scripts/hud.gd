@@ -32,6 +32,15 @@ var north_cap_btn: Button = null
 var deploy_campfire_btn: Button = null
 var deploy_lamp_btn: Button = null
 
+# Solar Cycle Day/Night UI Controls
+var solar_badge_label: Label = null
+var solar_time_slider: HSlider = null
+var solar_time_val: Label = null
+var sync_real_time_btn: Button = null
+var latitude_slider: HSlider = null
+var latitude_val: Label = null
+var solar_status_label: Label = null
+
 # UI Scaling Controls
 @onready var scale_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxScale/HSlider
 @onready var scale_val: Label = $UIRoot/ControlPanel/VBoxContainer/HBoxScale/HBox/ValLabel
@@ -57,6 +66,15 @@ func _ready() -> void:
 	_setup_ui_scaling()
 	_setup_control_panel()
 
+	var telem_vbox = get_node_or_null("UIRoot/TelemetryPanel/VBoxContainer")
+	if telem_vbox:
+		solar_badge_label = Label.new()
+		solar_badge_label.name = "SolarBadgeLabel"
+		solar_badge_label.add_theme_font_size_override("font_size", 12)
+		solar_badge_label.text = "SOLAR: --:--:-- [--]"
+		telem_vbox.add_child(solar_badge_label)
+		telem_vbox.move_child(solar_badge_label, 3)
+
 	if toggle_controls_btn:
 		toggle_controls_btn.focus_mode = Control.FOCUS_NONE
 		toggle_controls_btn.pressed.connect(_on_toggle_controls_pressed)
@@ -70,6 +88,9 @@ func _ready() -> void:
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 
+func _process(_delta: float) -> void:
+	_update_solar_ui()
+
 func _setup_underwater_overlay() -> void:
 	underwater_overlay = ColorRect.new()
 	underwater_overlay.name = "UnderwaterScreenTint"
@@ -82,10 +103,14 @@ func _setup_underwater_overlay() -> void:
 		ui_root.move_child(underwater_overlay, 0)
 
 func _setup_ui_scaling() -> void:
-	auto_scale_info = UIScaleManager.calculate_intelligent_scale()
+	auto_scale_info = UIScaleManager.calculate_intelligent_scale(-1.0, Vector2.ZERO, OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios"))
 	var saved_pref = UIScaleManager.load_user_scale()
 
-	if saved_pref.get("has_saved", false) and not saved_pref.get("is_auto", true):
+	# If running on a mobile device, ignore any saved manual scale and enforce auto scaling
+	if OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios"):
+		is_scale_auto = true
+		apply_ui_scale(auto_scale_info["scale"], true)
+	elif saved_pref.get("has_saved", false) and not saved_pref.get("is_auto", true):
 		is_scale_auto = false
 		apply_ui_scale(saved_pref.get("scale", auto_scale_info["scale"]), false)
 	else:
@@ -98,11 +123,12 @@ func _setup_ui_scaling() -> void:
 		reset_scale_btn.pressed.connect(_on_reset_scale_pressed)
 
 func apply_ui_scale(target_scale: float, auto_mode: bool) -> void:
-	current_ui_scale = clampf(target_scale, 0.75, 2.75)
+	current_ui_scale = clampf(target_scale, 0.5, 2.75)
 	is_scale_auto = auto_mode
 
 	if ui_root:
 		ui_root.scale = Vector2(current_ui_scale, current_ui_scale)
+		# Size the logical root to viewport/scale so scaled content fills the screen
 		var vp_size = get_viewport().get_visible_rect().size
 		ui_root.size = vp_size / current_ui_scale
 
@@ -150,12 +176,13 @@ func _setup_control_panel() -> void:
 		light_preset_option.focus_mode = Control.FOCUS_NONE
 		light_preset_option.clear()
 		light_preset_option.add_item("Uniform Daylight", 0)
-		light_preset_option.add_item("Gradient (Sunrise/Twilight)", 1)
+		light_preset_option.add_item("Gradient (Diurnal Solar Cycle)", 1)
 		light_preset_option.add_item("Day/Night Wave (Animated)", 2)
 		light_preset_option.add_item("Neon Aurora (Animated)", 3)
 		light_preset_option.add_item("Warm Sunset", 4)
+		light_preset_option.add_item("Solar Day/Night Cycle", 5)
 
-		var cur_sel = 0
+		var cur_sel = 1
 		if light_bar:
 			match light_bar.preset:
 				AxisLightBar.LightingPreset.UNIFORM: cur_sel = 0
@@ -163,6 +190,7 @@ func _setup_control_panel() -> void:
 				AxisLightBar.LightingPreset.DAY_NIGHT_WAVE: cur_sel = 2
 				AxisLightBar.LightingPreset.NEON_AURORA: cur_sel = 3
 				AxisLightBar.LightingPreset.WARM_SUNSET: cur_sel = 4
+				AxisLightBar.LightingPreset.SOLAR_CYCLE: cur_sel = 5
 		light_preset_option.select(cur_sel)
 		light_preset_option.item_selected.connect(_on_light_preset_selected)
 
@@ -188,6 +216,81 @@ func _setup_control_panel() -> void:
 
 	var btn_vbox = $UIRoot/ControlPanel/VBoxContainer
 	if btn_vbox:
+		# 1. Solar Time of Day Controls
+		var time_box = VBoxContainer.new()
+		time_box.name = "HBoxSolarTime"
+		var time_header = HBoxContainer.new()
+		var time_label = Label.new()
+		time_label.text = "Time of Day:"
+		time_label.add_theme_font_size_override("font_size", 11)
+		time_header.add_child(time_label)
+
+		solar_time_val = Label.new()
+		solar_time_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		solar_time_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		solar_time_val.add_theme_font_size_override("font_size", 11)
+		solar_time_val.text = "12:00 [Real-Time]"
+		time_header.add_child(solar_time_val)
+		time_box.add_child(time_header)
+
+		solar_time_slider = HSlider.new()
+		solar_time_slider.name = "SolarTimeSlider"
+		solar_time_slider.focus_mode = Control.FOCUS_NONE
+		solar_time_slider.min_value = 0.0
+		solar_time_slider.max_value = 24.0
+		solar_time_slider.step = 0.02
+		solar_time_slider.value = light_bar.time_of_day_hours if light_bar else 12.0
+		solar_time_slider.value_changed.connect(_on_solar_time_slider_changed)
+		time_box.add_child(solar_time_slider)
+
+		sync_real_time_btn = Button.new()
+		sync_real_time_btn.name = "SyncRealTimeButton"
+		sync_real_time_btn.text = "Sync to Real-Time Clock"
+		sync_real_time_btn.focus_mode = Control.FOCUS_NONE
+		sync_real_time_btn.add_theme_font_size_override("font_size", 10)
+		sync_real_time_btn.pressed.connect(_on_sync_real_time_pressed)
+		time_box.add_child(sync_real_time_btn)
+
+		btn_vbox.add_child(time_box)
+		btn_vbox.move_child(time_box, 4)
+
+		# 2. Earth Latitude Controls
+		var lat_box = VBoxContainer.new()
+		lat_box.name = "HBoxLatitude"
+		var lat_header = HBoxContainer.new()
+		var lat_label = Label.new()
+		lat_label.text = "Earth Latitude:"
+		lat_label.add_theme_font_size_override("font_size", 11)
+		lat_header.add_child(lat_label)
+
+		latitude_val = Label.new()
+		latitude_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		latitude_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		latitude_val.add_theme_font_size_override("font_size", 11)
+		latitude_val.text = "+40.0° N (Temperate)"
+		lat_header.add_child(latitude_val)
+		lat_box.add_child(lat_header)
+
+		latitude_slider = HSlider.new()
+		latitude_slider.name = "LatitudeSlider"
+		latitude_slider.focus_mode = Control.FOCUS_NONE
+		latitude_slider.min_value = -90.0
+		latitude_slider.max_value = 90.0
+		latitude_slider.step = 1.0
+		latitude_slider.value = light_bar.earth_latitude_deg if light_bar else 40.0
+		latitude_slider.value_changed.connect(_on_latitude_slider_changed)
+		lat_box.add_child(latitude_slider)
+
+		solar_status_label = Label.new()
+		solar_status_label.name = "SolarStatusLabel"
+		solar_status_label.add_theme_font_size_override("font_size", 10)
+		solar_status_label.text = "Solar Elev: +0.0°"
+		solar_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lat_box.add_child(solar_status_label)
+
+		btn_vbox.add_child(lat_box)
+		btn_vbox.move_child(lat_box, 5)
+
 		south_cap_btn = Button.new()
 		south_cap_btn.name = "ViewSouthCapButton"
 		south_cap_btn.text = "Inspect South End Cap (z = -8.5 km)"
@@ -219,6 +322,8 @@ func _setup_control_panel() -> void:
 		deploy_lamp_btn.add_theme_font_size_override("font_size", 12)
 		deploy_lamp_btn.pressed.connect(_on_deploy_lamp_pressed)
 		btn_vbox.add_child(deploy_lamp_btn)
+
+	_update_solar_ui()
 
 func _on_telemetry_updated(data: Dictionary) -> void:
 	var is_flying: bool = data.get("is_flying", false)
@@ -300,12 +405,78 @@ func _on_light_preset_selected(index: int) -> void:
 			light_bar.preset = AxisLightBar.LightingPreset.UNIFORM
 		1:
 			light_bar.preset = AxisLightBar.LightingPreset.GRADIENT
+			light_bar.gradient_follows_solar_cycle = true
 		2:
 			light_bar.preset = AxisLightBar.LightingPreset.DAY_NIGHT_WAVE
 		3:
 			light_bar.preset = AxisLightBar.LightingPreset.NEON_AURORA
 		4:
 			light_bar.preset = AxisLightBar.LightingPreset.WARM_SUNSET
+		5:
+			light_bar.preset = AxisLightBar.LightingPreset.SOLAR_CYCLE
+	_update_solar_ui()
+
+func _on_solar_time_slider_changed(value: float) -> void:
+	if light_bar:
+		light_bar.set_time_of_day(value, true)
+	_update_solar_ui()
+
+func _on_sync_real_time_pressed() -> void:
+	if sync_real_time_btn:
+		sync_real_time_btn.release_focus()
+	if light_bar:
+		light_bar.sync_to_system_clock()
+	_update_solar_ui()
+
+func _on_latitude_slider_changed(value: float) -> void:
+	if light_bar:
+		light_bar.set_earth_latitude(value)
+	_update_solar_ui()
+
+func _update_solar_ui() -> void:
+	if not light_bar:
+		return
+	var status = light_bar.get_solar_status()
+	var t_hours: float = status.get("time_hours", 12.0)
+	var is_rt: bool = status.get("is_real_time", true)
+	var elev: float = status.get("solar_elevation", 0.0)
+	var phase: String = status.get("phase_name", "Daylight")
+	var lat: float = status.get("latitude", 40.0)
+
+	var total_sec = int(t_hours * 3600.0)
+	var hours = (total_sec / 3600) % 24
+	var mins = (total_sec / 60) % 60
+	var secs = total_sec % 60
+	var mode_tag = "Real-Time" if is_rt else "Manual"
+
+	if solar_badge_label:
+		solar_badge_label.text = "SOLAR: %02d:%02d:%02d [%s] | Elev: %+.1f° (%s)" % [
+			hours, mins, secs, mode_tag, elev, phase
+		]
+		if elev >= 20.0:
+			solar_badge_label.modulate = Color(0.4, 0.9, 1.0)
+		elif elev >= 0.0:
+			solar_badge_label.modulate = Color(1.0, 0.8, 0.3)
+		elif elev >= -6.0:
+			solar_badge_label.modulate = Color(0.9, 0.45, 0.6)
+		elif elev >= -18.0:
+			solar_badge_label.modulate = Color(0.35, 0.5, 0.9)
+		else:
+			solar_badge_label.modulate = Color(0.5, 0.6, 0.8)
+
+	if solar_time_val:
+		solar_time_val.text = "%02d:%02d:%02d [%s]" % [hours, mins, secs, mode_tag]
+
+	if is_rt and solar_time_slider:
+		solar_time_slider.set_value_no_signal(t_hours)
+
+	if latitude_val:
+		var hemi = "N" if lat >= 0.0 else "S"
+		var desc = "Arctic" if absf(lat) > 66.5 else ("Equator" if absf(lat) < 5.0 else ("Tropical" if absf(lat) < 23.5 else "Temperate"))
+		latitude_val.text = "%+.0f°%s (%s)" % [absf(lat), hemi, desc]
+
+	if solar_status_label:
+		solar_status_label.text = "Solar Elev: %+.1f° | Phase: %s" % [elev, phase]
 
 func _on_light_slider_changed(slider_pos: float) -> void:
 	var intensity = slider_pos_to_intensity(slider_pos)
