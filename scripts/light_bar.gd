@@ -177,20 +177,20 @@ func rebuild_light_bar() -> void:
 	south_end_cap_light = SpotLight3D.new()
 	south_end_cap_light.name = "SouthEndCapLight"
 	south_end_cap_light.position = Vector3(0, 0, -half_len + 5.0)
-	south_end_cap_light.rotation_degrees = Vector3(0, 180, 0) # Facing -Z into South dish
-	south_end_cap_light.spot_range = cylinder_radius * 2.0
-	south_end_cap_light.spot_angle = 82.0
-	south_end_cap_light.spot_attenuation = 0.8
+	south_end_cap_light.rotation_degrees = Vector3(0, 0, 0) # Facing -Z into South dish
+	south_end_cap_light.spot_range = cylinder_radius * 2.2
+	south_end_cap_light.spot_angle = 86.0
+	south_end_cap_light.spot_attenuation = 0.7
 	south_end_cap_light.shadow_enabled = enable_shadows
 	add_child(south_end_cap_light)
 
 	north_end_cap_light = SpotLight3D.new()
 	north_end_cap_light.name = "NorthEndCapLight"
 	north_end_cap_light.position = Vector3(0, 0, half_len - 5.0)
-	north_end_cap_light.rotation_degrees = Vector3(0, 0, 0) # Facing +Z into North dish
-	north_end_cap_light.spot_range = cylinder_radius * 2.0
-	north_end_cap_light.spot_angle = 82.0
-	north_end_cap_light.spot_attenuation = 0.8
+	north_end_cap_light.rotation_degrees = Vector3(0, 180, 0) # Facing +Z into North dish
+	north_end_cap_light.spot_range = cylinder_radius * 2.2
+	north_end_cap_light.spot_angle = 86.0
+	north_end_cap_light.spot_attenuation = 0.7
 	north_end_cap_light.shadow_enabled = enable_shadows
 	add_child(north_end_cap_light)
 
@@ -337,11 +337,11 @@ func _refresh_all_segments() -> void:
 	if south_end_cap_light:
 		var c_south = segment_colors[0] if segment_colors.size() > 0 else avg_col
 		south_end_cap_light.light_color = c_south
-		south_end_cap_light.light_energy = 3.5 * intensity_norm
+		south_end_cap_light.light_energy = 5.0 * intensity_norm
 	if north_end_cap_light:
 		var c_north = segment_colors[-1] if segment_colors.size() > 0 else avg_col
 		north_end_cap_light.light_color = c_north
-		north_end_cap_light.light_energy = 3.5 * intensity_norm
+		north_end_cap_light.light_energy = 5.0 * intensity_norm
 
 	# Synchronize scene directional sun lights with intensity and preset color
 	for sun in sun_lights:

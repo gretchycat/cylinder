@@ -157,7 +157,7 @@ Left Joystick / WASD : Move (No camera turn)
 Drag Anywhere Else : Rotate camera view
 Space : Jump / Ascend | Shift : Sprint
 F : Toggle 3D Fly Mode (Microgravity exploration)
-Q/E or C/Space : Fly Down / Up
+Q/E : Fly Down / Up
 C : Deploy Campfire | L : Deploy Lamp Post
 T / Wobble Button : Perturb Horizon Roll
 R : Reset to Spawn"
@@ -173,6 +173,7 @@ offset_top = 165.0
 offset_right = -20.0
 offset_bottom = 200.0
 grow_horizontal = 0
+focus_mode = 0
 theme_override_font_sizes/font_size = 12
 text = "Tuning Settings ⚙"
 

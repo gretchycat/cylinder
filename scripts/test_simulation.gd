@@ -291,7 +291,29 @@ func _init() -> void:
 	hud_node._on_light_preset_selected(0)
 	test_check(light_bar.preset == AxisLightBar.LightingPreset.UNIFORM, "HUD resets to Uniform Daylight")
 
-	print("[PASS] Test 7: Axial lighting system, dynamic intensity slider, and preset gradients verified.")
+	# Verify logarithmic intensity scale from 0.001 to 3.5
+	test_check(is_equal_approx(HUD.slider_pos_to_intensity(0.0), 0.001), "Slider at 0.0 must map to 0.001 intensity")
+	test_check(is_equal_approx(HUD.slider_pos_to_intensity(1.0), 3.5), "Slider at 1.0 must map to 3.5 intensity")
+	test_check(is_equal_approx(HUD.intensity_to_slider_pos(0.001), 0.0), "0.001 intensity must map to slider position 0.0")
+	test_check(is_equal_approx(HUD.intensity_to_slider_pos(3.5), 1.0), "3.5 intensity must map to slider position 1.0")
+	var mid_intensity = HUD.slider_pos_to_intensity(0.5)
+	test_check(mid_intensity > 0.04 and mid_intensity < 0.08, "Midpoint of log scale must be around ~0.059 for smooth dim-light control")
+
+	# Test slider interaction through _on_light_slider_changed
+	hud_node._on_light_slider_changed(0.0)
+	test_check(is_equal_approx(light_bar.global_intensity_multiplier, 0.001), "Light bar intensity at slider 0.0 is 0.001")
+	hud_node._on_light_slider_changed(1.0)
+	test_check(is_equal_approx(light_bar.global_intensity_multiplier, 3.5), "Light bar intensity at slider 1.0 is 3.5")
+
+	# Verify UI button focus_mode is FOCUS_NONE so player movement is never blocked
+	test_check(hud_node.deploy_campfire_btn.focus_mode == Control.FOCUS_NONE, "Deploy campfire button must have FOCUS_NONE")
+	test_check(hud_node.south_cap_btn.focus_mode == Control.FOCUS_NONE, "Inspect South end cap button must have FOCUS_NONE")
+
+	# Verify end cap spotlights point inward into hemispherical dishes
+	test_check(light_bar.south_end_cap_light.rotation_degrees == Vector3(0, 0, 0), "South end cap light must point in -Z into South dish")
+	test_check(light_bar.north_end_cap_light.rotation_degrees == Vector3(0, 180, 0), "North end cap light must point in +Z into North dish")
+
+	print("[PASS] Test 7: Axial lighting system, logarithmic intensity slider (0.001 to 3.5), and preset gradients verified.")
 
 	# --- TEST 8: Standard Controls (Joystick Movement vs Screen Drag Look) ---
 	print("\n--- TEST 8: Standard Controls (Joystick Movement vs Screen Drag Look) ---")
@@ -411,7 +433,13 @@ func _init() -> void:
 	test_check(cylinder_world.water_material != null, "Water material must be configured")
 	test_check(cylinder_world.water_material.get_shader_parameter("elevation_map") != null, "Water material must have elevation map bound for volume tinting and land culling")
 	test_check(cylinder_world.water_material.get_shader_parameter("water_level") == 20.0, "Water level in water shader must match configured 20.0 m")
-	print("[PASS] Test 9: PNG elevation heightmap (0-100m) and RPG tilemap (water at 20m) verified.")
+
+	# Verify water shader normal and axial reflection line
+	var water_shader = (cylinder_world.water_material as ShaderMaterial).shader
+	test_check(water_shader.code.contains("refl_world"), "Water shader computes world-space reflection vector for axial light bar")
+	test_check(water_shader.code.contains("axis_reflection_glint"), "Water shader calculates continuous axial specular reflection line down axis")
+	test_check(water_shader.code.contains("cull_disabled"), "Water shader has cull_disabled so water faces are never backface culled")
+	print("[PASS] Test 9: PNG elevation heightmap, water volume tinting, and axial specular reflection line verified.")
 
 	# --- TEST 10: Max On Daylight Lighting System & 18 km Scale ---
 	print("\n--- TEST 10: Max On Daylight Lighting System & 18 km Scale with End Caps ---")
@@ -458,6 +486,8 @@ func _init() -> void:
 	# Verify end cap rib texture
 	var rib_tex = cylinder_world.surface_material.get_shader_parameter("tex_end_cap_ribs")
 	test_check(rib_tex != null, "Weathered industrial rib texture must be bound to terrain material for end caps")
+	test_check((cylinder_world.surface_material as ShaderMaterial).shader.code.contains("cull_disabled"), "Terrain shader must have cull_disabled to render inner cylinder bulkheads without backface culling")
+	test_check(player.camera.far >= 35000.0, "Player camera far clip distance must reach full 26 km across cylinder and end caps")
 
 	# Verify Surface Light Emitting Objects (Campfires, Street Lamps, and Beacons)
 	var ref_node = root_node.get_node_or_null("ReferenceObjects") as ReferenceObjects

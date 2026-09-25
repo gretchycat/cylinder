@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode blend_mix, depth_draw_always, cull_back, diffuse_burley, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_always, cull_disabled, diffuse_burley, specular_schlick_ggx;
 
 uniform vec4 shallow_color : source_color = vec4(0.14, 0.58, 0.82, 0.62);
 uniform vec4 deep_color : source_color = vec4(0.02, 0.16, 0.38, 0.90);
@@ -59,13 +59,36 @@ void fragment() {
 
 	float r1 = sin(uv1.x * 2.5 + uv1.y * 1.8);
 	float r2 = cos(uv2.x * 3.0 - uv2.y * 2.2);
-	vec3 ripple_norm = normalize(vec3((r1 * 0.10) * ripple_atten, (r2 * 0.10) * ripple_atten, 1.0));
+	vec3 ripple_perturb = (TANGENT * (r1 * 0.06) + BINORMAL * (r2 * 0.06)) * ripple_atten;
+	vec3 perturbed_normal = normalize(NORMAL + ripple_perturb);
+
+	// World-space reflection vector to calculate continuous reflection of the central axis light bar
+	vec3 view_dir_world = normalize(world_pos - CAMERA_POSITION_WORLD);
+	vec3 norm_world = normalize((INV_VIEW_MATRIX * vec4(perturbed_normal, 0.0)).xyz);
+	vec3 refl_world = reflect(view_dir_world, norm_world);
+
+	float refl_xy_sq = dot(refl_world.xy, refl_world.xy);
+	float axis_reflection_glint = 0.0;
+	if (refl_xy_sq > 0.0001) {
+		float t_closest = -dot(world_pos.xy, refl_world.xy) / refl_xy_sq;
+		if (t_closest > 0.0) {
+			vec2 p_closest_xy = world_pos.xy + refl_world.xy * t_closest;
+			float dist_to_axis = length(p_closest_xy);
+			float z_closest = world_pos.z + refl_world.z * t_closest;
+
+			if (abs(z_closest) <= cylinder_length * 0.5 + 400.0) {
+				// Continuous specular reflection line along the central light bar axis
+				float line_width = 160.0;
+				axis_reflection_glint = exp(-pow(dist_to_axis / line_width, 2.0));
+			}
+		}
+	}
 
 	// Tint the volume where the water exists: shallow translucent aqua to deep oceanic blue
 	vec3 volume_water_color = mix(shallow_color.rgb, deep_color.rgb, depth_norm);
 
 	// Fresnel effect for realistic surface reflectivity at glancing angles
-	float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.5);
+	float fresnel = pow(1.0 - clamp(dot(perturbed_normal, VIEW), 0.0, 1.0), 3.5);
 	vec3 final_color = mix(volume_water_color, vec3(0.85, 0.95, 1.0), fresnel * 0.35);
 
 	// Depth-dependent volume opacity: shoreline is transparent, deep water is rich and dense
@@ -74,14 +97,19 @@ void fragment() {
 
 	// Axial lighting spectrum & time-of-day gradient along the 18 km cylinder
 	vec3 target_air_color = air_color.rgb;
+	vec3 axial_col = vec3(1.0);
+	float axial_lum = 1.0;
 	if (axial_light_enabled > 0.5) {
 		float t_z = clamp((world_pos.z + cylinder_length * 0.5) / cylinder_length, 0.0, 1.0);
 		vec4 axial_light = texture(axial_light_lut, vec2(t_z, 0.5));
-		vec3 axial_col = axial_light.rgb;
-		float axial_lum = clamp(axial_light.a, 0.0, 1.5);
+		axial_col = axial_light.rgb;
+		axial_lum = clamp(axial_light.a, 0.0, 1.5);
 		final_color *= axial_col * mix(0.35, 1.15, clamp(axial_lum, 0.0, 1.0));
 		target_air_color = air_color.rgb * mix(vec3(1.0), axial_col, 0.65) * mix(0.10, 1.00, clamp(axial_lum, 0.0, 1.0));
 	}
+
+	// Add brilliant continuous specular reflection line along the cylinder rotational axis
+	final_color += axial_col * (axis_reflection_glint * 1.8 * clamp(axial_lum, 0.0, 1.0));
 
 	// Atmospheric aerial perspective: tint distant views across the 8 km cylinder
 	float air_factor = clamp((dist_to_cam - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
@@ -91,7 +119,7 @@ void fragment() {
 	final_alpha = mix(final_alpha, 0.98, air_scatter * air_density * dark_transparency_mult * 0.7);
 
 	ALBEDO = final_color;
-	NORMAL = ripple_norm;
+	NORMAL = perturbed_normal;
 	ALPHA = final_alpha;
 	ROUGHNESS = mix(roughness, 0.03, 1.0 - ripple_atten); // Perfectly calm mirror finish at distance
 	SPECULAR = specular;

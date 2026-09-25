@@ -58,11 +58,14 @@ func _ready() -> void:
 	_setup_control_panel()
 
 	if toggle_controls_btn:
+		toggle_controls_btn.focus_mode = Control.FOCUS_NONE
 		toggle_controls_btn.pressed.connect(_on_toggle_controls_pressed)
 
 	if wobble_test_btn:
+		wobble_test_btn.focus_mode = Control.FOCUS_NONE
 		wobble_test_btn.pressed.connect(_on_wobble_test_pressed)
 	if reset_spawn_btn:
+		reset_spawn_btn.focus_mode = Control.FOCUS_NONE
 		reset_spawn_btn.pressed.connect(_on_reset_spawn_pressed)
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
@@ -132,8 +135,19 @@ func _on_viewport_size_changed() -> void:
 		var vp_size = get_viewport().get_visible_rect().size
 		ui_root.size = vp_size / current_ui_scale
 
+static func slider_pos_to_intensity(s: float) -> float:
+	# Logarithmic scale from 0.001 to 3.5
+	# s=0.0 -> 0.001, s=1.0 -> 3.5
+	return 0.001 * pow(3500.0, clampf(s, 0.0, 1.0))
+
+static func intensity_to_slider_pos(intensity: float) -> float:
+	if intensity <= 0.001:
+		return 0.0
+	return clampf(log(intensity / 0.001) / log(3500.0), 0.0, 1.0)
+
 func _setup_control_panel() -> void:
 	if light_preset_option:
+		light_preset_option.focus_mode = Control.FOCUS_NONE
 		light_preset_option.clear()
 		light_preset_option.add_item("Uniform Daylight", 0)
 		light_preset_option.add_item("Gradient (Sunrise/Twilight)", 1)
@@ -153,15 +167,17 @@ func _setup_control_panel() -> void:
 		light_preset_option.item_selected.connect(_on_light_preset_selected)
 
 	if light_intensity_slider:
+		light_intensity_slider.focus_mode = Control.FOCUS_NONE
 		light_intensity_slider.min_value = 0.0
-		light_intensity_slider.max_value = 5.0
-		light_intensity_slider.step = 0.1
-		light_intensity_slider.value = light_bar.global_intensity_multiplier if light_bar else 3.5
-		light_intensity_slider.value_changed.connect(_on_light_intensity_changed)
-		if light_intensity_val:
-			light_intensity_val.text = "%.1fx" % light_intensity_slider.value
+		light_intensity_slider.max_value = 1.0
+		light_intensity_slider.step = 0.002
+		var cur_intensity = light_bar.global_intensity_multiplier if light_bar else 3.5
+		light_intensity_slider.value = intensity_to_slider_pos(cur_intensity)
+		light_intensity_slider.value_changed.connect(_on_light_slider_changed)
+		_update_intensity_display(cur_intensity)
 
 	if gravity_slider:
+		gravity_slider.focus_mode = Control.FOCUS_NONE
 		gravity_slider.min_value = 0.0
 		gravity_slider.max_value = 25.0
 		gravity_slider.step = 0.5
@@ -175,6 +191,7 @@ func _setup_control_panel() -> void:
 		south_cap_btn = Button.new()
 		south_cap_btn.name = "ViewSouthCapButton"
 		south_cap_btn.text = "Inspect South End Cap (z = -8.5 km)"
+		south_cap_btn.focus_mode = Control.FOCUS_NONE
 		south_cap_btn.add_theme_font_size_override("font_size", 12)
 		south_cap_btn.pressed.connect(_on_view_south_cap_pressed)
 		btn_vbox.add_child(south_cap_btn)
@@ -182,6 +199,7 @@ func _setup_control_panel() -> void:
 		north_cap_btn = Button.new()
 		north_cap_btn.name = "ViewNorthCapButton"
 		north_cap_btn.text = "Inspect North End Cap (z = +8.5 km)"
+		north_cap_btn.focus_mode = Control.FOCUS_NONE
 		north_cap_btn.add_theme_font_size_override("font_size", 12)
 		north_cap_btn.pressed.connect(_on_view_north_cap_pressed)
 		btn_vbox.add_child(north_cap_btn)
@@ -189,6 +207,7 @@ func _setup_control_panel() -> void:
 		deploy_campfire_btn = Button.new()
 		deploy_campfire_btn.name = "DeployCampfireButton"
 		deploy_campfire_btn.text = "Deploy Campfire at Feet"
+		deploy_campfire_btn.focus_mode = Control.FOCUS_NONE
 		deploy_campfire_btn.add_theme_font_size_override("font_size", 12)
 		deploy_campfire_btn.pressed.connect(_on_deploy_campfire_pressed)
 		btn_vbox.add_child(deploy_campfire_btn)
@@ -196,6 +215,7 @@ func _setup_control_panel() -> void:
 		deploy_lamp_btn = Button.new()
 		deploy_lamp_btn.name = "DeployLampButton"
 		deploy_lamp_btn.text = "Deploy Lamp Post at Feet"
+		deploy_lamp_btn.focus_mode = Control.FOCUS_NONE
 		deploy_lamp_btn.add_theme_font_size_override("font_size", 12)
 		deploy_lamp_btn.pressed.connect(_on_deploy_lamp_pressed)
 		btn_vbox.add_child(deploy_lamp_btn)
@@ -287,11 +307,31 @@ func _on_light_preset_selected(index: int) -> void:
 		4:
 			light_bar.preset = AxisLightBar.LightingPreset.WARM_SUNSET
 
+func _on_light_slider_changed(slider_pos: float) -> void:
+	var intensity = slider_pos_to_intensity(slider_pos)
+	_apply_light_intensity(intensity)
+
 func _on_light_intensity_changed(value: float) -> void:
+	if light_intensity_slider:
+		light_intensity_slider.set_value_no_signal(intensity_to_slider_pos(value))
+	_apply_light_intensity(value)
+
+func _apply_light_intensity(intensity: float) -> void:
 	if light_bar:
-		light_bar.global_intensity_multiplier = value
-	if light_intensity_val:
-		light_intensity_val.text = "%.1fx" % value
+		light_bar.global_intensity_multiplier = intensity
+	_update_intensity_display(intensity)
+
+func _update_intensity_display(intensity: float) -> void:
+	if not light_intensity_val:
+		return
+	if is_zero_approx(intensity):
+		light_intensity_val.text = "0.0x [Dark]"
+	elif intensity < 0.01:
+		light_intensity_val.text = "%.3fx" % intensity
+	elif intensity < 1.0:
+		light_intensity_val.text = "%.2fx" % intensity
+	else:
+		light_intensity_val.text = "%.1fx" % intensity
 
 func _on_gravity_changed(value: float) -> void:
 	if player:
@@ -300,47 +340,43 @@ func _on_gravity_changed(value: float) -> void:
 		gravity_val.text = "%.1f m/s²" % value
 
 func _on_toggle_controls_pressed() -> void:
+	if toggle_controls_btn:
+		toggle_controls_btn.release_focus()
 	if control_panel:
 		control_panel.visible = not control_panel.visible
 
 func _on_wobble_test_pressed() -> void:
+	if wobble_test_btn:
+		wobble_test_btn.release_focus()
 	if player:
 		player.wobble_impulse(25.0)
 
 func _on_reset_spawn_pressed() -> void:
+	if reset_spawn_btn:
+		reset_spawn_btn.release_focus()
 	if player:
 		player.reset_to_spawn()
 
 func _on_view_south_cap_pressed() -> void:
+	if south_cap_btn:
+		south_cap_btn.release_focus()
 	if player and player.has_method("teleport_to_z"):
 		player.teleport_to_z(-8500.0, true)
 
 func _on_view_north_cap_pressed() -> void:
+	if north_cap_btn:
+		north_cap_btn.release_focus()
 	if player and player.has_method("teleport_to_z"):
 		player.teleport_to_z(8500.0, true)
 
 func _on_deploy_campfire_pressed() -> void:
-	if not player:
-		return
-	var ref_obj = get_tree().get_first_node_in_group("reference_objects") as ReferenceObjects
-	if not ref_obj:
-		var root_node = get_tree().current_scene
-		if root_node:
-			ref_obj = root_node.get_node_or_null("ReferenceObjects")
-	if ref_obj and ref_obj.has_method("spawn_light_emitter"):
-		var theta = atan2(player.global_position.y, player.global_position.x)
-		var z = player.global_position.z
-		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.CAMPFIRE, theta, z)
+	if deploy_campfire_btn:
+		deploy_campfire_btn.release_focus()
+	if player and player.has_method("deploy_campfire"):
+		player.deploy_campfire()
 
 func _on_deploy_lamp_pressed() -> void:
-	if not player:
-		return
-	var ref_obj = get_tree().get_first_node_in_group("reference_objects") as ReferenceObjects
-	if not ref_obj:
-		var root_node = get_tree().current_scene
-		if root_node:
-			ref_obj = root_node.get_node_or_null("ReferenceObjects")
-	if ref_obj and ref_obj.has_method("spawn_light_emitter"):
-		var theta = atan2(player.global_position.y, player.global_position.x)
-		var z = player.global_position.z
-		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.LAMP_POST, theta, z)
+	if deploy_lamp_btn:
+		deploy_lamp_btn.release_focus()
+	if player and player.has_method("deploy_lamp_post"):
+		player.deploy_lamp_post()

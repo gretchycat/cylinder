@@ -38,6 +38,7 @@ var mobile_sprint_active: bool = false
 
 # Virtual input state (for keyboard or mobile touch controls)
 var input_axis: Vector2 = Vector2.ZERO
+var joystick_override: bool = false
 var fly_vertical_axis: float = 0.0
 var jump_requested: bool = false
 
@@ -58,9 +59,9 @@ func _ready() -> void:
 	# and dragging the virtual joystick moves only
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
-	# Ensure camera far distance covers the 8 km cylinder
+	# Ensure camera far distance covers the 18 km cylinder and end caps (26 km total)
 	if camera:
-		camera.far = 25000.0
+		camera.far = 40000.0
 
 	# Floor snapping for high-speed sprinting over 100m elevation hills and slopes
 	floor_snap_length = 2.5
@@ -97,6 +98,12 @@ func _input(event: InputEvent) -> void:
 			deploy_campfire()
 		elif event.keycode == KEY_L:
 			deploy_lamp_post()
+
+	# Movement key release
+	if event.is_action_released("move_forward") or event.is_action_released("move_backward") or event.is_action_released("move_left") or event.is_action_released("move_right"):
+		if not (Input.is_action_pressed("move_forward") or Input.is_action_pressed("move_backward") or Input.is_action_pressed("move_left") or Input.is_action_pressed("move_right")):
+			if not joystick_override:
+				input_axis = Vector2.ZERO
 
 func apply_look_input(delta_look: Vector2) -> void:
 	# Yaw: rotate player around local Up axis
@@ -334,8 +341,11 @@ func deploy_campfire() -> void:
 		if root_node:
 			ref_obj = root_node.get_node_or_null("ReferenceObjects")
 	if ref_obj and ref_obj.has_method("spawn_light_emitter"):
-		var theta = atan2(global_position.y, global_position.x)
-		var z = global_position.z
+		var fwd = -global_basis.z
+		fwd = (fwd - global_basis.y * fwd.dot(global_basis.y)).normalized()
+		var target_pos = global_position + fwd * 2.5
+		var theta = atan2(target_pos.y, target_pos.x)
+		var z = target_pos.z
 		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.CAMPFIRE, theta, z)
 
 func deploy_lamp_post() -> void:
@@ -345,8 +355,11 @@ func deploy_lamp_post() -> void:
 		if root_node:
 			ref_obj = root_node.get_node_or_null("ReferenceObjects")
 	if ref_obj and ref_obj.has_method("spawn_light_emitter"):
-		var theta = atan2(global_position.y, global_position.x)
-		var z = global_position.z
+		var fwd = -global_basis.z
+		fwd = (fwd - global_basis.y * fwd.dot(global_basis.y)).normalized()
+		var target_pos = global_position + fwd * 2.5
+		var theta = atan2(target_pos.y, target_pos.x)
+		var z = target_pos.z
 		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.LAMP_POST, theta, z)
 
 var last_telemetry: Dictionary = {}

@@ -190,6 +190,7 @@ func _update_joystick_knob(pos: Vector2) -> void:
 	var input_vec = offset / maxf(active_radius, 1.0)
 	# Joystick only sets movement axis - NO rotation is performed!
 	if player:
+		player.joystick_override = true
 		player.input_axis = Vector2(input_vec.x, input_vec.y)
 
 func _reset_joystick() -> void:
@@ -197,6 +198,7 @@ func _reset_joystick() -> void:
 	is_mouse_joystick = false
 	joystick_active = false
 	if player:
+		player.joystick_override = false
 		player.input_axis = Vector2.ZERO
 	if joystick_base and joystick_knob:
 		joystick_knob.position = (joystick_base.size * 0.5) - (joystick_knob.size * 0.5)
