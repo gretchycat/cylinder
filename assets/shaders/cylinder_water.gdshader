@@ -86,8 +86,9 @@ void fragment() {
 	// Atmospheric aerial perspective: tint distant views across the 8 km cylinder
 	float air_factor = clamp((dist_to_cam - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
 	float air_scatter = 1.0 - exp(-air_factor * 1.8);
-	final_color = mix(final_color, target_air_color, air_scatter * air_density);
-	final_alpha = mix(final_alpha, 0.98, air_scatter * air_density * 0.7);
+	float dark_transparency_mult = mix(0.12, 1.0, clamp(axial_light_enabled > 0.5 ? texture(axial_light_lut, vec2(clamp((world_pos.z + cylinder_length * 0.5) / cylinder_length, 0.0, 1.0), 0.5)).a : 1.0, 0.0, 1.0));
+	final_color = mix(final_color, target_air_color, air_scatter * air_density * dark_transparency_mult);
+	final_alpha = mix(final_alpha, 0.98, air_scatter * air_density * dark_transparency_mult * 0.7);
 
 	ALBEDO = final_color;
 	NORMAL = ripple_norm;

@@ -460,6 +460,14 @@ func _sync_fog_and_atmosphere() -> void:
 		env.fog_light_color = fog_col
 		env.fog_light_energy = fog_energy
 
+		# The fog is more transparent as the light is darker:
+		# In daylight (intensity_norm = 1.0): curve = 1.1, begin = 200.0m
+		# In darkness (intensity_norm = 0.0): curve = 2.8, begin = 600.0m (clearer night sky for surface lights)
+		var curve_val = lerpf(2.8, 1.1, clampf(intensity_norm, 0.0, 1.0))
+		var begin_val = lerpf(600.0, 200.0, clampf(intensity_norm, 0.0, 1.0))
+		env.fog_depth_curve = curve_val
+		env.fog_depth_begin = begin_val
+
 	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
 	if cylinder_world:
 		var shader_air_col = Color(

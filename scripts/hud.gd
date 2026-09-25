@@ -29,6 +29,8 @@ const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
 @onready var reset_spawn_btn: Button = $UIRoot/ControlPanel/VBoxContainer/ResetSpawnButton
 var south_cap_btn: Button = null
 var north_cap_btn: Button = null
+var deploy_campfire_btn: Button = null
+var deploy_lamp_btn: Button = null
 
 # UI Scaling Controls
 @onready var scale_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxScale/HSlider
@@ -184,6 +186,20 @@ func _setup_control_panel() -> void:
 		north_cap_btn.pressed.connect(_on_view_north_cap_pressed)
 		btn_vbox.add_child(north_cap_btn)
 
+		deploy_campfire_btn = Button.new()
+		deploy_campfire_btn.name = "DeployCampfireButton"
+		deploy_campfire_btn.text = "Deploy Campfire at Feet"
+		deploy_campfire_btn.add_theme_font_size_override("font_size", 12)
+		deploy_campfire_btn.pressed.connect(_on_deploy_campfire_pressed)
+		btn_vbox.add_child(deploy_campfire_btn)
+
+		deploy_lamp_btn = Button.new()
+		deploy_lamp_btn.name = "DeployLampButton"
+		deploy_lamp_btn.text = "Deploy Lamp Post at Feet"
+		deploy_lamp_btn.add_theme_font_size_override("font_size", 12)
+		deploy_lamp_btn.pressed.connect(_on_deploy_lamp_pressed)
+		btn_vbox.add_child(deploy_lamp_btn)
+
 func _on_telemetry_updated(data: Dictionary) -> void:
 	var is_flying: bool = data.get("is_flying", false)
 	var locomotion_state: String = data.get("locomotion_state", "IDLE")
@@ -302,3 +318,29 @@ func _on_view_south_cap_pressed() -> void:
 func _on_view_north_cap_pressed() -> void:
 	if player and player.has_method("teleport_to_z"):
 		player.teleport_to_z(8500.0, true)
+
+func _on_deploy_campfire_pressed() -> void:
+	if not player:
+		return
+	var ref_obj = get_tree().get_first_node_in_group("reference_objects") as ReferenceObjects
+	if not ref_obj:
+		var root_node = get_tree().current_scene
+		if root_node:
+			ref_obj = root_node.get_node_or_null("ReferenceObjects")
+	if ref_obj and ref_obj.has_method("spawn_light_emitter"):
+		var theta = atan2(player.global_position.y, player.global_position.x)
+		var z = player.global_position.z
+		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.CAMPFIRE, theta, z)
+
+func _on_deploy_lamp_pressed() -> void:
+	if not player:
+		return
+	var ref_obj = get_tree().get_first_node_in_group("reference_objects") as ReferenceObjects
+	if not ref_obj:
+		var root_node = get_tree().current_scene
+		if root_node:
+			ref_obj = root_node.get_node_or_null("ReferenceObjects")
+	if ref_obj and ref_obj.has_method("spawn_light_emitter"):
+		var theta = atan2(player.global_position.y, player.global_position.x)
+		var z = player.global_position.z
+		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.LAMP_POST, theta, z)

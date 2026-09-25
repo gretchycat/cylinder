@@ -89,10 +89,14 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("reset_position"):
 		reset_to_spawn()
 
-	# Wobble test key (T)
+	# Hotkeys: T (wobble test), C (deploy campfire when walking), L (deploy lamp post)
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_T:
 			wobble_impulse(22.0)
+		elif event.keycode == KEY_C and not is_flying:
+			deploy_campfire()
+		elif event.keycode == KEY_L:
+			deploy_lamp_post()
 
 func apply_look_input(delta_look: Vector2) -> void:
 	# Yaw: rotate player around local Up axis
@@ -322,6 +326,28 @@ func teleport_to_z(target_z: float, face_cap: bool = true) -> void:
 	wobble_velocity = 0.0
 	head.rotation = Vector3.ZERO
 	velocity = Vector3.ZERO
+
+func deploy_campfire() -> void:
+	var ref_obj = get_tree().get_first_node_in_group("reference_objects")
+	if not ref_obj:
+		var root_node = get_tree().current_scene
+		if root_node:
+			ref_obj = root_node.get_node_or_null("ReferenceObjects")
+	if ref_obj and ref_obj.has_method("spawn_light_emitter"):
+		var theta = atan2(global_position.y, global_position.x)
+		var z = global_position.z
+		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.CAMPFIRE, theta, z)
+
+func deploy_lamp_post() -> void:
+	var ref_obj = get_tree().get_first_node_in_group("reference_objects")
+	if not ref_obj:
+		var root_node = get_tree().current_scene
+		if root_node:
+			ref_obj = root_node.get_node_or_null("ReferenceObjects")
+	if ref_obj and ref_obj.has_method("spawn_light_emitter"):
+		var theta = atan2(global_position.y, global_position.x)
+		var z = global_position.z
+		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.LAMP_POST, theta, z)
 
 var last_telemetry: Dictionary = {}
 

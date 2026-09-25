@@ -261,12 +261,16 @@ func _init() -> void:
 	test_check(is_zero_approx(sun_a.light_energy), "DaylightSunA scales down to pitch black (0.0 energy)")
 	test_check(is_zero_approx(env_node.environment.ambient_light_energy), "Ambient light scales down to pitch black (0.0 energy)")
 	test_check(is_zero_approx(env_node.environment.fog_light_energy), "Fog light energy scales down to pitch black (0.0 energy)")
+	test_check(env_node.environment.fog_depth_curve > 2.0, "In darkness, depth fog curve is steepened (> 2.0) to make fog transparent near surface")
+	test_check(env_node.environment.fog_depth_begin > 400.0, "In darkness, fog depth begin is pushed out (> 400m) to clear near/mid distances for surface lights")
 
 	hud_node._on_light_intensity_changed(3.5)
 	test_check(is_equal_approx(light_bar.global_intensity_multiplier, 3.5), "Intensity multiplier at 3.5 verified")
 	test_check(is_equal_approx(sun_a.light_energy, 1.8), "DaylightSunA scales to 1.8 at nominal daylight (3.5x)")
 	test_check(is_equal_approx(env_node.environment.ambient_light_energy, 1.0), "Ambient light scales to 1.0 at nominal daylight (3.5x)")
 	test_check(is_equal_approx(env_node.environment.fog_light_energy, 1.0), "Fog light energy scales to 1.0 at nominal daylight (3.5x)")
+	test_check(is_equal_approx(env_node.environment.fog_depth_curve, 1.1), "In nominal daylight, fog depth curve returns to 1.1")
+	test_check(is_equal_approx(env_node.environment.fog_depth_begin, 200.0), "In nominal daylight, fog depth begin returns to 200.0m")
 
 	# Verify HUD preset dropdown mappings
 	hud_node._on_light_preset_selected(0)
@@ -454,6 +458,60 @@ func _init() -> void:
 	# Verify end cap rib texture
 	var rib_tex = cylinder_world.surface_material.get_shader_parameter("tex_end_cap_ribs")
 	test_check(rib_tex != null, "Weathered industrial rib texture must be bound to terrain material for end caps")
+
+	# Verify Surface Light Emitting Objects (Campfires, Street Lamps, and Beacons)
+	var ref_node = root_node.get_node_or_null("ReferenceObjects") as ReferenceObjects
+	test_check(ref_node != null, "ReferenceObjects node must exist in main scene")
+
+	var light_emitter_count = 0
+	var found_campfire = false
+	var found_lamp = false
+	var found_beacon = false
+	var sample_campfire: SurfaceLightObject = null
+	var sample_lamp: SurfaceLightObject = null
+
+	for child in ref_node.get_children():
+		if child is SurfaceLightObject:
+			light_emitter_count += 1
+			if child.object_type == SurfaceLightObject.ObjectType.CAMPFIRE:
+				found_campfire = true
+				if not sample_campfire:
+					sample_campfire = child
+			elif child.object_type == SurfaceLightObject.ObjectType.LAMP_POST:
+				found_lamp = true
+				if not sample_lamp:
+					sample_lamp = child
+			elif child.object_type == SurfaceLightObject.ObjectType.BEACON_LANTERN:
+				found_beacon = true
+
+	print("Surface light objects detected: %d (Campfires: %s, Lamps: %s, Beacons: %s)" % [
+		light_emitter_count, found_campfire, found_lamp, found_beacon
+	])
+	test_check(light_emitter_count >= 15, "Substantial procedural surface light objects must be spawned across cylinder")
+	test_check(found_campfire, "Campfires must be present on cylinder surface")
+	test_check(found_lamp, "Lamp posts must be present on cylinder surface")
+	test_check(found_beacon, "Beacon lanterns must be present near end caps")
+
+	# Verify sample campfire emission and omni light
+	test_check(sample_campfire != null and sample_campfire.omni_light != null, "Campfire must possess an OmniLight3D emitter")
+	test_check(sample_campfire.omni_light.light_color.r > 0.8 and sample_campfire.omni_light.light_color.b < 0.4, "Campfire light must be warm firelight spectrum")
+	test_check(sample_campfire.omni_light.omni_range >= 30.0, "Campfire light range must illuminate surrounding ground (>= 30m)")
+	test_check(sample_campfire.flame_mats.size() > 0, "Campfire must have emissive flame material")
+	test_check(sample_campfire.flame_mats[0].emission_enabled, "Campfire flame mesh material emission must be enabled")
+
+	# Verify sample lamp post emission and omni light
+	test_check(sample_lamp != null and sample_lamp.omni_light != null, "Lamp post must possess an OmniLight3D emitter")
+	test_check(sample_lamp.omni_light.light_energy > 0.0, "Lamp post light energy must be active")
+
+	# Verify dynamic placement at player position via player controller hotkey methods
+	var pre_count = ref_node.get_child_count()
+	player.deploy_campfire()
+	test_check(ref_node.get_child_count() > pre_count, "Player deploy_campfire() must instantiate new light on surface")
+	var deployed_fire = ref_node.get_child(ref_node.get_child_count() - 1) as SurfaceLightObject
+	test_check(deployed_fire != null and deployed_fire.object_type == SurfaceLightObject.ObjectType.CAMPFIRE, "Deployed object must be a campfire")
+	# Check orientation: Local Y (Up) should point inward toward axis (dot with (0,0,1) is 0)
+	var local_up = deployed_fire.global_basis.y
+	test_check(absf(local_up.dot(Vector3(0, 0, 1))) < 0.01, "Deployed light Local Up must be strictly perpendicular to cylinder axis")
 
 	print("[PASS] Test 10: Max On daylight lighting level, 18 km cylinder scale, and atmospheric air tinting verified.")
 

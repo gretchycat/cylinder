@@ -231,15 +231,19 @@ void fragment() {
 
 		// Atmospheric haze reflects the current light level and color along the cylinder
 		vec3 target_air_color = air_color.rgb;
+		float light_lum = 1.0;
 		if (axial_light_enabled > 0.5) {
 			float t_z = clamp((world_pos.z + cylinder_length * 0.5) / cylinder_length, 0.0, 1.0);
 			vec4 axial_light = texture(axial_light_lut, vec2(t_z, 0.5));
 			vec3 axial_col = axial_light.rgb;
 			float axial_lum = clamp(axial_light.a, 0.0, 1.5);
-			target_air_color = air_color.rgb * mix(vec3(1.0), axial_col, 0.65) * mix(0.10, 1.00, clamp(axial_lum, 0.0, 1.0));
+			light_lum = clamp(axial_lum, 0.0, 1.0);
+			target_air_color = air_color.rgb * mix(vec3(1.0), axial_col, 0.65) * mix(0.10, 1.00, light_lum);
 		}
 
-		final_color = mix(final_color, target_air_color, air_scatter * air_density);
+		// The fog is more transparent as the light is darker (clearing the night air for surface lights)
+		float dark_transparency_mult = mix(0.12, 1.0, light_lum);
+		final_color = mix(final_color, target_air_color, air_scatter * air_density * dark_transparency_mult);
 	}
 
 	ALBEDO = final_color;
