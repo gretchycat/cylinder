@@ -36,13 +36,13 @@ const TerrainManagerClass = preload("res://scripts/terrain_manager.gd")
 		if is_inside_tree() and Engine.is_editor_hint():
 			generate_cylinder()
 
-@export var end_cap_rings: int = 20: # Concentric structural rings on each end cap
+@export var end_cap_rings: int = 32: # Concentric structural rings on each hemispherical end cap
 	set(val):
-		end_cap_rings = clampi(val, 4, 48)
+		end_cap_rings = clampi(val, 8, 64)
 		if is_inside_tree() and Engine.is_editor_hint():
 			generate_cylinder()
 
-@export var end_cap_dish_depth: float = 150.0: # Outward dome pressure vessel curvature
+@export var end_cap_dish_depth: float = 4000.0: # Hemispherical dome radius depth (4 km)
 	set(val):
 		end_cap_dish_depth = max(val, 0.0)
 		if is_inside_tree() and Engine.is_editor_hint():
@@ -344,6 +344,17 @@ func _create_terrain_material() -> ShaderMaterial:
 	mat.set_shader_parameter("tex_sand_to_grass", load("res://assets/textures/terrain/sand_to_grass.png"))
 	mat.set_shader_parameter("tex_dirt_to_grass", load("res://assets/textures/terrain/dirt_to_grass.png"))
 	mat.set_shader_parameter("tex_road_edge", load("res://assets/textures/terrain/road_edge.png"))
+
+	var rib_tex: Texture2D = null
+	if ResourceLoader.exists("res://assets/textures/terrain/end_cap_ribs.png"):
+		rib_tex = load("res://assets/textures/terrain/end_cap_ribs.png")
+	if not rib_tex and (FileAccess.file_exists("res://assets/textures/terrain/end_cap_ribs.png") or FileAccess.file_exists(ProjectSettings.globalize_path("res://assets/textures/terrain/end_cap_ribs.png"))):
+		var img = Image.load_from_file(ProjectSettings.globalize_path("res://assets/textures/terrain/end_cap_ribs.png"))
+		if img:
+			rib_tex = ImageTexture.create_from_image(img)
+	if rib_tex:
+		mat.set_shader_parameter("tex_end_cap_ribs", rib_tex)
+
 	mat.set_shader_parameter("cylinder_radius", radius)
 	mat.set_shader_parameter("cylinder_length", cylinder_length)
 	mat.set_shader_parameter("water_level", water_level)
@@ -462,54 +473,55 @@ func _build_terrain_mesh() -> void:
 			st.add_index(i11)
 			st.add_index(i01)
 
-	# --- Generate Concentric End Cap Bulkheads (if enabled) ---
+	# --- Generate Concentric Hemispherical End Cap Bulkheads (if enabled) ---
 	if include_end_caps:
 		var cap_divisions = radial_segments
 		var cap_rings = end_cap_rings
-		var dish = end_cap_dish_depth
 
-		# === Cap 1: z = -half_len (inward normal facing +Z into cylinder) ===
+		# === Cap 1: Hemispherical Dome at z = -half_len (inward normal facing +Z into cylinder) ===
 		var center_idx1 = stride * (length_segments + 1)
 		st.set_normal(Vector3(0, 0, 1))
-		st.set_uv(Vector2(0.5, 0.5))
-		# COLOR: r = radial_ratio (0.0), g = terrain_type (4: Concrete / Spaceport), b = is_end_cap (1.0)
-		st.set_color(Color(0.0, 4.0 / 8.0, 1.0, 1.0))
-		st.add_vertex(Vector3(0, 0, -half_len - dish))
+		st.set_uv(Vector2(0.5, 0.0))
+		# COLOR: r = radial_ratio (0.0 at pole), g = spaceport plaza (5/8), b = is_end_cap (1.0)
+		st.set_color(Color(0.0, 5.0 / 8.0, 1.0, 1.0))
+		st.add_vertex(Vector3(0, 0, -half_len - radius))
 
 		for k in range(1, cap_rings + 1):
-			var t_ring = float(k) / float(cap_rings)
-			var z_cap = -half_len - dish * (1.0 - t_ring * t_ring)
-			var slope = (2.0 * dish * t_ring / radius) if radius > 0.0 else 0.0
+			var alpha = float(k) / float(cap_rings)
+			var phi = alpha * (PI * 0.5) # 0 at pole, PI/2 at cylinder rim
+			var sin_phi = sin(phi)
+			var cos_phi = cos(phi)
+			var r_sphere = radius * sin_phi
+			var delta_z = radius * cos_phi
+			var z_cap = -half_len - delta_z
 
 			for i in range(cap_divisions + 1):
 				var theta = float(i) * d_theta
 				var cos_t = cos(theta)
 				var sin_t = sin(theta)
 
-				var r_k: float
-				if k < cap_rings:
-					r_k = radius * t_ring
-				else:
-					# Seamless watertight join with perimeter cylinder floor elevation
-					var elev = terrain_manager.get_elevation(theta, -half_len, cylinder_length)
-					r_k = radius - elev
+				var elev = terrain_manager.get_elevation(theta, -half_len, cylinder_length)
+				var elev_blend = smoothstep(0.70, 1.0, alpha)
+				var r_k = r_sphere - elev * elev_blend
 
 				var pos = Vector3(r_k * cos_t, r_k * sin_t, z_cap)
-				var norm = Vector3(slope * cos_t, slope * sin_t, 1.0).normalized() if k < cap_rings else Vector3(0, 0, 1.0)
+				var norm = Vector3(-sin_phi * cos_t, -sin_phi * sin_t, cos_phi).normalized()
 
-				var uv_planar = Vector2(0.5 + 0.5 * (pos.x / radius), 0.5 + 0.5 * (pos.y / radius))
+				var u_circ = float(i) / float(cap_divisions)
+				# Spherical rib UV: 32 radial rib spokes around 360°, 16 concentric rings along latitude
+				var uv_rib = Vector2(u_circ * 32.0, alpha * 16.0)
 
 				var t_type = 4 # Concrete structural bulkhead
-				if r_k <= 300.0:
-					t_type = 5 # Road / alloy central spaceport docking plaza
-				elif r_k > 3600.0:
+				if r_k <= 350.0:
+					t_type = 5 # Road / alloy central spaceport docking collar
+				elif alpha > 0.94:
 					t_type = terrain_manager.get_terrain_type(theta, -half_len, cylinder_length)
 				elif k % 4 == 0:
-					t_type = 8 # Road edge structural ring rib
+					t_type = 8 # Concentric structural girder rib
 
 				st.set_normal(norm)
-				st.set_uv(uv_planar)
-				st.set_color(Color(t_ring, float(t_type) / 8.0, 1.0, 1.0))
+				st.set_uv(uv_rib)
+				st.set_color(Color(alpha, float(t_type) / 8.0, 1.0, 1.0))
 				st.add_vertex(pos)
 
 		# Cap 1 Triangles: Center to Ring 1
@@ -539,47 +551,48 @@ func _build_terrain_mesh() -> void:
 				st.add_index(i01)
 				st.add_index(i11)
 
-		# === Cap 2: z = +half_len (inward normal facing -Z into cylinder) ===
+		# === Cap 2: Hemispherical Dome at z = +half_len (inward normal facing -Z into cylinder) ===
 		var center_idx2 = center_idx1 + 1 + cap_rings * stride
 		st.set_normal(Vector3(0, 0, -1))
-		st.set_uv(Vector2(0.5, 0.5))
-		st.set_color(Color(0.0, 4.0 / 8.0, 1.0, 1.0))
-		st.add_vertex(Vector3(0, 0, half_len + dish))
+		st.set_uv(Vector2(0.5, 0.0))
+		st.set_color(Color(0.0, 5.0 / 8.0, 1.0, 1.0))
+		st.add_vertex(Vector3(0, 0, half_len + radius))
 
 		for k in range(1, cap_rings + 1):
-			var t_ring = float(k) / float(cap_rings)
-			var z_cap = half_len + dish * (1.0 - t_ring * t_ring)
-			var slope = (2.0 * dish * t_ring / radius) if radius > 0.0 else 0.0
+			var alpha = float(k) / float(cap_rings)
+			var phi = alpha * (PI * 0.5)
+			var sin_phi = sin(phi)
+			var cos_phi = cos(phi)
+			var r_sphere = radius * sin_phi
+			var delta_z = radius * cos_phi
+			var z_cap = half_len + delta_z
 
 			for i in range(cap_divisions + 1):
 				var theta = float(i) * d_theta
 				var cos_t = cos(theta)
 				var sin_t = sin(theta)
 
-				var r_k: float
-				if k < cap_rings:
-					r_k = radius * t_ring
-				else:
-					# Seamless watertight join with perimeter cylinder floor elevation
-					var elev = terrain_manager.get_elevation(theta, half_len, cylinder_length)
-					r_k = radius - elev
+				var elev = terrain_manager.get_elevation(theta, half_len, cylinder_length)
+				var elev_blend = smoothstep(0.70, 1.0, alpha)
+				var r_k = r_sphere - elev * elev_blend
 
 				var pos = Vector3(r_k * cos_t, r_k * sin_t, z_cap)
-				var norm = Vector3(slope * cos_t, slope * sin_t, -1.0).normalized() if k < cap_rings else Vector3(0, 0, -1.0)
+				var norm = Vector3(-sin_phi * cos_t, -sin_phi * sin_t, -cos_phi).normalized()
 
-				var uv_planar = Vector2(0.5 + 0.5 * (pos.x / radius), 0.5 + 0.5 * (pos.y / radius))
+				var u_circ = float(i) / float(cap_divisions)
+				var uv_rib = Vector2(u_circ * 32.0, alpha * 16.0)
 
 				var t_type = 4 # Concrete structural bulkhead
-				if r_k <= 300.0:
-					t_type = 5 # Road / alloy central spaceport docking plaza
-				elif r_k > 3600.0:
+				if r_k <= 350.0:
+					t_type = 5 # Road / alloy central spaceport docking collar
+				elif alpha > 0.94:
 					t_type = terrain_manager.get_terrain_type(theta, half_len, cylinder_length)
 				elif k % 4 == 0:
-					t_type = 8 # Road edge structural ring rib
+					t_type = 8 # Concentric structural girder rib
 
 				st.set_normal(norm)
-				st.set_uv(uv_planar)
-				st.set_color(Color(t_ring, float(t_type) / 8.0, 1.0, 1.0))
+				st.set_uv(uv_rib)
+				st.set_color(Color(alpha, float(t_type) / 8.0, 1.0, 1.0))
 				st.add_vertex(pos)
 
 		# Cap 2 Triangles: Center to Ring 1 (reversed winding for -Z facing)

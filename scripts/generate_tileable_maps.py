@@ -50,6 +50,7 @@ def generate_tileable_maps(
     roughness: float = 0.85,
     tile_vertical: bool = True,
     tile_horizontal: bool = True,
+    end_caps_aware: bool = True,
     seed: int = 42,
     output_dir: str = "assets/maps",
     elevation_filename: str = "elevation_map.png",
@@ -169,9 +170,31 @@ def generate_tileable_maps(
                 spawn_boost = (1.0 - d_spawn) * 35.0
                 elevation = max(elevation, water_level + 15.0 + spawn_boost)
 
+            # 6. End Cap Awareness (Hemispherical bulkheads at v = 0 and v = 1)
+            dist_to_cap = min(v, 1.0 - v)
+            dist_to_cap_m = dist_to_cap * 18000.0
+
+            is_bulkhead_apron = False
+            is_perimeter_ring_road = False
+            is_perimeter_ring_edge = False
+
+            if end_caps_aware:
+                # Coastal seawall containment: ensure no open oceans spill into the bulkhead
+                if dist_to_cap_m < 500.0:
+                    seawall_blend = max(0.0, 1.0 - dist_to_cap_m / 500.0)
+                    target_rim_elev = 28.0
+                    elevation = elevation * (1.0 - seawall_blend) + max(elevation, target_rim_elev) * seawall_blend
+
+                # Perimeter Bulkhead Highway Ring (encircles cylinder base in front of each end cap)
+                is_perimeter_ring_road = abs(dist_to_cap_m - 320.0) < 48.0
+                is_perimeter_ring_edge = abs(dist_to_cap_m - 320.0) < 75.0
+
+                # Bulkhead Foundation Apron (heavy concrete/alloy base where cylinder anchors into hemisphere)
+                is_bulkhead_apron = dist_to_cap_m <= 150.0
+
             elevation = max(0.0, min(max_elevation, elevation))
 
-            # 6. 2D RPG Terrain Biome Classification
+            # 7. 2D RPG Terrain Biome Classification
             # Periodic road corridors
             d_axial_road = abs(u - 0.0)
             if tile_horizontal and d_axial_road > 0.5:
@@ -181,7 +204,7 @@ def generate_tileable_maps(
             d_ring_2 = abs((phi - 1.5 * math.pi + math.pi) % math.tau - math.pi) / math.tau
             is_axial_road = d_axial_road < 0.022
             is_ring_road = (d_ring_1 < 0.022 or d_ring_2 < 0.022) and du > 0.07
-            is_road = (is_axial_road or is_ring_road) and elevation >= (water_level - 1.0)
+            is_road = (is_axial_road or is_ring_road or is_perimeter_ring_road) and elevation >= (water_level - 1.0)
 
             # Colony Spaceport / Launch Hub (concrete plaza)
             plaza_u_dist = abs(u - 0.72)
@@ -192,12 +215,17 @@ def generate_tileable_maps(
 
             t_type = 3 # Grass meadow default
 
-            if is_concrete_hub:
-                t_type = 4 # Concrete
+            if is_bulkhead_apron:
+                t_type = 4 # Concrete / Alloy Bulkhead Foundation Apron
+                elevation = max(elevation, water_level + 8.0)
+            elif is_concrete_hub:
+                t_type = 4 # Concrete Spaceport Hub
                 elevation = max(elevation, water_level + 10.0)
             elif is_road:
                 t_type = 5 # Road
                 elevation = max(elevation, water_level + 4.0)
+            elif is_perimeter_ring_edge and elevation >= (water_level - 1.0):
+                t_type = 8 # Road Edge Shoulder
             elif elevation < water_level:
                 t_type = 0 # Water basin (0 to 20m)
             elif elevation < water_level + 5.5:

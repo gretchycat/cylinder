@@ -9,6 +9,7 @@ uniform sampler2D tex_road : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D tex_sand_to_grass : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D tex_dirt_to_grass : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D tex_road_edge : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D tex_end_cap_ribs : source_color, filter_linear_mipmap, repeat_enable;
 
 uniform float uv_scale = 0.08;
 uniform float cylinder_radius = 4000.0;
@@ -26,10 +27,12 @@ uniform float axial_light_enabled = 1.0;
 
 varying vec3 world_pos;
 varying vec4 vert_attr; // r: elevation_ratio (0..1), g: terrain_type_id (0..8), b: is_end_cap (0..1)
+varying vec2 v_uv;
 
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	vert_attr = COLOR;
+	v_uv = UV;
 }
 
 void fragment() {
@@ -112,29 +115,52 @@ void fragment() {
 	float contour = sin(elev * 3.14159265);
 	final_color = mix(final_color * 0.95, final_color * 1.05, (contour + 1.0) * 0.5);
 
-	// Structural detailing on end cap bulkheads
+	// Structural detailing on hemispherical end cap bulkheads
 	if (is_end_cap > 0.5) {
 		float r_axis = length(world_pos.xy);
-		// Concentric structural bulkhead rings (every 250 m)
-		float ring_dist = abs(fract(r_axis / 250.0 + 0.5) - 0.5) * 250.0;
-		float ring_line = smoothstep(10.0, 0.0, ring_dist);
+		float alpha = vert_attr.r; // Latitude parameter: 0.0 at apex pole to 1.0 at cylinder rim
 
-		// 16 radial structural compression ribs
+		// Sample the dedicated weathered aerospace rib texture with spherical mapping
+		vec3 col_ribs = texture(tex_end_cap_ribs, v_uv).rgb;
+		vec3 col_ribs_macro = texture(tex_end_cap_ribs, v_uv * 0.25).rgb;
+		vec3 bulkhead_base = mix(col_ribs, col_ribs_macro * 1.15, 0.28);
+
+		final_color = bulkhead_base;
+		roughness_val = 0.62;
+		metallic_val = 0.72;
+
+		// 3D structural concentric hoop rings (every 250 m)
+		float ring_dist = abs(fract(r_axis / 250.0 + 0.5) - 0.5) * 250.0;
+		float ring_line = smoothstep(12.0, 0.0, ring_dist);
+
+		// 16 major radial structural compression ribs radiating from axis
 		float spoke_val = abs(fract(angle / (6.28318530718 / 16.0) + 0.5) - 0.5);
 		float spoke_line = smoothstep(0.015, 0.0, spoke_val);
 
-		// Central Zero-G spaceport docking ring (radius <= 250 m)
-		if (r_axis < 250.0) {
-			float dock_circle = abs(r_axis - 180.0);
-			if (dock_circle < 10.0) {
-				final_color = vec3(0.95, 0.78, 0.25); // Golden aerospace guidance ring
-				roughness_val = 0.25;
+		// Darker recessed shadow grooves on the structural girders
+		final_color = mix(final_color, final_color * 0.55, ring_line * 0.40 + spoke_line * 0.35);
+
+		// Central Zero-G spaceport docking ring and guidance collar (r_axis <= 350 m at pole)
+		if (r_axis < 350.0) {
+			float dock_circle = abs(r_axis - 220.0);
+			if (dock_circle < 14.0) {
+				final_color = vec3(0.98, 0.78, 0.22); // Golden aerospace guidance ring
+				roughness_val = 0.20;
+				metallic_val = 0.90;
+			}
+			float inner_ring = abs(r_axis - 100.0);
+			if (inner_ring < 10.0) {
+				final_color = vec3(0.20, 0.85, 0.95); // Cyan active docking beacon ring
+				roughness_val = 0.15;
 				metallic_val = 0.85;
 			}
 		}
 
-		// Darker structural accent grooves on the bulkhead rings and ribs
-		final_color = mix(final_color, col_concrete * 0.45, ring_line * 0.4 + spoke_line * 0.35);
+		// Architectural foundation transition into the cylinder floor perimeter apron
+		if (alpha > 0.90) {
+			float apron_blend = smoothstep(0.90, 1.0, alpha);
+			final_color = mix(final_color, col_concrete * 0.85, apron_blend * 0.50);
+		}
 	}
 
 	// Prominently tint the terrain under the water level (submerged seabed, lake, and river beds)

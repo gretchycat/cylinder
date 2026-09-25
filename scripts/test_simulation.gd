@@ -433,10 +433,18 @@ func _init() -> void:
 	test_check(terr_air_density > 0.0 and terr_air_density <= 1.0, "Terrain air density must be within (0, 1]")
 	test_check(water_air_col != null and water_air_max == 18000.0, "Water air tint must reach 18 km")
 
-	# Verify end cap mesh structure
+	# Verify end cap mesh structure & hemispherical depth (4 km radius hemispheres on both ends = 26 km total)
 	var face_count = cylinder_world.mesh_instance.mesh.get_faces().size() / 3
-	print("Mesh generated: %d triangles (barrel + concentric end caps)" % face_count)
-	test_check(face_count > 30000, "Mesh must contain high-fidelity barrel and concentric end cap bulkheads")
+	var aabb = cylinder_world.mesh_instance.mesh.get_aabb()
+	print("Mesh generated: %d triangles (barrel + hemispherical end caps)" % face_count)
+	print("Mesh total bounds: size=%s, position=%s" % [aabb.size, aabb.position])
+	test_check(face_count > 50000, "Mesh must contain high-fidelity barrel and hemispherical end cap bulkheads")
+	test_check(aabb.size.z >= 25900.0, "Mesh must span full 26 km from South hemisphere pole to North hemisphere pole")
+	test_check(aabb.position.z <= -12900.0, "South hemisphere end cap must reach -13,000 m")
+
+	# Verify end cap rib texture
+	var rib_tex = cylinder_world.surface_material.get_shader_parameter("tex_end_cap_ribs")
+	test_check(rib_tex != null, "Weathered industrial rib texture must be bound to terrain material for end caps")
 
 	print("[PASS] Test 10: Max On daylight lighting level, 18 km cylinder scale, and atmospheric air tinting verified.")
 

@@ -213,19 +213,32 @@ func generate_default_rpg_map() -> void:
 				var target_seabed = lerpf(19.0, 5.0, river_factor) # 5m to 19m depth under 20m water
 				elevation = lerpf(elevation, target_seabed, river_factor)
 
+			# End Cap Awareness: near cylinder ends (|z_norm| -> 1.0)
+			var dist_to_cap_norm = 1.0 - absf(z_norm)
+			var is_bulkhead_apron = dist_to_cap_norm < 0.015
+			var is_perimeter_ring_road = absf(dist_to_cap_norm - 0.035) < 0.008
+
+			# Coastal seawall containment at end cap interface
+			if dist_to_cap_norm < 0.055:
+				var seawall_blend = maxf(0.0, 1.0 - dist_to_cap_norm / 0.055)
+				elevation = elevation * (1.0 - seawall_blend) + maxf(elevation, 28.0) * seawall_blend
+
 			elevation = clampf(elevation, 0.0, elevation_variance)
 
 			# 3. Determine Terrain Type
 			var angle_dist_road = absf(wrapf(angle - 0.0, -PI, PI))
 			var is_axial_road = angle_dist_road < 0.035
 			var is_ring_road = absf(z_norm - 0.5) < 0.025 or absf(z_norm + 0.5) < 0.025
-			var is_road = (is_axial_road or is_ring_road) and elevation >= (water_level - 1.0)
+			var is_road = (is_axial_road or is_ring_road or is_perimeter_ring_road) and elevation >= (water_level - 1.0)
 
 			var is_concrete_hub = absf(wrapf(angle - 0.45, -PI, PI)) < 0.08 and absf(z_norm) < 0.08
 
 			var t_type = TerrainType.GRASS
 
-			if is_concrete_hub:
+			if is_bulkhead_apron:
+				t_type = TerrainType.CONCRETE
+				elevation = max(elevation, water_level + 8.0)
+			elif is_concrete_hub:
 				t_type = TerrainType.CONCRETE
 				elevation = max(elevation, water_level + 8.0)
 			elif is_road:
