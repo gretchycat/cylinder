@@ -36,8 +36,8 @@ const TerrainManagerClass = preload("res://scripts/terrain_manager.gd")
 		if is_inside_tree() and Engine.is_editor_hint():
 			generate_cylinder()
 
-@export_category("Terrain & Elevation")
-@export var elevation_variance: float = 10.0: # 10 m default variance
+@export_category("Terrain & Elevation (PNG Heightmap & RPG Tilemap)")
+@export var elevation_variance: float = 100.0: # 0 to 100 m elevation range
 	set(val):
 		elevation_variance = max(val, 0.0)
 		if terrain_manager:
@@ -45,12 +45,26 @@ const TerrainManagerClass = preload("res://scripts/terrain_manager.gd")
 		if is_inside_tree() and Engine.is_editor_hint():
 			generate_cylinder()
 
-@export var water_level: float = 4.0: # 4 m from elevation 0
+@export var water_level: float = 20.0: # 20 m from elevation 0
 	set(val):
 		water_level = max(val, 0.0)
 		if terrain_manager:
 			terrain_manager.water_level = water_level
 		if is_inside_tree() and Engine.is_editor_hint():
+			generate_cylinder()
+
+@export_file("*.png") var elevation_map_path: String = "res://assets/maps/elevation_map.png":
+	set(val):
+		elevation_map_path = val
+		if terrain_manager and is_inside_tree():
+			terrain_manager.load_elevation_from_png(elevation_map_path)
+			generate_cylinder()
+
+@export_file("*.png") var terrain_map_path: String = "res://assets/maps/terrain_map.png":
+	set(val):
+		terrain_map_path = val
+		if terrain_manager and is_inside_tree():
+			terrain_manager.load_terrain_from_png(terrain_map_path)
 			generate_cylinder()
 
 @export var surface_material: Material
@@ -65,17 +79,24 @@ var collision_shape: CollisionShape3D
 
 func _ready() -> void:
 	if not terrain_manager:
-		terrain_manager = TerrainManagerClass.new(144, 80, elevation_variance, water_level)
+		_initialize_terrain_manager()
 	generate_cylinder()
+
+func _initialize_terrain_manager() -> void:
+	terrain_manager = TerrainManagerClass.new(512, 256, elevation_variance, water_level)
+	if FileAccess.file_exists(elevation_map_path) or FileAccess.file_exists(ProjectSettings.globalize_path(elevation_map_path)):
+		terrain_manager.load_elevation_from_png(elevation_map_path)
+	if FileAccess.file_exists(terrain_map_path) or FileAccess.file_exists(ProjectSettings.globalize_path(terrain_map_path)):
+		terrain_manager.load_terrain_from_png(terrain_map_path)
 
 func get_elevation_at(theta: float, z: float) -> float:
 	if not terrain_manager:
-		terrain_manager = TerrainManagerClass.new(144, 80, elevation_variance, water_level)
+		_initialize_terrain_manager()
 	return terrain_manager.get_elevation(theta, z, cylinder_length)
 
 func get_terrain_type_at(theta: float, z: float) -> int:
 	if not terrain_manager:
-		terrain_manager = TerrainManagerClass.new(144, 80, elevation_variance, water_level)
+		_initialize_terrain_manager()
 	return terrain_manager.get_terrain_type(theta, z, cylinder_length)
 
 func get_surface_radius_at(theta: float, z: float) -> float:
@@ -83,7 +104,7 @@ func get_surface_radius_at(theta: float, z: float) -> float:
 
 func generate_cylinder() -> void:
 	if not terrain_manager:
-		terrain_manager = TerrainManagerClass.new(radial_segments, length_segments, elevation_variance, water_level)
+		_initialize_terrain_manager()
 
 	# Ensure child nodes exist
 	if not mesh_instance:

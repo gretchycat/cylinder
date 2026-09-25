@@ -270,36 +270,34 @@ func _init() -> void:
 	touch_controls._handle_touch_end(11)
 	print("[PASS] Test 8: Movement joystick only moves; dragging anywhere else rotates view.")
 
-	# --- TEST 9: Configurable 2D RPG Elevation & Terrain System ---
-	print("\n--- TEST 9: 2D RPG Elevation Array, Water Basin & Terrain Biomes ---")
+	# --- TEST 9: PNG Elevation Map & 2D RPG Tilemap System ---
+	print("\n--- TEST 9: PNG Elevation Map (0-100m) & RPG Tilemap (Water at 20m) ---")
 	assert(cylinder_world.radius == 4000.0, "Cylinder radius must be 4 km (8 km diameter)")
 	assert(cylinder_world.cylinder_length == 8000.0, "Cylinder length must be 8 km")
-	assert(cylinder_world.elevation_variance == 10.0, "Elevation variance must default to 10 m")
-	assert(cylinder_world.water_level == 4.0, "Water level must be 4.0 m from elevation 0")
+	assert(cylinder_world.elevation_variance == 100.0, "Elevation variance must be 100 m (0 to 100m valid range)")
+	assert(cylinder_world.water_level == 20.0, "Water level must be 20.0 m from elevation 0")
 
 	var elev_sample_spawn = cylinder_world.get_elevation_at(-PI * 0.5, 0.0)
-	print("Elevation at player spawn: %.2f m (variance range: 0.0 - 10.0 m)" % elev_sample_spawn)
-	assert(elev_sample_spawn >= 0.0 and elev_sample_spawn <= 10.0, "Elevation must be within 10 m variance range")
+	print("Elevation at player spawn: %.2f m (variance range: 0.0 - 100.0 m)" % elev_sample_spawn)
+	assert(elev_sample_spawn >= 0.0 and elev_sample_spawn <= 100.0, "Elevation must be within 0-100 m variance range")
 
-	# Verify terrain manager data export and configurable array injection
+	# Verify loading from PNG image maps
 	var terrain_mgr = cylinder_world.terrain_manager
-	var original_elev_data = terrain_mgr.export_elevation_array()
-	assert(original_elev_data.size() == terrain_mgr.grid_u * terrain_mgr.grid_v, "Elevation array size matches grid dimensions")
+	var ok_load_elev = terrain_mgr.load_elevation_from_png("res://assets/maps/elevation_map.png")
+	var ok_load_terr = terrain_mgr.load_terrain_from_png("res://assets/maps/terrain_map.png")
+	print("Loaded elevation map PNG: %s, Loaded terrain map PNG: %s (Dimensions: %dx%d)" % [ok_load_elev, ok_load_terr, terrain_mgr.grid_u, terrain_mgr.grid_v])
+	assert(ok_load_elev, "Must successfully load elevation map from PNG image")
+	assert(ok_load_terr, "Must successfully load terrain tilemap from PNG image")
 
-	# Test custom array injection (similar to old 2D top-down RPG map data)
-	var custom_map: Array[float] = []
-	for idx in range(terrain_mgr.grid_u * terrain_mgr.grid_v):
-		custom_map.append(2.0 if idx % 2 == 0 else 8.5)
-	terrain_mgr.set_elevation_array(custom_map)
-	assert(terrain_mgr.get_elevation(0.0, 0.0, 8000.0) > 1.0, "Custom RPG elevation array successfully loaded")
+	# Verify saving to PNG format
+	var ok_save_elev = terrain_mgr.save_elevation_to_png("user://test_elev_export.png")
+	var ok_save_terr = terrain_mgr.save_terrain_to_png("user://test_terr_export.png")
+	assert(ok_save_elev and ok_save_terr, "Must successfully export elevation and terrain to PNG images")
 
-	# Restore default map
-	terrain_mgr.generate_default_rpg_map()
-
-	# Verify terrain type classification based on elevation
-	var sample_water_elev = terrain_mgr.water_level - 1.0 # 3.0 m (underwater)
-	assert(sample_water_elev < 4.0, "Water basins are in the first 4 meters (0-4m)")
-	print("[PASS] Test 9: Configurable 2D RPG elevation array and terrain biomes verified.")
+	# Verify water level at 20 m
+	var sample_water_elev = terrain_mgr.water_level - 5.0 # 15.0 m (underwater)
+	assert(sample_water_elev < 20.0, "Water basins are below the 20 m water level")
+	print("[PASS] Test 9: PNG elevation heightmap (0-100m) and RPG tilemap (water at 20m) verified.")
 
 	# --- TEST 10: Max On Daylight Lighting System ---
 	print("\n--- TEST 10: Max On Daylight Lighting System & Scale ---")

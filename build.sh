@@ -24,6 +24,7 @@ usage() {
     echo "  android         Export Android APK (build/cylinder.apk)"
     echo "  linux           Export Linux binary (build/cylinder.x86_64)"
     echo "  install         Install exported APK to connected Android device (via adb)"
+    echo "  maps            Generate vertically tileable elevation & terrain PNG maps"
     echo "  templates       Check status of Godot export templates"
     echo "  help            Show this help message"
     echo "=========================================================="
@@ -96,12 +97,21 @@ cmd_templates() {
     fi
 }
 
+cmd_maps() {
+    echo "[MAPS] Generating vertically tileable elevation & terrain maps..."
+    shift || true
+    python3 scripts/generate_tileable_maps.py "$@"
+}
+
 case "${1:-run}" in
     run)
         cmd_run
         ;;
     test)
         cmd_test
+        ;;
+    maps)
+        cmd_maps "$@"
         ;;
     android)
         cmd_android

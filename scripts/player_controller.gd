@@ -57,6 +57,10 @@ func _ready() -> void:
 	if camera:
 		camera.far = 25000.0
 
+	# Floor snapping for high-speed sprinting over 100m elevation hills and slopes
+	floor_snap_length = 2.5
+	floor_max_angle = deg_to_rad(65.0)
+
 	# Spawn accurately onto inner cylinder terrain
 	reset_to_spawn()
 
@@ -231,9 +235,9 @@ func _process_ground_movement(delta: float) -> void:
 	if not is_on_floor():
 		v_up -= current_gravity * delta
 	else:
-		# Stick firmly to the curved surface
+		# Stick firmly to the curved surface and hills
 		if v_up < 0.0:
-			v_up = -1.0
+			v_up = -maxf(3.0, move_speed * 0.25)
 
 	# Jump handling
 	if jump_requested:
@@ -300,7 +304,7 @@ func _emit_telemetry() -> void:
 	var omega_n = lerpf(wobble_frequency_min, wobble_frequency_max, grav_ratio)
 	var correction_rate = omega_n
 
-	var is_in_water = dist_surface < 4.0
+	var is_in_water = dist_surface < 20.0
 
 	var telemetry = {
 		"is_flying": is_flying,

@@ -8,7 +8,7 @@ uniform float wave_frequency : hint_range(0.01, 1.0) = 0.08;
 uniform float wave_height : hint_range(0.0, 0.5) = 0.06;
 uniform float roughness : hint_range(0.0, 1.0) = 0.08;
 uniform float specular : hint_range(0.0, 1.0) = 0.90;
-uniform float cylinder_radius = 3996.0; // 4000m - 4m water level
+uniform float cylinder_radius = 3980.0; // 4000m - 20m water level
 
 varying vec3 world_pos;
 

@@ -42,6 +42,6 @@ directional_shadow_max_distance = 6000.0
 script = ExtResource("3_markers")
 
 [node name="Player" parent="." instance=ExtResource("4_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3992, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3928.88, 0)
 
 [node name="UI" parent="." instance=ExtResource("5_ui")]

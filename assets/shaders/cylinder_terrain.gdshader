@@ -12,8 +12,8 @@ uniform sampler2D tex_road_edge : source_color, filter_linear_mipmap, repeat_ena
 
 uniform float uv_scale = 0.08;
 uniform float cylinder_radius = 4000.0;
-uniform float water_level = 4.0;
-uniform float max_elevation = 10.0;
+uniform float water_level = 20.0;
+uniform float max_elevation = 100.0;
 
 varying vec3 world_pos;
 varying vec4 vert_attr; // r: elevation_ratio (0..1), g: terrain_type_id (0..8)
