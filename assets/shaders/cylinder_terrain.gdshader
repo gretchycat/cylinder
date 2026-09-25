@@ -96,6 +96,15 @@ void fragment() {
 	float contour = sin(elev * 3.14159265);
 	final_color = mix(final_color * 0.95, final_color * 1.05, (contour + 1.0) * 0.5);
 
+	// Tint the volume where the water exists:
+	// Submerged seabed terrain below water_level is colored by the aquatic water column above it
+	if (elev < water_level) {
+		float water_depth = water_level - elev;
+		float depth_factor = clamp(water_depth / 16.0, 0.0, 1.0);
+		vec3 water_volume_tint = vec3(0.03, 0.20, 0.42);
+		final_color = mix(final_color, water_volume_tint, depth_factor * 0.72);
+	}
+
 	ALBEDO = final_color;
 	ROUGHNESS = roughness_val;
 	METALLIC = metallic_val;

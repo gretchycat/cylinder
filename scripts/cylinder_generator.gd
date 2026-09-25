@@ -288,6 +288,8 @@ func generate_cylinder() -> void:
 		surface_material = _create_terrain_material()
 	if water_material == null:
 		water_material = _create_water_material()
+	else:
+		_update_water_material_textures()
 
 	_build_terrain_mesh()
 	_build_water_mesh()
@@ -318,7 +320,31 @@ func _create_water_material() -> ShaderMaterial:
 	var mat = ShaderMaterial.new()
 	mat.shader = shader
 	mat.set_shader_parameter("cylinder_radius", radius - water_level)
+	mat.set_shader_parameter("cylinder_length", cylinder_length)
+	mat.set_shader_parameter("water_level", water_level)
+	mat.set_shader_parameter("max_elevation", elevation_variance)
+	_update_water_material_textures(mat)
 	return mat
+
+func _update_water_material_textures(mat: ShaderMaterial = null) -> void:
+	if not mat:
+		mat = water_material as ShaderMaterial
+	if not mat:
+		return
+	mat.set_shader_parameter("cylinder_radius", radius - water_level)
+	mat.set_shader_parameter("cylinder_length", cylinder_length)
+	mat.set_shader_parameter("water_level", water_level)
+	mat.set_shader_parameter("max_elevation", elevation_variance)
+
+	var elev_tex: Texture2D = null
+	if FileAccess.file_exists(elevation_map_path) or FileAccess.file_exists(ProjectSettings.globalize_path(elevation_map_path)):
+		elev_tex = load(elevation_map_path)
+	if not elev_tex and terrain_manager:
+		var img = terrain_manager.create_elevation_image()
+		if img:
+			elev_tex = ImageTexture.create_from_image(img)
+	if elev_tex:
+		mat.set_shader_parameter("elevation_map", elev_tex)
 
 func _build_terrain_mesh() -> void:
 	var st = SurfaceTool.new()

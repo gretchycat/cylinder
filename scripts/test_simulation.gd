@@ -245,9 +245,29 @@ func _init() -> void:
 	var touch_controls = root_node.get_node_or_null("UI/UIRoot/TouchControls") as MobileTouchControls
 	test_check(touch_controls != null, "MobileTouchControls node must exist")
 
+	# Verify joystick creation and visibility
+	touch_controls._ensure_joystick_created()
+	test_check(touch_controls.joystick_base != null and touch_controls.joystick_base.visible, "JoystickBase must exist and be visible")
+	test_check(touch_controls.joystick_knob != null and touch_controls.joystick_knob.visible, "Joystick Knob must exist and be visible")
+	test_check(touch_controls.joystick_base.size.x >= 100.0 and touch_controls.joystick_base.size.y >= 100.0, "JoystickBase must have valid dimensions")
+	print("JoystickBase position: %s, size: %s (Knob pos: %s, size: %s)" % [
+		touch_controls.joystick_base.position, touch_controls.joystick_base.size,
+		touch_controls.joystick_knob.position, touch_controls.joystick_knob.size
+	])
+
+	# Verify joystick stays on screen across UI scales
+	var hud_node = root_node.get_node_or_null("UI")
+	if hud_node and hud_node.has_method("apply_ui_scale"):
+		hud_node.apply_ui_scale(1.5, false)
+		var vp_h = root_node.get_viewport().get_visible_rect().size.y
+		var joy_global_y = touch_controls.joystick_base.global_position.y
+		print("Joystick global Y at 1.5x scale: %.1f px (viewport height: %.1f px)" % [joy_global_y, vp_h])
+		test_check(joy_global_y > 100.0 and joy_global_y < vp_h, "JoystickBase must remain visible and within screen at 1.5x scale")
+		hud_node.apply_ui_scale(1.0, true)
+
 	var initial_pitch = player.pitch
 	var initial_basis = player.global_basis
-	var joy_center = touch_controls.joystick_base.global_position + Vector2(touch_controls.joystick_radius, touch_controls.joystick_radius)
+	var joy_center = touch_controls.joystick_base.global_position + (touch_controls.joystick_base.size * 0.5 * touch_controls.ui_scale)
 
 	# 1. Touch and drag the joystick on the left
 	touch_controls._handle_touch_start(10, joy_center)
@@ -331,6 +351,11 @@ func _init() -> void:
 	# Verify water level at 20 m
 	var sample_water_elev = terrain_mgr.water_level - 5.0 # 15.0 m (underwater)
 	test_check(sample_water_elev < 20.0, "Water basins are below the 20 m water level")
+
+	# Verify water material and volume tinting parameters
+	test_check(cylinder_world.water_material != null, "Water material must be configured")
+	test_check(cylinder_world.water_material.get_shader_parameter("elevation_map") != null, "Water material must have elevation map bound for volume tinting and land culling")
+	test_check(cylinder_world.water_material.get_shader_parameter("water_level") == 20.0, "Water level in water shader must match configured 20.0 m")
 	print("[PASS] Test 9: PNG elevation heightmap (0-100m) and RPG tilemap (water at 20m) verified.")
 
 	# --- TEST 10: Max On Daylight Lighting System ---
