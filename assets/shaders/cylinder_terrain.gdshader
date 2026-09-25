@@ -212,7 +212,7 @@ void fragment() {
 	} else {
 		// In air: atmospheric aerial perspective across the 18 km cylinder
 		float air_factor = clamp((cam_dist - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
-		float air_scatter = 1.0 - exp(-air_factor * 1.1);
+		float air_scatter = 1.0 - exp(-air_factor * 2.8);
 
 		// Atmospheric haze reflects the current light level and color along the cylinder
 		vec3 target_air_color = air_color.rgb;
@@ -228,7 +228,8 @@ void fragment() {
 
 		// The fog is more transparent as the light is darker (clearing the night air for surface lights)
 		float dark_transparency_mult = mix(0.12, 1.0, light_lum);
-		final_color = mix(final_color, target_air_color, air_scatter * air_density * dark_transparency_mult);
+		float fog_blend = clamp(air_scatter * air_density * dark_transparency_mult, 0.0, 1.0);
+		final_color = mix(final_color, target_air_color, fog_blend);
 	}
 
 	ALBEDO = final_color;
