@@ -20,14 +20,14 @@ enum ObjectType {
 		if omni_light:
 			omni_light.light_color = light_color
 
-@export var light_energy: float = 3.2:
+@export var light_energy: float = 5.5:
 	set(val):
 		light_energy = max(val, 0.0)
 		base_energy = light_energy
 		if omni_light:
 			omni_light.light_energy = light_energy
 
-@export var light_range: float = 40.0:
+@export var light_range: float = 55.0:
 	set(val):
 		light_range = max(val, 1.0)
 		if omni_light:
@@ -38,7 +38,7 @@ enum ObjectType {
 var omni_light: OmniLight3D = null
 var flame_nodes: Array[Node3D] = []
 var flame_mats: Array[StandardMaterial3D] = []
-var base_energy: float = 3.2
+var base_energy: float = 5.5
 var flicker_time: float = 0.0
 var rng_offset: float = 0.0
 
@@ -63,7 +63,7 @@ func rebuild_object() -> void:
 			_build_beacon_lantern()
 
 func _build_campfire() -> void:
-	base_energy = light_energy if light_energy > 0.0 else 3.2
+	base_energy = light_energy if light_energy > 0.0 else 5.5
 	if light_color == Color(1.0, 0.92, 0.78):
 		light_color = Color(1.0, 0.55, 0.18) # Warm firelight
 
@@ -182,11 +182,11 @@ func _build_campfire() -> void:
 	omni_light.light_color = light_color
 	omni_light.light_energy = base_energy
 	omni_light.omni_range = light_range
-	omni_light.omni_attenuation = 1.05
+	omni_light.omni_attenuation = 0.85
 	add_child(omni_light)
 
 func _build_lamp_post() -> void:
-	base_energy = light_energy if light_energy > 0.0 else 2.8
+	base_energy = light_energy if light_energy > 0.0 else 4.8
 	light_color = Color(1.0, 0.92, 0.78) # Warm incandescent glow
 
 	var metal_mat = StandardMaterial3D.new()
@@ -264,12 +264,12 @@ func _build_lamp_post() -> void:
 	omni_light.position = Vector3(0.0, 4.15, 0.70)
 	omni_light.light_color = light_color
 	omni_light.light_energy = base_energy
-	omni_light.omni_range = light_range
-	omni_light.omni_attenuation = 1.15
+	omni_light.omni_range = light_range if light_range > 0.0 else 45.0
+	omni_light.omni_attenuation = 0.85
 	add_child(omni_light)
 
 func _build_beacon_lantern() -> void:
-	base_energy = light_energy if light_energy > 0.0 else 3.0
+	base_energy = light_energy if light_energy > 0.0 else 4.2
 	light_color = Color(0.20, 0.88, 1.0) # Active cyan spaceport marker
 
 	var metal_mat = StandardMaterial3D.new()
@@ -308,8 +308,8 @@ func _build_beacon_lantern() -> void:
 	omni_light.position = Vector3(0.0, 2.4, 0.0)
 	omni_light.light_color = light_color
 	omni_light.light_energy = base_energy
-	omni_light.omni_range = light_range
-	omni_light.omni_attenuation = 1.0
+	omni_light.omni_range = light_range if light_range > 0.0 else 45.0
+	omni_light.omni_attenuation = 0.90
 	add_child(omni_light)
 
 func _process(delta: float) -> void:

@@ -216,19 +216,22 @@ func rebuild_light_bar() -> void:
 		add_child(seg_mesh_inst)
 		segment_nodes.append(seg_mesh_inst)
 
-		# OmniLight3D emitter at this segment (broad illumination across 4000m radius)
-		var light = OmniLight3D.new()
-		light.name = "SegmentLight_%d" % i
-		light.position = Vector3(0, 0, z_pos)
-		light.omni_range = cylinder_radius * 2.0
-		light.omni_attenuation = 0.75
-		light.shadow_enabled = enable_shadows
-		add_child(light)
-		light_nodes.append(light)
-
 		# Initial values
 		segment_colors.append(Color.WHITE)
 		segment_intensities.append(1.0)
+
+	# 2 broad axial omni lights (South and North halves) to illuminate the cylinder
+	# while leaving room in Godot's light cluster budget for local surface lights (campfires, lamps)
+	for k in range(2):
+		var z_axial = -half_len * 0.5 if k == 0 else half_len * 0.5
+		var light = OmniLight3D.new()
+		light.name = "AxialLight_%s" % ("South" if k == 0 else "North")
+		light.position = Vector3(0, 0, z_axial)
+		light.omni_range = cylinder_radius * 2.5
+		light.omni_attenuation = 1.0
+		light.shadow_enabled = false
+		add_child(light)
+		light_nodes.append(light)
 
 	_apply_current_preset()
 
@@ -392,18 +395,37 @@ func _refresh_all_segments() -> void:
 			mat.emission = col
 			mat.emission_energy_multiplier = energy * 1.5
 
-		# Update omni light
-		if i < light_nodes.size():
-			var light = light_nodes[i]
-			light.light_color = col
-			light.light_energy = energy
-
 		avg_col += col
 		avg_intensity += segment_intensities[i]
 
 	if count > 0:
 		avg_col = Color(avg_col.r / float(count), avg_col.g / float(count), avg_col.b / float(count), 1.0)
 		avg_intensity /= float(count)
+
+	# Update 2 broad axial lights (South and North)
+	if light_nodes.size() >= 2 and count > 0:
+		var half_count = count / 2
+		var south_col = Color.BLACK
+		var south_inten = 0.0
+		var north_col = Color.BLACK
+		var north_inten = 0.0
+		for i in range(half_count):
+			south_col += segment_colors[i]
+			south_inten += segment_intensities[i]
+		for i in range(half_count, count):
+			north_col += segment_colors[i]
+			north_inten += segment_intensities[i]
+		if half_count > 0:
+			south_col = south_col / float(half_count)
+			south_inten = south_inten / float(half_count)
+		var north_count = count - half_count
+		if north_count > 0:
+			north_col = north_col / float(north_count)
+			north_inten = north_inten / float(north_count)
+		light_nodes[0].light_color = south_col
+		light_nodes[0].light_energy = south_inten * intensity_norm * 1.5
+		light_nodes[1].light_color = north_col
+		light_nodes[1].light_energy = north_inten * intensity_norm * 1.5
 
 	current_avg_color = avg_col
 	current_avg_intensity = avg_intensity
