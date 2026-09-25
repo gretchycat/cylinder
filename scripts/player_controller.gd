@@ -3,9 +3,9 @@ extends CharacterBody3D
 
 signal telemetry_updated(data: Dictionary)
 
-@export_category("Cylinder Dimensions (8 km x 8 km)")
+@export_category("Cylinder Dimensions (8 km dia x 18 km length)")
 @export var cylinder_radius: float = 4000.0
-@export var cylinder_length: float = 8000.0
+@export var cylinder_length: float = 18000.0
 
 @export_category("Movement & Gravity")
 @export var walk_speed: float = 8.0
@@ -323,12 +323,17 @@ func _emit_telemetry() -> void:
 	var correction_rate = omega_n
 
 	var is_in_water = dist_surface < 20.0
+	var cam_pos = camera.global_position if camera else global_position
+	var cam_dist_axis = Vector3(cam_pos.x, cam_pos.y, 0.0).length()
+	var cam_elevation = max(cylinder_radius - cam_dist_axis, 0.0)
+	var is_camera_underwater = cam_elevation < 20.0
 
 	var telemetry = {
 		"is_flying": is_flying,
 		"is_sprinting": is_sprinting,
 		"is_on_floor": is_on_floor(),
 		"is_in_water": is_in_water,
+		"is_camera_underwater": is_camera_underwater,
 		"locomotion_state": get_locomotion_state(),
 		"gravity_ms2": grav_mag,
 		"gravity_g": grav_mag / 9.80665,

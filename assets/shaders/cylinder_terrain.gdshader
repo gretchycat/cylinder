@@ -133,20 +133,49 @@ void fragment() {
 		final_color = mix(final_color, col_concrete * 0.45, ring_line * 0.4 + spoke_line * 0.35);
 	}
 
-	// Tint the volume where the water exists:
-	// Submerged seabed terrain below water_level is colored by the aquatic water column above it
+	// Prominently tint the terrain under the water level (submerged seabed, lake, and river beds)
 	if (elev < water_level && is_end_cap < 0.5) {
 		float water_depth = water_level - elev;
-		float depth_factor = clamp(water_depth / 16.0, 0.0, 1.0);
-		vec3 water_volume_tint = vec3(0.03, 0.20, 0.42);
-		final_color = mix(final_color, water_volume_tint, depth_factor * 0.72);
+		float depth_norm = clamp(water_depth / 16.0, 0.0, 1.0);
+
+		// Rich aquatic gradient: translucent coastal cyan -> deep oceanic blue -> abyssal indigo
+		vec3 shallow_seabed_tint = vec3(0.08, 0.48, 0.68);
+		vec3 deep_seabed_tint = vec3(0.01, 0.12, 0.32);
+		vec3 aquatic_tint = mix(shallow_seabed_tint, deep_seabed_tint, depth_norm);
+
+		// Strong tint blend (72% at shoreline, reaching 96% in deep trenches)
+		final_color = mix(final_color, aquatic_tint, 0.72 + 0.24 * depth_norm);
+
+		// Animated underwater sunlight caustics flickering across submerged seabed
+		float c_uv1 = sin(terrain_uv.x * 1.5 + TIME * 1.4) * cos(terrain_uv.y * 1.5 - TIME * 1.1);
+		float c_uv2 = cos(terrain_uv.x * 2.4 - TIME * 1.7) * sin(terrain_uv.y * 2.4 + TIME * 1.3);
+		float caustics = clamp((c_uv1 + c_uv2) * 0.5 + 0.5, 0.0, 1.0);
+		vec3 caustic_color = vec3(0.25, 0.75, 0.95);
+		final_color += caustic_color * (pow(caustics, 3.2) * 0.38 * (1.0 - depth_norm * 0.75));
+
+		roughness_val = mix(roughness_val, 0.25, depth_norm * 0.5);
 	}
 
-	// Atmospheric aerial perspective: tint distant views across the 8 km cylinder
+	// Distance perspective: Check if camera itself is submerged underwater
 	float cam_dist = length(world_pos - CAMERA_POSITION_WORLD);
-	float air_factor = clamp((cam_dist - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
-	float air_scatter = 1.0 - exp(-air_factor * 1.8);
-	final_color = mix(final_color, air_color.rgb, air_scatter * air_density);
+	float cam_r = length(CAMERA_POSITION_WORLD.xy);
+	bool is_camera_underwater = cam_r > (cylinder_radius - water_level);
+
+	if (is_camera_underwater) {
+		// When camera moves underwater, aquatic volumetric extinction replaces air haze
+		float water_visibility = 220.0;
+		float water_fog = 1.0 - exp(-cam_dist / water_visibility);
+		vec3 deep_water_fog = vec3(0.02, 0.22, 0.44);
+		final_color = mix(final_color, deep_water_fog, water_fog * 0.92);
+
+		// Additional ambient underwater color wash on nearby surfaces
+		final_color = mix(final_color, vec3(0.04, 0.35, 0.55), 0.30);
+	} else {
+		// In air: atmospheric aerial perspective across the 18 km cylinder
+		float air_factor = clamp((cam_dist - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
+		float air_scatter = 1.0 - exp(-air_factor * 1.8);
+		final_color = mix(final_color, air_color.rgb, air_scatter * air_density);
+	}
 
 	ALBEDO = final_color;
 	ROUGHNESS = roughness_val;

@@ -37,11 +37,15 @@ var current_ui_scale: float = 1.0
 var is_scale_auto: bool = true
 var auto_scale_info: Dictionary = {}
 
+var underwater_overlay: ColorRect = null
+
 func _ready() -> void:
 	if not player:
 		player = get_tree().get_first_node_in_group("player")
 	if not light_bar:
 		light_bar = get_tree().get_first_node_in_group("light_bar")
+
+	_setup_underwater_overlay()
 
 	if player:
 		player.telemetry_updated.connect(_on_telemetry_updated)
@@ -58,6 +62,17 @@ func _ready() -> void:
 		reset_spawn_btn.pressed.connect(_on_reset_spawn_pressed)
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
+
+func _setup_underwater_overlay() -> void:
+	underwater_overlay = ColorRect.new()
+	underwater_overlay.name = "UnderwaterScreenTint"
+	underwater_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	underwater_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	underwater_overlay.color = Color(0.04, 0.32, 0.55, 0.38)
+	underwater_overlay.visible = false
+	if ui_root:
+		ui_root.add_child(underwater_overlay)
+		ui_root.move_child(underwater_overlay, 0)
 
 func _setup_ui_scaling() -> void:
 	auto_scale_info = UIScaleManager.calculate_intelligent_scale()
@@ -157,6 +172,10 @@ func _on_telemetry_updated(data: Dictionary) -> void:
 	var pitch_deg: float = data.get("pitch_deg", 0.0)
 
 	var is_in_water: bool = data.get("is_in_water", false)
+	var is_camera_underwater: bool = data.get("is_camera_underwater", is_in_water)
+
+	if underwater_overlay:
+		underwater_overlay.visible = is_camera_underwater
 
 	if telemetry_label:
 		var text = ""
