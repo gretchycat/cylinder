@@ -19,6 +19,8 @@ const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
 @onready var light_preset_option: OptionButton = $UIRoot/ControlPanel/VBoxContainer/HBoxPreset/OptionButton
 @onready var light_intensity_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxIntensity/HSlider
 @onready var light_intensity_val: Label = $UIRoot/ControlPanel/VBoxContainer/HBoxIntensity/HBox/ValLabel
+@onready var fog_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxFog/HSlider
+@onready var fog_val: Label = $UIRoot/ControlPanel/VBoxContainer/HBoxFog/HBox/ValLabel
 @onready var gravity_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxGravity/HSlider
 @onready var gravity_val: Label = $UIRoot/ControlPanel/VBoxContainer/HBoxGravity/HBox/ValLabel
 @onready var toggle_controls_btn: Button = $UIRoot/ToggleControlsButton
@@ -203,6 +205,18 @@ func _setup_control_panel() -> void:
 		light_intensity_slider.value = intensity_to_slider_pos(cur_intensity)
 		light_intensity_slider.value_changed.connect(_on_light_slider_changed)
 		_update_intensity_display(cur_intensity)
+
+	if fog_slider:
+		fog_slider.focus_mode = Control.FOCUS_NONE
+		fog_slider.min_value = 0.0
+		fog_slider.max_value = 1.0
+		fog_slider.step = 0.01
+		var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator
+		var cur_fog = cylinder_world.air_density if cylinder_world else 0.65
+		fog_slider.value = cur_fog
+		fog_slider.value_changed.connect(_on_fog_changed)
+		if fog_val:
+			fog_val.text = "%d%%" % int(round(cur_fog * 100.0))
 
 	if gravity_slider:
 		gravity_slider.focus_mode = Control.FOCUS_NONE
@@ -503,6 +517,13 @@ func _update_intensity_display(intensity: float) -> void:
 		light_intensity_val.text = "%.2fx" % intensity
 	else:
 		light_intensity_val.text = "%.1fx" % intensity
+
+func _on_fog_changed(value: float) -> void:
+	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator
+	if cylinder_world:
+		cylinder_world.air_density = value
+	if fog_val:
+		fog_val.text = "%d%%" % int(round(value * 100.0))
 
 func _on_gravity_changed(value: float) -> void:
 	if player:

@@ -267,6 +267,30 @@ horizontal_alignment = 2
 [node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/VBoxContainer/HBoxIntensity"]
 layout_mode = 2
 
+[node name="HBoxFog" type="VBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer/HBoxFog"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="UIRoot/ControlPanel/VBoxContainer/HBoxFog/HBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Fog Opacity / Density:"
+
+[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/VBoxContainer/HBoxFog/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "65%"
+horizontal_alignment = 2
+
+[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/VBoxContainer/HBoxFog"]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+value = 0.65
+
 [node name="HBoxGravity" type="VBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer"]
 layout_mode = 2
 

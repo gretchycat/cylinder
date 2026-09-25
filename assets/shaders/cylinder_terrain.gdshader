@@ -220,11 +220,8 @@ void fragment() {
 		final_color = mix(final_color, vec3(0.04, 0.35, 0.55), 0.30);
 	} else {
 		// In air: atmospheric aerial perspective across the 18 km cylinder
-		// For end caps, attenuate air scatter so structural radial ribs remain crisp and distinct
 		float air_factor = clamp((cam_dist - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
-		// No shader fog on end caps — engine fog suppressed via FOG output; axial LUT handles depth tinting
-		float endcap_fog_mult = (is_end_cap > 0.5) ? 0.0 : 1.0;
-		float air_scatter = (1.0 - exp(-air_factor * 1.1)) * endcap_fog_mult;
+		float air_scatter = 1.0 - exp(-air_factor * 1.1);
 
 		// Atmospheric haze reflects the current light level and color along the cylinder
 		vec3 target_air_color = air_color.rgb;
