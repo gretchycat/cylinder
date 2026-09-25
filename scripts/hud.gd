@@ -27,6 +27,8 @@ const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
 
 @onready var wobble_test_btn: Button = $UIRoot/ControlPanel/VBoxContainer/WobbleTestButton
 @onready var reset_spawn_btn: Button = $UIRoot/ControlPanel/VBoxContainer/ResetSpawnButton
+var south_cap_btn: Button = null
+var north_cap_btn: Button = null
 
 # UI Scaling Controls
 @onready var scale_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxScale/HSlider
@@ -166,6 +168,22 @@ func _setup_control_panel() -> void:
 		if gravity_val:
 			gravity_val.text = "%.1f m/s²" % gravity_slider.value
 
+	var btn_vbox = $UIRoot/ControlPanel/VBoxContainer
+	if btn_vbox:
+		south_cap_btn = Button.new()
+		south_cap_btn.name = "ViewSouthCapButton"
+		south_cap_btn.text = "Inspect South End Cap (z = -8.5 km)"
+		south_cap_btn.add_theme_font_size_override("font_size", 12)
+		south_cap_btn.pressed.connect(_on_view_south_cap_pressed)
+		btn_vbox.add_child(south_cap_btn)
+
+		north_cap_btn = Button.new()
+		north_cap_btn.name = "ViewNorthCapButton"
+		north_cap_btn.text = "Inspect North End Cap (z = +8.5 km)"
+		north_cap_btn.add_theme_font_size_override("font_size", 12)
+		north_cap_btn.pressed.connect(_on_view_north_cap_pressed)
+		btn_vbox.add_child(north_cap_btn)
+
 func _on_telemetry_updated(data: Dictionary) -> void:
 	var is_flying: bool = data.get("is_flying", false)
 	var locomotion_state: String = data.get("locomotion_state", "IDLE")
@@ -276,3 +294,11 @@ func _on_wobble_test_pressed() -> void:
 func _on_reset_spawn_pressed() -> void:
 	if player:
 		player.reset_to_spawn()
+
+func _on_view_south_cap_pressed() -> void:
+	if player and player.has_method("teleport_to_z"):
+		player.teleport_to_z(-8500.0, true)
+
+func _on_view_north_cap_pressed() -> void:
+	if player and player.has_method("teleport_to_z"):
+		player.teleport_to_z(8500.0, true)

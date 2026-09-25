@@ -304,6 +304,25 @@ func reset_to_spawn() -> void:
 	head.rotation = Vector3.ZERO
 	velocity = Vector3.ZERO
 
+func teleport_to_z(target_z: float, face_cap: bool = true) -> void:
+	var cyl_world = get_tree().get_first_node_in_group("cylinder_world")
+	var theta = atan2(global_position.y, global_position.x)
+	var surface_r = cylinder_radius
+	if cyl_world and cyl_world.has_method("get_elevation_at"):
+		surface_r = cylinder_radius - cyl_world.get_elevation_at(theta, target_z)
+	var spawn_r = surface_r - 0.95
+	global_position = Vector3(spawn_r * cos(theta), spawn_r * sin(theta), target_z)
+	var up = Vector3(-cos(theta), -sin(theta), 0.0)
+	var forward = Vector3(0.0, 0.0, -1.0 if target_z < 0.0 else 1.0) if face_cap else Vector3(0.0, 0.0, -1.0)
+	var back = -forward
+	var right = up.cross(back).normalized()
+	global_basis = Basis(right, up, back).orthonormalized()
+	pitch = 0.0
+	wobble_roll = 0.0
+	wobble_velocity = 0.0
+	head.rotation = Vector3.ZERO
+	velocity = Vector3.ZERO
+
 var last_telemetry: Dictionary = {}
 
 func get_telemetry() -> Dictionary:

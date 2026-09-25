@@ -481,7 +481,7 @@ func _build_terrain_mesh() -> void:
 		# === Cap 1: Hemispherical Dome at z = -half_len (inward normal facing +Z into cylinder) ===
 		var center_idx1 = stride * (length_segments + 1)
 		st.set_normal(Vector3(0, 0, 1))
-		st.set_uv(Vector2(0.5, 0.0))
+		st.set_uv(Vector2(0.5, 0.5))
 		# COLOR: r = radial_ratio (0.0 at pole), g = spaceport plaza (5/8), b = is_end_cap (1.0)
 		st.set_color(Color(0.0, 5.0 / 8.0, 1.0, 1.0))
 		st.add_vertex(Vector3(0, 0, -half_len - radius))
@@ -507,9 +507,8 @@ func _build_terrain_mesh() -> void:
 				var pos = Vector3(r_k * cos_t, r_k * sin_t, z_cap)
 				var norm = Vector3(-sin_phi * cos_t, -sin_phi * sin_t, cos_phi).normalized()
 
-				var u_circ = float(i) / float(cap_divisions)
-				# Spherical rib UV: 32 radial rib spokes around 360°, 16 concentric rings along latitude
-				var uv_rib = Vector2(u_circ * 32.0, alpha * 16.0)
+				# Polar rib UV: 1:1 mapping with circular radial rib texture (center 0.5, 0.5, radius 0.49)
+				var uv_rib = Vector2(0.5 + cos_t * (0.49 * alpha), 0.5 + sin_t * (0.49 * alpha))
 
 				var t_type = 4 # Concrete structural bulkhead
 				if r_k <= 350.0:
@@ -554,7 +553,7 @@ func _build_terrain_mesh() -> void:
 		# === Cap 2: Hemispherical Dome at z = +half_len (inward normal facing -Z into cylinder) ===
 		var center_idx2 = center_idx1 + 1 + cap_rings * stride
 		st.set_normal(Vector3(0, 0, -1))
-		st.set_uv(Vector2(0.5, 0.0))
+		st.set_uv(Vector2(0.5, 0.5))
 		st.set_color(Color(0.0, 5.0 / 8.0, 1.0, 1.0))
 		st.add_vertex(Vector3(0, 0, half_len + radius))
 
@@ -579,8 +578,8 @@ func _build_terrain_mesh() -> void:
 				var pos = Vector3(r_k * cos_t, r_k * sin_t, z_cap)
 				var norm = Vector3(-sin_phi * cos_t, -sin_phi * sin_t, -cos_phi).normalized()
 
-				var u_circ = float(i) / float(cap_divisions)
-				var uv_rib = Vector2(u_circ * 32.0, alpha * 16.0)
+				# Polar rib UV: 1:1 mapping with circular radial rib texture (center 0.5, 0.5, radius 0.49)
+				var uv_rib = Vector2(0.5 + cos_t * (0.49 * alpha), 0.5 + sin_t * (0.49 * alpha))
 
 				var t_type = 4 # Concrete structural bulkhead
 				if r_k <= 350.0:

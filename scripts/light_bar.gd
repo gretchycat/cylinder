@@ -66,6 +66,8 @@ var use_custom_extent: bool = false
 
 var segment_nodes: Array[MeshInstance3D] = []
 var light_nodes: Array[OmniLight3D] = []
+var south_end_cap_light: SpotLight3D = null
+var north_end_cap_light: SpotLight3D = null
 var truss_node: MeshInstance3D
 
 var sun_lights: Array[DirectionalLight3D] = []
@@ -166,6 +168,27 @@ func rebuild_light_bar() -> void:
 		# Initial values
 		segment_colors.append(Color.WHITE)
 		segment_intensities.append(1.0)
+
+	# 3. Axial End Cap Floodlights (illuminate hemispherical end cap bulkheads)
+	south_end_cap_light = SpotLight3D.new()
+	south_end_cap_light.name = "SouthEndCapLight"
+	south_end_cap_light.position = Vector3(0, 0, -half_len + 5.0)
+	south_end_cap_light.rotation_degrees = Vector3(0, 180, 0) # Facing -Z into South dish
+	south_end_cap_light.spot_range = cylinder_radius * 2.0
+	south_end_cap_light.spot_angle = 82.0
+	south_end_cap_light.spot_attenuation = 0.8
+	south_end_cap_light.shadow_enabled = enable_shadows
+	add_child(south_end_cap_light)
+
+	north_end_cap_light = SpotLight3D.new()
+	north_end_cap_light.name = "NorthEndCapLight"
+	north_end_cap_light.position = Vector3(0, 0, half_len - 5.0)
+	north_end_cap_light.rotation_degrees = Vector3(0, 0, 0) # Facing +Z into North dish
+	north_end_cap_light.spot_range = cylinder_radius * 2.0
+	north_end_cap_light.spot_angle = 82.0
+	north_end_cap_light.spot_attenuation = 0.8
+	north_end_cap_light.shadow_enabled = enable_shadows
+	add_child(north_end_cap_light)
 
 	_apply_current_preset()
 
@@ -298,6 +321,16 @@ func _refresh_all_segments() -> void:
 	# Global master intensity scaling (nominal full daylight is at global_intensity_multiplier = 3.5)
 	var intensity_norm = global_intensity_multiplier / 3.5
 
+	# Update axial end-cap spotlights facing into hemispherical bulkheads
+	if south_end_cap_light:
+		var c_south = segment_colors[0] if segment_colors.size() > 0 else avg_col
+		south_end_cap_light.light_color = c_south
+		south_end_cap_light.light_energy = 3.5 * intensity_norm
+	if north_end_cap_light:
+		var c_north = segment_colors[-1] if segment_colors.size() > 0 else avg_col
+		north_end_cap_light.light_color = c_north
+		north_end_cap_light.light_energy = 3.5 * intensity_norm
+
 	# Synchronize scene directional sun lights with intensity and preset color
 	for sun in sun_lights:
 		sun.light_color = avg_col
@@ -345,10 +378,18 @@ func _apply_lut_to_materials() -> void:
 func _update_light_ranges() -> void:
 	for light in light_nodes:
 		light.omni_range = cylinder_radius * 2.0
+	if south_end_cap_light:
+		south_end_cap_light.spot_range = cylinder_radius * 2.0
+	if north_end_cap_light:
+		north_end_cap_light.spot_range = cylinder_radius * 2.0
 
 func _update_shadows() -> void:
 	for light in light_nodes:
 		light.shadow_enabled = enable_shadows
+	if south_end_cap_light:
+		south_end_cap_light.shadow_enabled = enable_shadows
+	if north_end_cap_light:
+		north_end_cap_light.shadow_enabled = enable_shadows
 
 # Public API for setting individual segment properties
 func set_segment(index: int, color: Color, intensity: float) -> void:

@@ -116,41 +116,54 @@ void fragment() {
 	final_color = mix(final_color * 0.95, final_color * 1.05, (contour + 1.0) * 0.5);
 
 	// Structural detailing on hemispherical end cap bulkheads
+	vec3 emission_color = vec3(0.0);
 	if (is_end_cap > 0.5) {
 		float r_axis = length(world_pos.xy);
 		float alpha = vert_attr.r; // Latitude parameter: 0.0 at apex pole to 1.0 at cylinder rim
 
-		// Sample the dedicated weathered aerospace rib texture with spherical mapping
-		vec3 col_ribs = texture(tex_end_cap_ribs, v_uv).rgb;
-		vec3 col_ribs_macro = texture(tex_end_cap_ribs, v_uv * 0.25).rgb;
-		vec3 bulkhead_base = mix(col_ribs, col_ribs_macro * 1.15, 0.28);
+		// Polar UV projection: maps circular radial rib texture perfectly across the hemisphere
+		vec2 polar_uv = vec2(0.5, 0.5);
+		if (r_axis > 0.01) {
+			vec2 dir = world_pos.xy / r_axis;
+			polar_uv = vec2(0.5, 0.5) + dir * (0.49 * alpha);
+		}
+
+		// Sample the dedicated weathered aerospace radial rib texture
+		vec3 col_ribs = texture(tex_end_cap_ribs, polar_uv).rgb;
+		vec3 col_alloy_grain = texture(tex_concrete, world_pos.xy * 0.015).rgb;
+		vec3 bulkhead_base = mix(col_ribs, col_ribs * col_alloy_grain * 1.35, 0.22);
 
 		final_color = bulkhead_base;
-		roughness_val = 0.62;
-		metallic_val = 0.72;
+		roughness_val = 0.58;
+		metallic_val = 0.68;
 
 		// 3D structural concentric hoop rings (every 250 m)
 		float ring_dist = abs(fract(r_axis / 250.0 + 0.5) - 0.5) * 250.0;
 		float ring_line = smoothstep(12.0, 0.0, ring_dist);
 
-		// 16 major radial structural compression ribs radiating from axis
-		float spoke_val = abs(fract(angle / (6.28318530718 / 16.0) + 0.5) - 0.5);
-		float spoke_line = smoothstep(0.015, 0.0, spoke_val);
+		// 32 major radial structural compression ribs radiating from rotational axis
+		float spoke_val = abs(fract(angle / (6.28318530718 / 32.0) + 0.5) - 0.5);
+		float spoke_line = smoothstep(0.012, 0.0, spoke_val);
 
 		// Darker recessed shadow grooves on the structural girders
-		final_color = mix(final_color, final_color * 0.55, ring_line * 0.40 + spoke_line * 0.35);
+		final_color = mix(final_color, final_color * 0.60, ring_line * 0.35 + spoke_line * 0.30);
 
-		// Central Zero-G spaceport docking ring and guidance collar (r_axis <= 350 m at pole)
+		// Ambient structural self-illumination: ensures end caps and radial ribs never disappear in shadow
+		emission_color = final_color * 0.22;
+
+		// Central Zero-G spaceport active docking ring and guidance lighting
 		if (r_axis < 350.0) {
 			float dock_circle = abs(r_axis - 220.0);
-			if (dock_circle < 14.0) {
+			if (dock_circle < 16.0) {
 				final_color = vec3(0.98, 0.78, 0.22); // Golden aerospace guidance ring
+				emission_color += vec3(1.0, 0.82, 0.25) * 1.8;
 				roughness_val = 0.20;
 				metallic_val = 0.90;
 			}
 			float inner_ring = abs(r_axis - 100.0);
-			if (inner_ring < 10.0) {
+			if (inner_ring < 12.0) {
 				final_color = vec3(0.20, 0.85, 0.95); // Cyan active docking beacon ring
+				emission_color += vec3(0.20, 0.88, 1.0) * 2.8;
 				roughness_val = 0.15;
 				metallic_val = 0.85;
 			}
@@ -211,12 +224,15 @@ void fragment() {
 		final_color = mix(final_color, vec3(0.04, 0.35, 0.55), 0.30);
 	} else {
 		// In air: atmospheric aerial perspective across the 18 km cylinder
+		// For end caps, attenuate air scatter so structural radial ribs remain crisp and distinct
 		float air_factor = clamp((cam_dist - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
-		float air_scatter = 1.0 - exp(-air_factor * 1.8);
+		float endcap_fog_mult = (is_end_cap > 0.5) ? 0.45 : 1.0;
+		float air_scatter = (1.0 - exp(-air_factor * 1.8)) * endcap_fog_mult;
 		final_color = mix(final_color, air_color.rgb, air_scatter * air_density);
 	}
 
 	ALBEDO = final_color;
 	ROUGHNESS = roughness_val;
 	METALLIC = metallic_val;
+	EMISSION = emission_color;
 }
