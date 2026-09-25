@@ -53,6 +53,10 @@ func _ready() -> void:
 	_update_fly_buttons_visibility()
 	_reset_joystick()
 
+func _process(_delta: float) -> void:
+	if (look_touch_id != -1 or is_mouse_looking) and player:
+		player.look_control_timer = 0.5
+
 func _input(event: InputEvent) -> void:
 	if not player:
 		return

@@ -16,6 +16,7 @@ signal telemetry_updated(data: Dictionary)
 @export var base_gravity: float = 12.0
 @export var jump_velocity: float = 8.5
 @export var horizon_alignment_speed: float = 20.0
+@export var attitude_flatten_speed: float = 3.0
 
 @export_category("Wobble Dynamics")
 @export var wobble_frequency_min: float = 1.0
@@ -42,6 +43,9 @@ var joystick_override: bool = false
 var fly_vertical_axis: float = 0.0
 var jump_requested: bool = false
 
+# Active look tracking
+var look_control_timer: float = 0.0
+
 # Wobble / Horizon roll state
 var wobble_roll: float = 0.0        # Radians (left/right tilt)
 var wobble_velocity: float = 0.0    # Angular velocity (rad/s)
@@ -63,9 +67,13 @@ func _ready() -> void:
 	if camera:
 		camera.far = 40000.0
 
-	# Floor snapping for high-speed sprinting over 100m elevation hills and slopes
-	floor_snap_length = 2.5
-	floor_max_angle = deg_to_rad(65.0)
+	# Seamless slope climbing across terrain hills and 26 km end cap dishes
+	floor_snap_length = 0.8
+	floor_max_angle = deg_to_rad(89.0)
+	floor_constant_speed = true
+	floor_stop_on_slope = false
+	floor_block_on_wall = false
+	wall_min_slide_angle = deg_to_rad(10.0)
 
 	# Spawn accurately onto inner cylinder terrain
 	reset_to_spawn()
@@ -106,6 +114,8 @@ func _input(event: InputEvent) -> void:
 				input_axis = Vector2.ZERO
 
 func apply_look_input(delta_look: Vector2) -> void:
+	look_control_timer = 0.5 # Actively controlling look angles
+
 	# Yaw: rotate player around local Up axis
 	rotate_object_local(Vector3.UP, -delta_look.x)
 
@@ -207,24 +217,29 @@ func _update_horizon_and_gravity(delta: float) -> void:
 	var k_spring = omega_n * omega_n
 	var c_damp = 2.0 * zeta * omega_n
 
-	# Stride excitation when walking / running on the ground
-	var stride_excitation: float = 0.0
-	var speed = velocity.length()
-	if is_on_floor() and not is_flying and speed > 0.3:
-		var step_freq = 18.0 if is_sprinting else 11.5
-		stride_phase += step_freq * delta
-		var sway_amplitude = deg_to_rad(3.5 if is_sprinting else 1.6)
-		stride_excitation = sin(stride_phase) * sway_amplitude * k_spring
-	else:
-		stride_phase = lerpf(stride_phase, 0.0, 5.0 * delta)
-
-	# Harmonic oscillator: d2phi/dt2 = -k*phi - c*dphi/dt + excitation
-	var wobble_accel = -k_spring * wobble_roll - c_damp * wobble_velocity + stride_excitation
+	# Harmonic oscillator: d2phi/dt2 = -k*phi - c*dphi/dt
+	var wobble_accel = -k_spring * wobble_roll - c_damp * wobble_velocity
 	wobble_velocity += wobble_accel * delta
 	wobble_roll += wobble_velocity * delta
 	wobble_roll = clampf(wobble_roll, -deg_to_rad(45.0), deg_to_rad(45.0))
 
-	# Apply roll wobble to camera head
+	# --- Attitude Auto-Flattening When Taking Steps ---
+	if look_control_timer > 0.0:
+		look_control_timer = maxf(0.0, look_control_timer - delta)
+
+	var is_actively_controlling = look_control_timer > 0.0
+	var is_taking_steps = is_on_floor() and not is_flying and (input_axis.length_squared() > 0.01 or velocity.length() > 0.3)
+
+	if is_taking_steps and not is_actively_controlling:
+		# Smoothly flatten pitch attitude towards horizontal level (0.0) as steps are taken
+		pitch = lerpf(pitch, 0.0, clampf(attitude_flatten_speed * delta, 0.0, 1.0))
+		head.rotation.x = pitch
+
+		# Settle any residual roll wobble to flat
+		wobble_roll = lerpf(wobble_roll, 0.0, clampf(attitude_flatten_speed * 2.0 * delta, 0.0, 1.0))
+		wobble_velocity = lerpf(wobble_velocity, 0.0, clampf(attitude_flatten_speed * 2.0 * delta, 0.0, 1.0))
+
+	# Apply roll wobble / attitude to camera head
 	head.rotation.z = wobble_roll
 
 func _process_ground_movement(delta: float) -> void:
@@ -234,34 +249,67 @@ func _process_ground_movement(delta: float) -> void:
 	var gravity_factor = clampf(dist_from_axis / cylinder_radius, 0.0, 1.0)
 	var current_gravity = base_gravity * gravity_factor
 
-	# Separate velocity into vertical (along local up) and tangent (along ground)
-	var v_up = velocity.dot(current_up)
-	var v_tangent = velocity - current_up * v_up
-
-	# Movement direction in player's local ground plane
 	var move_speed = sprint_speed if is_sprinting else walk_speed
-	var move_dir = (global_basis.x * input_axis.x + global_basis.z * input_axis.y)
-	move_dir = (move_dir - current_up * move_dir.dot(current_up)).normalized() * input_axis.length()
+	var input_len = input_axis.length()
 
-	var target_v_tangent = move_dir * move_speed
-	var accel = acceleration if is_on_floor() else air_control
-	v_tangent = v_tangent.lerp(target_v_tangent, accel * delta)
-
-	# Gravity and floor sticking
-	if not is_on_floor():
-		v_up -= current_gravity * delta
+	# Flat movement direction in player's local horizontal frame
+	var flat_move_dir = (global_basis.x * input_axis.x + global_basis.z * input_axis.y)
+	flat_move_dir = (flat_move_dir - current_up * flat_move_dir.dot(current_up))
+	if flat_move_dir.length_squared() > 1e-5:
+		flat_move_dir = flat_move_dir.normalized()
 	else:
-		# Stick firmly to the curved surface and hills
-		if v_up < 0.0:
-			v_up = -maxf(3.0, move_speed * 0.25)
+		flat_move_dir = Vector3.ZERO
+
+	var on_floor = is_on_floor()
+	var floor_norm = get_floor_normal() if on_floor and get_floor_normal().length_squared() > 0.5 else current_up
+
+	# Project movement along actual surface / terrain / end cap slope
+	var surface_move_dir = flat_move_dir
+	if on_floor and flat_move_dir != Vector3.ZERO:
+		surface_move_dir = (flat_move_dir - floor_norm * flat_move_dir.dot(floor_norm))
+		if surface_move_dir.length_squared() > 1e-5:
+			surface_move_dir = surface_move_dir.normalized()
+		else:
+			surface_move_dir = flat_move_dir
+
+	# --- Grade / Steepness Speed Scaling ---
+	var slope_angle = current_up.angle_to(floor_norm)
+	var uphill_component = -flat_move_dir.dot(floor_norm)
+
+	var grade_speed_mult = 1.0
+	if on_floor and flat_move_dir != Vector3.ZERO:
+		if uphill_component > 0.001:
+			# Uphill: forward progress relates to steepness of the grade (steeper = slower, never trapped)
+			var sin_slope = sin(slope_angle)
+			grade_speed_mult = clampf(1.0 - (sin_slope * uphill_component * 0.75), 0.20, 1.0)
+		elif uphill_component < -0.001:
+			# Downhill: slight natural acceleration
+			var sin_slope = sin(slope_angle)
+			grade_speed_mult = clampf(1.0 + (sin_slope * (-uphill_component) * 0.15), 1.0, 1.20)
+
+	var effective_speed = move_speed * grade_speed_mult
+	var target_v = surface_move_dir * (effective_speed * input_len)
+	var accel = acceleration if on_floor else air_control
+	velocity = velocity.lerp(target_v, accel * delta)
+
+	# Vertical gravity and smooth surface adhesion
+	if not on_floor:
+		var v_up = velocity.dot(current_up) - current_gravity * delta
+		var v_planar = velocity - current_up * velocity.dot(current_up)
+		velocity = v_planar + current_up * v_up
+	else:
+		# Smooth ground contact
+		var v_up = velocity.dot(current_up)
+		if v_up > 0.0:
+			velocity -= current_up * (v_up * minf(10.0 * delta, 1.0))
+		else:
+			velocity -= current_up * (0.5 * delta)
 
 	# Jump handling
 	if jump_requested:
 		jump_requested = false
-		if is_on_floor():
-			v_up = jump_velocity
-
-	velocity = v_tangent + current_up * v_up
+		if on_floor:
+			velocity += current_up * jump_velocity
 
 func _process_flying_movement(delta: float) -> void:
 	jump_requested = false
