@@ -2,8 +2,9 @@
 class_name ReferenceObjects
 extends Node3D
 
-@export var cylinder_radius: float = 80.0
-@export var cylinder_length: float = 300.0
+@export_category("Cylinder Dimensions (8 km x 8 km)")
+@export var cylinder_radius: float = 4000.0
+@export var cylinder_length: float = 8000.0
 @export var num_scattered_balls: int = 40
 @export var spawn_ring_markers: bool = true
 @export var spawn_dynamic_balls: bool = true
@@ -14,6 +15,12 @@ func _ready() -> void:
 		child.queue_free()
 
 	spawn_all_markers()
+
+func _get_terrain_elevation(theta: float, z: float) -> float:
+	var cyl_world = get_parent().get_node_or_null("CylinderWorld") if get_parent() else null
+	if cyl_world and cyl_world.has_method("get_elevation_at"):
+		return cyl_world.get_elevation_at(theta, z)
+	return 0.0
 
 func spawn_all_markers() -> void:
 	if spawn_ring_markers:
@@ -31,12 +38,12 @@ func _create_sphere_material(color: Color, roughness: float = 0.3, metallic: flo
 	if emission != Color.BLACK:
 		mat.emission_enabled = true
 		mat.emission = emission
-		mat.emission_energy_multiplier = 1.0
+		mat.emission_energy_multiplier = 1.5
 	return mat
 
 func _spawn_reference_rings() -> void:
-	# Create rings of spheres along Z to mark distance and angle
-	var z_positions = [-100.0, -50.0, 0.0, 50.0, 100.0]
+	# Rings of spheres along Z to mark distance and angle in the 8 km cylinder
+	var z_positions = [-3000.0, -1500.0, 0.0, 1500.0, 3000.0]
 	var ring_colors = [
 		Color(0.95, 0.25, 0.25), # Red
 		Color(0.25, 0.85, 0.35), # Green
@@ -48,14 +55,15 @@ func _spawn_reference_rings() -> void:
 		Color(0.95, 0.95, 0.95)  # White
 	]
 
-	var r_ball = 1.6
+	var r_ball = 25.0
 	for z in z_positions:
 		for i in range(8):
 			if is_equal_approx(z, 0.0) and i == 6:
-				continue # Keep player spawn area at z=0, deg 270 completely clear
+				continue # Keep player spawn area at z=0, deg 270 clear
 			var theta = float(i) * (TAU / 8.0)
 			var col = ring_colors[i]
-			var dist = cylinder_radius - r_ball
+			var elev = _get_terrain_elevation(theta, z)
+			var dist = cylinder_radius - elev - r_ball
 			var pos = Vector3(dist * cos(theta), dist * sin(theta), z)
 
 			var body = StaticBody3D.new()
@@ -67,7 +75,7 @@ func _spawn_reference_rings() -> void:
 			sphere_mesh.radius = r_ball
 			sphere_mesh.height = r_ball * 2.0
 			mesh_inst.mesh = sphere_mesh
-			mesh_inst.material_override = _create_sphere_material(col, 0.25, 0.3, col * 0.15)
+			mesh_inst.material_override = _create_sphere_material(col, 0.25, 0.3, col * 0.25)
 			body.add_child(mesh_inst)
 
 			var col_shape = CollisionShape3D.new()
@@ -79,12 +87,12 @@ func _spawn_reference_rings() -> void:
 			add_child(body)
 
 func _spawn_landmark_spheres() -> void:
-	# Major landmark spheres - large navigation anchors
+	# Major landmark beacons across the 8 km landscape
 	var landmarks = [
-		{"theta": 0.0, "z": -60.0, "radius": 4.5, "color": Color(0.98, 0.3, 0.1), "name": "Alpha_Sphere"},
-		{"theta": PI * 0.5, "z": 60.0, "radius": 5.0, "color": Color(0.1, 0.7, 0.95), "name": "Beta_Sphere"},
-		{"theta": PI, "z": -30.0, "radius": 4.0, "color": Color(0.9, 0.8, 0.1), "name": "Gamma_Sphere"},
-		{"theta": PI * 1.5, "z": 30.0, "radius": 4.5, "color": Color(0.7, 0.2, 0.9), "name": "Delta_Sphere"},
+		{"theta": 0.0, "z": -1800.0, "radius": 60.0, "color": Color(0.98, 0.3, 0.1), "name": "Alpha_Sphere"},
+		{"theta": PI * 0.5, "z": 1800.0, "radius": 70.0, "color": Color(0.1, 0.7, 0.95), "name": "Beta_Sphere"},
+		{"theta": PI, "z": -900.0, "radius": 55.0, "color": Color(0.9, 0.8, 0.1), "name": "Gamma_Sphere"},
+		{"theta": PI * 1.5, "z": 900.0, "radius": 65.0, "color": Color(0.7, 0.2, 0.9), "name": "Delta_Sphere"},
 	]
 
 	for lm in landmarks:
@@ -93,7 +101,8 @@ func _spawn_landmark_spheres() -> void:
 		var z: float = lm["z"]
 		var col: Color = lm["color"]
 
-		var dist = cylinder_radius - r_ball
+		var elev = _get_terrain_elevation(theta, z)
+		var dist = cylinder_radius - elev - r_ball
 		var pos = Vector3(dist * cos(theta), dist * sin(theta), z)
 
 		var body = StaticBody3D.new()
@@ -105,7 +114,7 @@ func _spawn_landmark_spheres() -> void:
 		sphere_mesh.radius = r_ball
 		sphere_mesh.height = r_ball * 2.0
 		mesh_inst.mesh = sphere_mesh
-		mesh_inst.material_override = _create_sphere_material(col, 0.2, 0.6, col * 0.3)
+		mesh_inst.material_override = _create_sphere_material(col, 0.2, 0.6, col * 0.4)
 		body.add_child(mesh_inst)
 
 		var col_shape = CollisionShape3D.new()
@@ -117,7 +126,6 @@ func _spawn_landmark_spheres() -> void:
 		add_child(body)
 
 func _spawn_scattered_spheres() -> void:
-	# Pseudo-random but deterministic placement of scattered spheres
 	var rng = RandomNumberGenerator.new()
 	rng.seed = 42
 
@@ -129,19 +137,20 @@ func _spawn_scattered_spheres() -> void:
 		Color(0.75, 0.35, 0.85),
 		Color(0.95, 0.95, 0.35),
 		Color(0.20, 0.40, 0.85),
-		Color(0.85, 0.85, 0.88), # Pearl
-		Color(0.25, 0.25, 0.28)  # Obsidian
+		Color(0.85, 0.85, 0.88),
+		Color(0.25, 0.25, 0.28)
 	]
 
-	var half_len = (cylinder_length * 0.5) - 20.0
+	var half_len = (cylinder_length * 0.5) - 300.0
 
 	for i in range(num_scattered_balls):
 		var theta = rng.randf_range(0, TAU)
 		var z = rng.randf_range(-half_len, half_len)
-		var r_ball = rng.randf_range(0.8, 2.8)
+		var r_ball = rng.randf_range(15.0, 35.0)
 		var col = palette[rng.randi() % palette.size()]
 
-		var dist = cylinder_radius - r_ball
+		var elev = _get_terrain_elevation(theta, z)
+		var dist = cylinder_radius - elev - r_ball
 		var pos = Vector3(dist * cos(theta), dist * sin(theta), z)
 
 		var body = StaticBody3D.new()
@@ -165,20 +174,20 @@ func _spawn_scattered_spheres() -> void:
 		add_child(body)
 
 func _spawn_interactive_physics_balls() -> void:
-	# Add a cluster of dynamic physics balls safely ahead of spawn
-	# Spawn near bottom (theta = -PI/2, i.e. x=0, y=-radius)
+	# Add physics balls safely ahead of spawn at z ≈ -45m
 	var spawn_z_start = -45.0
 	for i in range(6):
-		var r_ball = 1.0
-		var theta = -PI * 0.5 + float(i - 2.5) * 0.05
-		var z = spawn_z_start + float(i) * 3.5
-		var dist = cylinder_radius - r_ball - 0.5
+		var r_ball = 3.0
+		var theta = -PI * 0.5 + float(i - 2.5) * 0.005
+		var z = spawn_z_start + float(i) * 8.0
+		var elev = _get_terrain_elevation(theta, z)
+		var dist = cylinder_radius - elev - r_ball - 0.5
 		var pos = Vector3(dist * cos(theta), dist * sin(theta), z)
 
 		var rb = RigidBody3D.new()
 		rb.name = "DynamicBall_%d" % i
 		rb.position = pos
-		rb.mass = 5.0
+		rb.mass = 20.0
 		rb.custom_integrator = true
 
 		var script_code = load("res://scripts/cylinder_rigidbody.gd")
@@ -192,7 +201,7 @@ func _spawn_interactive_physics_balls() -> void:
 		sphere_mesh.height = r_ball * 2.0
 		mesh_inst.mesh = sphere_mesh
 		var col = Color(1.0, 0.4, 0.1) if i % 2 == 0 else Color(0.1, 0.8, 1.0)
-		mesh_inst.material_override = _create_sphere_material(col, 0.2, 0.5, col * 0.2)
+		mesh_inst.material_override = _create_sphere_material(col, 0.2, 0.5, col * 0.3)
 		rb.add_child(mesh_inst)
 
 		var col_shape = CollisionShape3D.new()

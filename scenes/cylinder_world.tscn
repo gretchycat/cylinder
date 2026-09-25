@@ -2,5 +2,5 @@
 
 [ext_resource type="Script" path="res://scripts/cylinder_generator.gd" id="1_cylinder"]
 
-[node name="CylinderWorld" type="Node3D"]
+[node name="CylinderWorld" type="Node3D" groups=["cylinder_world"]]
 script = ExtResource("1_cylinder")

@@ -10,46 +10,46 @@ enum LightingPreset {
 	WARM_SUNSET
 }
 
-@export_category("Dimensions")
-@export var bar_length: float = 300.0:
+@export_category("Dimensions (8 km Scale)")
+@export var bar_length: float = 8000.0:
 	set(val):
 		bar_length = max(val, 10.0)
 		if is_inside_tree():
 			rebuild_light_bar()
 
-@export var cylinder_radius: float = 80.0:
+@export var cylinder_radius: float = 4000.0:
 	set(val):
 		cylinder_radius = max(val, 5.0)
 		if is_inside_tree():
 			_update_light_ranges()
 
-@export var num_segments: int = 12:
+@export var num_segments: int = 16:
 	set(val):
 		num_segments = clampi(val, 2, 32)
 		if is_inside_tree():
 			rebuild_light_bar()
 
-@export var bar_radius: float = 1.2:
+@export var bar_radius: float = 35.0:
 	set(val):
-		bar_radius = max(val, 0.1)
+		bar_radius = max(val, 0.5)
 		if is_inside_tree():
 			rebuild_light_bar()
 
-@export_category("Lighting Control")
-@export var preset: LightingPreset = LightingPreset.GRADIENT:
+@export_category("Lighting Control - Max On Full Illumination")
+@export var preset: LightingPreset = LightingPreset.UNIFORM:
 	set(val):
 		preset = val
 		_apply_current_preset()
 
-@export var global_intensity_multiplier: float = 1.8:
+@export var global_intensity_multiplier: float = 3.5:
 	set(val):
 		global_intensity_multiplier = max(val, 0.0)
 		_refresh_all_segments()
 
-@export var start_color: Color = Color(1.0, 0.85, 0.65) # Warm dawn/sunrise
-@export var end_color: Color = Color(0.45, 0.7, 1.0)     # Cool daylight/dusk
-@export var start_intensity: float = 2.0
-@export var end_intensity: float = 1.2
+@export var start_color: Color = Color(1.0, 0.98, 0.95) # Clean daylight
+@export var end_color: Color = Color(0.96, 0.98, 1.0)
+@export var start_intensity: float = 3.5
+@export var end_intensity: float = 3.5
 
 @export var wave_speed: float = 0.5
 @export var enable_shadows: bool = false:
@@ -85,7 +85,7 @@ func rebuild_light_bar() -> void:
 	spine_mesh.top_radius = bar_radius * 0.45
 	spine_mesh.bottom_radius = bar_radius * 0.45
 	spine_mesh.height = bar_length * 1.02
-	spine_mesh.radial_segments = 16
+	spine_mesh.radial_segments = 24
 
 	var spine_mat = StandardMaterial3D.new()
 	spine_mat.albedo_color = Color(0.12, 0.13, 0.16)
@@ -96,7 +96,6 @@ func rebuild_light_bar() -> void:
 	truss_node.name = "CentralTruss"
 	truss_node.mesh = spine_mesh
 	truss_node.material_override = spine_mat
-	# Godot CylinderMesh is aligned along Y axis by default; rotate 90 deg around X to align with Z axis
 	truss_node.rotation_degrees = Vector3(90, 0, 0)
 	add_child(truss_node)
 
@@ -105,22 +104,21 @@ func rebuild_light_bar() -> void:
 	var half_len = bar_length * 0.5
 
 	for i in range(num_segments):
-		# Z center for segment i
 		var z_pos = -half_len + (float(i) + 0.5) * segment_length
 
 		# Glowing tube segment
 		var tube_mesh = CylinderMesh.new()
 		tube_mesh.top_radius = bar_radius
 		tube_mesh.bottom_radius = bar_radius
-		tube_mesh.height = segment_length * 0.92 # Small gap between segments for visual modularity
-		tube_mesh.radial_segments = 24
+		tube_mesh.height = segment_length * 0.94
+		tube_mesh.radial_segments = 32
 
 		var seg_mat = StandardMaterial3D.new()
 		seg_mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 		seg_mat.albedo_color = Color.WHITE
 		seg_mat.emission_enabled = true
 		seg_mat.emission = Color.WHITE
-		seg_mat.emission_energy_multiplier = 2.0
+		seg_mat.emission_energy_multiplier = 4.0
 
 		var seg_mesh_inst = MeshInstance3D.new()
 		seg_mesh_inst.name = "SegmentMesh_%d" % i
@@ -131,12 +129,12 @@ func rebuild_light_bar() -> void:
 		add_child(seg_mesh_inst)
 		segment_nodes.append(seg_mesh_inst)
 
-		# OmniLight3D emitter at this segment
+		# OmniLight3D emitter at this segment (broad illumination across 4000m radius)
 		var light = OmniLight3D.new()
 		light.name = "SegmentLight_%d" % i
 		light.position = Vector3(0, 0, z_pos)
-		light.omni_range = cylinder_radius * 1.55
-		light.omni_attenuation = 1.1
+		light.omni_range = cylinder_radius * 2.0
+		light.omni_attenuation = 0.75
 		light.shadow_enabled = enable_shadows
 		add_child(light)
 		light_nodes.append(light)
@@ -169,9 +167,9 @@ func _apply_current_preset() -> void:
 				segment_intensities[i] = lerpf(start_intensity, end_intensity, t)
 
 		LightingPreset.WARM_SUNSET:
-			var sunset_start = Color(1.0, 0.45, 0.15) # Intense amber/orange
-			var sunset_mid = Color(1.0, 0.85, 0.5)   # Golden center
-			var sunset_end = Color(0.2, 0.4, 0.9)    # Twilight deep blue
+			var sunset_start = Color(1.0, 0.45, 0.15)
+			var sunset_mid = Color(1.0, 0.85, 0.5)
+			var sunset_end = Color(0.2, 0.4, 0.9)
 			for i in range(num_segments):
 				var t = float(i) / max(float(num_segments - 1), 1.0)
 				var col: Color
@@ -180,7 +178,7 @@ func _apply_current_preset() -> void:
 				else:
 					col = sunset_mid.lerp(sunset_end, (t - 0.5) * 2.0)
 				segment_colors[i] = col
-				segment_intensities[i] = lerpf(2.2, 1.4, t)
+				segment_intensities[i] = lerpf(3.5, 2.0, t)
 
 		LightingPreset.NEON_AURORA, LightingPreset.DAY_NIGHT_WAVE:
 			_update_animated_wave()
@@ -194,17 +192,15 @@ func _update_animated_wave() -> void:
 		var phase = t * TAU * 1.5 - wave_time * TAU
 
 		if preset == LightingPreset.DAY_NIGHT_WAVE:
-			# Shifting wave of daylight down the cylinder
 			var wave_factor = (sin(phase) + 1.0) * 0.5
 			var col = start_color.lerp(end_color, wave_factor)
-			var intensity = lerpf(0.5, 2.5, wave_factor)
+			var intensity = lerpf(1.0, 4.0, wave_factor)
 			segment_colors[i] = col
 			segment_intensities[i] = intensity
 		elif preset == LightingPreset.NEON_AURORA:
-			# Shifting neon spectrum
 			var hue = fposmod(t + wave_time * 0.2, 1.0)
 			var col = Color.from_hsv(hue, 0.8, 1.0)
-			var intensity = 1.5 + 0.8 * sin(phase)
+			var intensity = 2.0 + 1.2 * sin(phase)
 			segment_colors[i] = col
 			segment_intensities[i] = intensity
 
@@ -231,7 +227,7 @@ func _refresh_all_segments() -> void:
 
 func _update_light_ranges() -> void:
 	for light in light_nodes:
-		light.omni_range = cylinder_radius * 1.55
+		light.omni_range = cylinder_radius * 2.0
 
 func _update_shadows() -> void:
 	for light in light_nodes:

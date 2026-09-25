@@ -156,11 +156,16 @@ func _on_telemetry_updated(data: Dictionary) -> void:
 	var correction_rate: float = data.get("wobble_correction_rate", 16.0)
 	var pitch_deg: float = data.get("pitch_deg", 0.0)
 
+	var is_in_water: bool = data.get("is_in_water", false)
+
 	if telemetry_label:
 		var text = ""
 		text += "CENTRIFUGAL GRAVITY: %4.2f G  (%4.1f m/s²)\n" % [grav_g, grav_ms2]
-		text += "AXIS DISTANCE:       %5.1f m / %4.1f m\n" % [dist_axis, player.cylinder_radius if player else 80.0]
-		text += "SURFACE ALTITUDE:    %5.1f m\n" % dist_surface
+		text += "AXIS DISTANCE:       %5.1f m / %4.1f m\n" % [dist_axis, player.cylinder_radius if player else 4000.0]
+		if is_in_water:
+			text += "SURFACE ALTITUDE:    %5.1f m [WATER BASIN]\n" % dist_surface
+		else:
+			text += "SURFACE ALTITUDE:    %5.1f m\n" % dist_surface
 		text += "VELOCITY:            %5.1f m/s\n" % speed
 		text += "COORDINATES:         Angle: %5.1f° | Z: %5.1f m" % [ring_deg, pos_z]
 		telemetry_label.text = text

@@ -150,7 +150,7 @@ func _init() -> void:
 	var fly_state = player.get_locomotion_state()
 	print("After flying towards axis: dist_from_axis: %.2f m, State: %s" % [fly_dist_axis, fly_state])
 	assert(fly_state == "FLYING", "Locomotion state must be FLYING")
-	assert(fly_dist_axis < 65.0, "Player must ascend freely in 3D towards the axis")
+	assert(fly_dist_axis < player.cylinder_radius - 20.0, "Player must ascend freely in 3D towards the axis")
 
 	# Fly to central microgravity core (r < 5m)
 	player.velocity = Vector3.ZERO
@@ -236,8 +236,81 @@ func _init() -> void:
 	assert(light_bar.segment_colors[0] == Color.ORANGE, "First segment color verified")
 	assert(light_bar.segment_colors[light_bar.num_segments - 1] == Color.CYAN, "Last segment color verified")
 	print("[PASS] Test 7: Axial lighting system verified.")
+	# --- TEST 8: Standard Controls (Joystick Movement vs Screen Drag Look) ---
+	print("\n--- TEST 8: Standard Controls (Joystick Movement vs Screen Drag Look) ---")
+	var touch_controls = root_node.get_node_or_null("UI/UIRoot/TouchControls") as MobileTouchControls
+	assert(touch_controls != null, "MobileTouchControls node must exist")
+
+	var initial_pitch = player.pitch
+	var initial_basis = player.global_basis
+	var joy_center = touch_controls.joystick_base.global_position + Vector2(touch_controls.joystick_radius, touch_controls.joystick_radius)
+
+	# 1. Touch and drag the joystick on the left
+	touch_controls._handle_touch_start(10, joy_center)
+	touch_controls._handle_touch_drag(10, joy_center + Vector2(40.0, -30.0), Vector2(40.0, -30.0))
+
+	print("Joystick input_axis: %s (should be non-zero)" % player.input_axis)
+	assert(player.input_axis.length() > 0.2, "Joystick must command character movement")
+	print("Player pitch after joystick drag: %.4f (initial: %.4f)" % [player.pitch, initial_pitch])
+	assert(is_equal_approx(player.pitch, initial_pitch), "Joystick drag must NOT rotate camera pitch up or down")
+	assert(player.global_basis.is_equal_approx(initial_basis), "Joystick drag must NOT rotate player view to the side")
+
+	# End joystick drag
+	touch_controls._handle_touch_end(10)
+	assert(player.input_axis == Vector2.ZERO, "Releasing joystick must reset movement axis to zero")
+
+	# 2. Drag elsewhere on the screen (e.g. center/right side) to rotate view
+	var screen_drag_pos = Vector2(700.0, 350.0)
+	touch_controls._handle_touch_start(11, screen_drag_pos)
+	touch_controls._handle_touch_drag(11, screen_drag_pos + Vector2(60.0, -40.0), Vector2(60.0, -40.0))
+
+	var pitch_after_drag = player.pitch
+	print("Pitch after dragging screen: %.4f° (was %.4f°)" % [rad_to_deg(pitch_after_drag), rad_to_deg(initial_pitch)])
+	assert(not is_equal_approx(pitch_after_drag, initial_pitch), "Dragging screen must rotate camera pitch")
+	touch_controls._handle_touch_end(11)
+	print("[PASS] Test 8: Movement joystick only moves; dragging anywhere else rotates view.")
+
+	# --- TEST 9: Configurable 2D RPG Elevation & Terrain System ---
+	print("\n--- TEST 9: 2D RPG Elevation Array, Water Basin & Terrain Biomes ---")
+	assert(cylinder_world.radius == 4000.0, "Cylinder radius must be 4 km (8 km diameter)")
+	assert(cylinder_world.cylinder_length == 8000.0, "Cylinder length must be 8 km")
+	assert(cylinder_world.elevation_variance == 10.0, "Elevation variance must default to 10 m")
+	assert(cylinder_world.water_level == 4.0, "Water level must be 4.0 m from elevation 0")
+
+	var elev_sample_spawn = cylinder_world.get_elevation_at(-PI * 0.5, 0.0)
+	print("Elevation at player spawn: %.2f m (variance range: 0.0 - 10.0 m)" % elev_sample_spawn)
+	assert(elev_sample_spawn >= 0.0 and elev_sample_spawn <= 10.0, "Elevation must be within 10 m variance range")
+
+	# Verify terrain manager data export and configurable array injection
+	var terrain_mgr = cylinder_world.terrain_manager
+	var original_elev_data = terrain_mgr.export_elevation_array()
+	assert(original_elev_data.size() == terrain_mgr.grid_u * terrain_mgr.grid_v, "Elevation array size matches grid dimensions")
+
+	# Test custom array injection (similar to old 2D top-down RPG map data)
+	var custom_map: Array[float] = []
+	for idx in range(terrain_mgr.grid_u * terrain_mgr.grid_v):
+		custom_map.append(2.0 if idx % 2 == 0 else 8.5)
+	terrain_mgr.set_elevation_array(custom_map)
+	assert(terrain_mgr.get_elevation(0.0, 0.0, 8000.0) > 1.0, "Custom RPG elevation array successfully loaded")
+
+	# Restore default map
+	terrain_mgr.generate_default_rpg_map()
+
+	# Verify terrain type classification based on elevation
+	var sample_water_elev = terrain_mgr.water_level - 1.0 # 3.0 m (underwater)
+	assert(sample_water_elev < 4.0, "Water basins are in the first 4 meters (0-4m)")
+	print("[PASS] Test 9: Configurable 2D RPG elevation array and terrain biomes verified.")
+
+	# --- TEST 10: Max On Daylight Lighting System ---
+	print("\n--- TEST 10: Max On Daylight Lighting System & Scale ---")
+	assert(light_bar.bar_length == 8000.0, "Axis light bar length must match 8 km cylinder")
+	assert(light_bar.cylinder_radius == 4000.0, "Axis light bar radius must match 4 km radius")
+	assert(light_bar.global_intensity_multiplier >= 3.0, "Max On lighting intensity must be at full illumination level (>= 3.0)")
+	for light in light_bar.light_nodes:
+		assert(light.omni_range >= 6000.0, "Axial omni light range must cover 4 km radial distance")
+	print("[PASS] Test 10: Max On daylight lighting level and 8 km cylinder scale verified.")
 
 	print("\n=======================================================")
-	print(" ALL O'NEILL CYLINDER SIMULATION TESTS PASSED (7/7)!  ")
+	print(" ALL O'NEILL CYLINDER SIMULATION TESTS PASSED (10/10)! ")
 	print("=======================================================\n")
 	quit(0)

@@ -3,18 +3,18 @@ extends CharacterBody3D
 
 signal telemetry_updated(data: Dictionary)
 
-@export_category("Cylinder Dimensions")
-@export var cylinder_radius: float = 80.0
-@export var cylinder_length: float = 300.0
+@export_category("Cylinder Dimensions (8 km x 8 km)")
+@export var cylinder_radius: float = 4000.0
+@export var cylinder_length: float = 8000.0
 
 @export_category("Movement & Gravity")
 @export var walk_speed: float = 8.0
-@export var sprint_speed: float = 15.0
-@export var fly_speed: float = 22.0
-@export var acceleration: float = 14.0
-@export var air_control: float = 4.0
+@export var sprint_speed: float = 20.0
+@export var fly_speed: float = 80.0
+@export var acceleration: float = 16.0
+@export var air_control: float = 5.0
 @export var base_gravity: float = 12.0
-@export var jump_velocity: float = 8.0
+@export var jump_velocity: float = 8.5
 @export var horizon_alignment_speed: float = 20.0
 
 @export_category("Wobble Dynamics")
@@ -49,28 +49,27 @@ var stride_phase: float = 0.0       # Phase for footstep roll sway
 var pitch: float = 0.0
 
 func _ready() -> void:
-	# Capture mouse by default on desktop
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	# Standard drag / touch controls: default mouse to visible so dragging anywhere on screen rotates
+	# and dragging the virtual joystick moves only
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
-	# If spawn position was not explicitly set, set to bottom of cylinder
-	if global_position.length_squared() < 1.0:
-		reset_to_spawn()
+	# Ensure camera far distance covers the 8 km cylinder
+	if camera:
+		camera.far = 25000.0
+
+	# Spawn accurately onto inner cylinder terrain
+	reset_to_spawn()
 
 func _input(event: InputEvent) -> void:
-	# Mouse look
+	# Traditional PC mouse look only active if mouse is explicitly captured
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		apply_look_input(Vector2(event.relative.x, event.relative.y) * mouse_sensitivity)
 
-	# Toggle mouse capture with ESC
-	if event.is_action_pressed("ui_cancel"):
+	# Toggle mouse capture with ESC or F1
+	if event.is_action_pressed("ui_cancel") or (event is InputEventKey and event.pressed and event.keycode == KEY_F1):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-	# Click into window to recapture mouse
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 	# Toggle fly mode
@@ -183,8 +182,6 @@ func _update_horizon_and_gravity(delta: float) -> void:
 	up_direction = global_basis.y
 
 	# --- Wobble Dynamics & Self-Righting to Perpendicular ---
-	# Natural frequency (stiffness) and damping ratio scale with local gravity:
-	# As gravity increases, restoring force and correction rate increase!
 	var omega_n = lerpf(wobble_frequency_min, wobble_frequency_max, gravity_factor)
 	var zeta = lerpf(wobble_damping_min, wobble_damping_max, gravity_factor)
 	var k_spring = omega_n * omega_n
@@ -197,10 +194,8 @@ func _update_horizon_and_gravity(delta: float) -> void:
 		var step_freq = 18.0 if is_sprinting else 11.5
 		stride_phase += step_freq * delta
 		var sway_amplitude = deg_to_rad(3.5 if is_sprinting else 1.6)
-		# Alternating stride roll excitation
 		stride_excitation = sin(stride_phase) * sway_amplitude * k_spring
 	else:
-		# Decay stride phase when stationary
 		stride_phase = lerpf(stride_phase, 0.0, 5.0 * delta)
 
 	# Harmonic oscillator: d2phi/dt2 = -k*phi - c*dphi/dt + excitation
@@ -259,21 +254,31 @@ func _process_flying_movement(delta: float) -> void:
 
 	var target_vel = fly_dir * fly_speed
 	if is_sprinting:
-		target_vel *= 1.6
+		target_vel *= 2.5 # High-speed flight across 8km cylinder
 
 	velocity = velocity.lerp(target_vel, 8.0 * delta)
 
 func toggle_fly_mode() -> void:
 	is_flying = not is_flying
 	if is_flying:
-		# Nullify downward ground-sticking impulse
 		var v_up = velocity.dot(global_basis.y)
 		if v_up < 0.0:
 			velocity -= global_basis.y * v_up
 
 func reset_to_spawn() -> void:
 	# Bottom of cylinder at z = 0, facing -Z
-	var spawn_r = cylinder_radius - 1.2
+	var surface_r = cylinder_radius
+	var cyl_world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
+	if not cyl_world and get_parent():
+		cyl_world = get_parent().get_node_or_null("CylinderWorld")
+	if cyl_world and cyl_world.has_method("get_surface_radius_at"):
+		surface_r = cyl_world.get_surface_radius_at(-PI * 0.5, 0.0)
+	elif cyl_world and cyl_world.has_method("get_elevation_at"):
+		surface_r = cylinder_radius - cyl_world.get_elevation_at(-PI * 0.5, 0.0)
+
+	# Capsule has height 1.8m (half-height 0.9m)
+	var spawn_r = surface_r - 0.92
+
 	global_position = Vector3(0.0, -spawn_r, 0.0)
 	global_basis = Basis.IDENTITY # At (0, -R, 0), local Up is +Y
 	pitch = 0.0
@@ -295,10 +300,13 @@ func _emit_telemetry() -> void:
 	var omega_n = lerpf(wobble_frequency_min, wobble_frequency_max, grav_ratio)
 	var correction_rate = omega_n
 
+	var is_in_water = dist_surface < 4.0
+
 	var telemetry = {
 		"is_flying": is_flying,
 		"is_sprinting": is_sprinting,
 		"is_on_floor": is_on_floor(),
+		"is_in_water": is_in_water,
 		"locomotion_state": get_locomotion_state(),
 		"gravity_ms2": grav_mag,
 		"gravity_g": grav_mag / 9.80665,

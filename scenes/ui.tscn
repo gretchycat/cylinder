@@ -100,7 +100,7 @@ layout_mode = 2
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "GRAVITY: 1.00 G
-DISTANCE TO AXIS: 80.0 m
+DISTANCE TO AXIS: 4000.0 m
 ALTITUDE: 0.0 m
 VELOCITY: 0.0 m/s"
 
@@ -143,18 +143,18 @@ anchor_right = 1.0
 offset_left = -340.0
 offset_top = 20.0
 offset_right = -20.0
-offset_bottom = 135.0
+offset_bottom = 145.0
 grow_horizontal = 0
 theme_override_colors/font_color = Color(0.8, 0.85, 0.9, 0.75)
 theme_override_font_sizes/font_size = 11
-text = "CROSS-PLATFORM CONTROLS:
-WASD / Virtual Stick : Move along cylinder surface
-Space : Jump / Ascend
-Shift : Sprint / Run
+text = "CONTROLS:
+Left Joystick / WASD : Move (No camera turn)
+Drag Anywhere Else : Rotate camera view
+Space : Jump / Ascend | Shift : Sprint
 F : Toggle 3D Fly Mode (Microgravity exploration)
 Q/E or C/Space : Fly Down / Up
-T / Wobble Button : Perturb Horizon Roll (Test Self-Righting)
-R : Reset to Spawn | ESC : Mouse Capture"
+T / Wobble Button : Perturb Horizon Roll
+R : Reset to Spawn"
 horizontal_alignment = 2
 
 [node name="ToggleControlsButton" type="Button" parent="UIRoot"]
@@ -319,6 +319,72 @@ offset_right = 95.0
 offset_bottom = 95.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_joyknob")
+
+[node name="CrosshairN" type="Label" parent="UIRoot/TouchControls/JoystickBase"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -10.0
+offset_top = 6.0
+offset_right = 10.0
+offset_bottom = 26.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.4, 0.7, 0.95, 0.6)
+theme_override_font_sizes/font_size = 11
+text = "▲"
+horizontal_alignment = 1
+
+[node name="CrosshairS" type="Label" parent="UIRoot/TouchControls/JoystickBase"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -10.0
+offset_top = -26.0
+offset_right = 10.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.4, 0.7, 0.95, 0.6)
+theme_override_font_sizes/font_size = 11
+text = "▼"
+horizontal_alignment = 1
+
+[node name="CrosshairW" type="Label" parent="UIRoot/TouchControls/JoystickBase"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 6.0
+offset_top = -10.0
+offset_right = 26.0
+offset_bottom = 10.0
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.4, 0.7, 0.95, 0.6)
+theme_override_font_sizes/font_size = 11
+text = "◄"
+horizontal_alignment = 1
+
+[node name="CrosshairE" type="Label" parent="UIRoot/TouchControls/JoystickBase"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -26.0
+offset_top = -10.0
+offset_right = -6.0
+offset_bottom = 10.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.4, 0.7, 0.95, 0.6)
+theme_override_font_sizes/font_size = 11
+text = "►"
+horizontal_alignment = 1
 
 [node name="ActionButtons" type="Control" parent="UIRoot/TouchControls"]
 layout_mode = 1

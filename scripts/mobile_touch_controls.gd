@@ -12,9 +12,11 @@ var joystick_touch_id: int = -1
 var joystick_center: Vector2 = Vector2.ZERO
 var joystick_knob_pos: Vector2 = Vector2.ZERO
 var joystick_active: bool = false
+var is_mouse_joystick: bool = false
 
-# Touch look state
+# Touch / Drag look state
 var look_touch_id: int = -1
+var is_mouse_looking: bool = false
 var last_look_pos: Vector2 = Vector2.ZERO
 
 @onready var joystick_base: Control = $JoystickBase
@@ -53,6 +55,7 @@ func _input(event: InputEvent) -> void:
 	if not player:
 		return
 
+	# 1. Touch Events (Mobile or emulated touch)
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			_handle_touch_start(event.index, event.position)
@@ -62,43 +65,75 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenDrag:
 		_handle_touch_drag(event.index, event.position, event.relative)
 
+	# 2. Mouse Drag Events (Desktop standard drag-to-look / drag-joystick)
+	elif event is InputEventMouseButton and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_handle_mouse_press(event.position)
+			else:
+				_handle_mouse_release()
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			if event.pressed:
+				if not _is_pos_inside_ui(event.position):
+					is_mouse_looking = true
+					last_look_pos = event.position
+			else:
+				is_mouse_looking = false
+
+	elif event is InputEventMouseMotion and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		_handle_mouse_motion(event.position, event.relative)
+
+func _is_pos_inside_joystick_zone(pos: Vector2) -> bool:
+	if not joystick_base:
+		return false
+	var base_rect = joystick_base.get_global_rect()
+	# Generous hit area around joystick base (expanded by 35 pixels)
+	var active_rect = base_rect.grow(35.0 * ui_scale)
+	return active_rect.has_point(pos)
+
+func _is_pos_inside_ui(pos: Vector2) -> bool:
+	if _is_pos_inside_action_buttons(pos):
+		return true
+
+	# Control panel or tuning settings
+	var ctrl_panel = get_tree().root.find_child("ControlPanel", true, false) as Control
+	if ctrl_panel and ctrl_panel.visible and ctrl_panel.get_global_rect().has_point(pos):
+		return true
+
+	var toggle_btn = get_tree().root.find_child("ToggleControlsButton", true, false) as Control
+	if toggle_btn and toggle_btn.get_global_rect().has_point(pos):
+		return true
+
+	return false
+
 func _handle_touch_start(id: int, pos: Vector2) -> void:
-	var screen_width = get_viewport_rect().size.x
+	if _is_pos_inside_ui(pos):
+		return
 
-	# Left side of screen: Virtual Joystick
-	if pos.x < screen_width * 0.45 and joystick_touch_id == -1:
-		joystick_touch_id = id
-		joystick_active = true
-		joystick_center = pos
-		joystick_knob_pos = pos
-		if joystick_base:
-			var scaled_rad = joystick_radius * ui_scale
-			joystick_base.global_position = pos - Vector2(scaled_rad, scaled_rad)
-			joystick_base.visible = true
-			if joystick_knob:
-				joystick_knob.position = Vector2(joystick_radius, joystick_radius) - joystick_knob.size * 0.5
+	# If touch is in the bottom-left joystick zone: Virtual Joystick MOVEMENT ONLY
+	if _is_pos_inside_joystick_zone(pos):
+		if joystick_touch_id == -1:
+			joystick_touch_id = id
+			joystick_active = true
+			if joystick_base:
+				var center_local = Vector2(joystick_radius * ui_scale, joystick_radius * ui_scale)
+				joystick_center = joystick_base.global_position + center_local
+			else:
+				joystick_center = pos
+			_update_joystick_knob(pos)
+			# NOTE: Never triggers look rotation!
 
-	# Right side of screen: Camera Look
-	elif pos.x >= screen_width * 0.45 and look_touch_id == -1:
-		if not _is_pos_inside_action_buttons(pos):
-			look_touch_id = id
-			last_look_pos = pos
+	# Dragging ANYWHERE ELSE on the screen: Camera Look Rotation
+	elif look_touch_id == -1:
+		look_touch_id = id
+		last_look_pos = pos
 
 func _handle_touch_drag(id: int, pos: Vector2, rel: Vector2) -> void:
+	# Virtual joystick drag: moves player, NEVER rotates view
 	if id == joystick_touch_id and joystick_active:
-		var offset = pos - joystick_center
-		var active_radius = joystick_radius * ui_scale
-		var dist = offset.length()
-		if dist > active_radius:
-			offset = offset.normalized() * active_radius
-		joystick_knob_pos = joystick_center + offset
+		_update_joystick_knob(pos)
 
-		if joystick_knob:
-			joystick_knob.position = Vector2(joystick_radius, joystick_radius) + (offset / ui_scale) - joystick_knob.size * 0.5
-
-		var input_vec = offset / active_radius
-		player.input_axis = Vector2(input_vec.x, input_vec.y)
-
+	# Screen drag anywhere else: rotates camera view
 	elif id == look_touch_id:
 		var look_delta = rel * touch_look_sensitivity
 		player.apply_look_input(look_delta)
@@ -109,8 +144,54 @@ func _handle_touch_end(id: int) -> void:
 	elif id == look_touch_id:
 		look_touch_id = -1
 
+func _handle_mouse_press(pos: Vector2) -> void:
+	if _is_pos_inside_ui(pos):
+		return
+
+	if _is_pos_inside_joystick_zone(pos):
+		is_mouse_joystick = true
+		joystick_active = true
+		if joystick_base:
+			var center_local = Vector2(joystick_radius * ui_scale, joystick_radius * ui_scale)
+			joystick_center = joystick_base.global_position + center_local
+		else:
+			joystick_center = pos
+		_update_joystick_knob(pos)
+	else:
+		is_mouse_looking = true
+		last_look_pos = pos
+
+func _handle_mouse_motion(pos: Vector2, rel: Vector2) -> void:
+	if is_mouse_joystick and joystick_active:
+		_update_joystick_knob(pos)
+	elif is_mouse_looking:
+		var look_delta = rel * touch_look_sensitivity
+		player.apply_look_input(look_delta)
+
+func _handle_mouse_release() -> void:
+	if is_mouse_joystick:
+		is_mouse_joystick = false
+		_reset_joystick()
+	is_mouse_looking = false
+
+func _update_joystick_knob(pos: Vector2) -> void:
+	var offset = pos - joystick_center
+	var active_radius = joystick_radius * ui_scale
+	var dist = offset.length()
+	if dist > active_radius:
+		offset = offset.normalized() * active_radius
+	joystick_knob_pos = joystick_center + offset
+
+	if joystick_knob:
+		joystick_knob.position = Vector2(joystick_radius, joystick_radius) + (offset / ui_scale) - joystick_knob.size * 0.5
+
+	var input_vec = offset / max(active_radius, 1.0)
+	# Joystick only sets movement axis - NO rotation is performed!
+	player.input_axis = Vector2(input_vec.x, input_vec.y)
+
 func _reset_joystick() -> void:
 	joystick_touch_id = -1
+	is_mouse_joystick = false
 	joystick_active = false
 	if player:
 		player.input_axis = Vector2.ZERO

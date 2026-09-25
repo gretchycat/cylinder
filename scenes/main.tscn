@@ -8,19 +8,31 @@
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
-background_color = Color(0.01, 0.012, 0.018, 1)
+background_color = Color(0.02, 0.03, 0.05, 1)
 ambient_light_source = 2
-ambient_light_color = Color(0.12, 0.14, 0.18, 1)
-ambient_light_energy = 0.45
+ambient_light_color = Color(0.92, 0.95, 1, 1)
+ambient_light_energy = 1.0
 tonemap_mode = 2
 glow_enabled = true
-glow_intensity = 0.85
-glow_bloom = 0.2
+glow_intensity = 0.6
+glow_bloom = 0.15
 
 [node name="Main" type="Node3D"]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_1")
+
+[node name="DaylightSunA" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0)
+light_color = Color(1, 0.98, 0.95, 1)
+light_energy = 1.8
+directional_shadow_max_distance = 6000.0
+
+[node name="DaylightSunB" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+light_color = Color(0.96, 0.98, 1, 1)
+light_energy = 1.8
+directional_shadow_max_distance = 6000.0
 
 [node name="CylinderWorld" parent="." instance=ExtResource("1_cylinder")]
 
@@ -30,6 +42,6 @@ environment = SubResource("Environment_1")
 script = ExtResource("3_markers")
 
 [node name="Player" parent="." instance=ExtResource("4_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -78.8, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3992, 0)
 
 [node name="UI" parent="." instance=ExtResource("5_ui")]
