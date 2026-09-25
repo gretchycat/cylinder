@@ -104,17 +104,16 @@ void fragment() {
 		vec4 axial_light = texture(axial_light_lut, vec2(t_z, 0.5));
 		axial_col = axial_light.rgb;
 		axial_lum = clamp(axial_light.a, 0.0, 1.5);
-		target_air_color = air_color.rgb * mix(vec3(1.0), axial_col, 0.65) * mix(0.10, 1.00, clamp(axial_lum, 0.0, 1.0));
+		target_air_color = air_color.rgb * mix(vec3(1.0), axial_col, 0.65);
 	}
 
 	// Add brilliant continuous specular reflection line along the cylinder rotational axis
 	final_color += axial_col * (axis_reflection_glint * 1.8 * clamp(axial_lum, 0.0, 1.0));
 
-	// Atmospheric aerial perspective: tint distant views across the 8 km cylinder
+	// Atmospheric aerial perspective across the cylinder (day and night)
 	float air_factor = clamp((dist_to_cam - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
 	float air_scatter = 1.0 - exp(-air_factor * 2.8);
-	float dark_transparency_mult = mix(0.12, 1.0, clamp(axial_light_enabled > 0.5 ? texture(axial_light_lut, vec2(clamp((world_pos.z + cylinder_length * 0.5) / cylinder_length, 0.0, 1.0), 0.5)).a : 1.0, 0.0, 1.0));
-	float fog_blend = clamp(air_scatter * air_density * dark_transparency_mult, 0.0, 1.0);
+	float fog_blend = clamp(air_scatter * air_density, 0.0, 1.0);
 	final_color = mix(final_color, target_air_color, fog_blend);
 	final_alpha = mix(final_alpha, 0.98, fog_blend * 0.7);
 

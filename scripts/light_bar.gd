@@ -521,12 +521,12 @@ func get_effective_fog_properties() -> Dictionary:
 	var light_b_ratio = clampf(effective_light_col.b / 0.95, 0.0, 3.0)
 
 	var fog_col = Color(
-		clampf(0.52 * light_r_ratio, 0.0, 1.0),
-		clampf(0.72 * light_g_ratio, 0.0, 1.0),
-		clampf(0.88 * light_b_ratio, 0.0, 1.0),
+		clampf(0.52 * light_r_ratio, 0.05, 1.0),
+		clampf(0.72 * light_g_ratio, 0.05, 1.0),
+		clampf(0.88 * light_b_ratio, 0.08, 1.0),
 		1.0
 	)
-	var fog_energy = 1.0 * intensity_norm
+	var fog_energy = clampf(lerpf(0.35, 1.0, intensity_norm), 0.35, 1.0)
 
 	return {
 		"fog_color": fog_col,
@@ -549,30 +549,14 @@ func _sync_fog_and_atmosphere() -> void:
 		var env = world_environment.environment
 		env.fog_light_color = fog_col
 		env.fog_light_energy = fog_energy
-
-		# The fog is more transparent as the light is darker:
-		# In daylight (intensity_norm = 1.0): curve = 1.1, begin = 200.0m
-		# In darkness (intensity_norm = 0.0): curve = 2.8, begin = 600.0m (clearer night sky for surface lights)
-		var curve_val = lerpf(2.8, 1.1, clampf(intensity_norm, 0.0, 1.0))
-		var begin_val = lerpf(600.0, 200.0, clampf(intensity_norm, 0.0, 1.0))
-		env.fog_depth_curve = curve_val
-		env.fog_depth_begin = begin_val
+		env.fog_depth_curve = 1.1
+		env.fog_depth_begin = 200.0
 		# Update end‑cap emission based on scene brightness
 		if cylinder_world and cylinder_world.surface_material is ShaderMaterial:
 			cylinder_world.surface_material.set_shader_parameter("endcap_emission_factor", intensity_norm)
-		# Hide end‑cap rib texture when lighting is very low
-		if intensity_norm < 0.05:
-			if cylinder_world and cylinder_world.surface_material is ShaderMaterial:
-				cylinder_world.surface_material.set_shader_parameter("tex_end_cap_ribs", null)
 
 	if cylinder_world:
-		var shader_air_col = Color(
-			clampf(fog_col.r * intensity_norm, 0.0, 1.0),
-			clampf(fog_col.g * intensity_norm, 0.0, 1.0),
-			clampf(fog_col.b * intensity_norm, 0.0, 1.0),
-			1.0
-		)
-		cylinder_world.air_color = shader_air_col
+		cylinder_world.air_color = fog_col
 
 func _update_light_ranges() -> void:
 	for light in light_nodes:

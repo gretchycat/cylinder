@@ -260,9 +260,9 @@ func _init() -> void:
 	test_check(is_zero_approx(light_bar.global_intensity_multiplier), "Intensity multiplier at 0.0 verified")
 	test_check(is_zero_approx(sun_a.light_energy), "DaylightSunA scales down to pitch black (0.0 energy)")
 	test_check(is_zero_approx(env_node.environment.ambient_light_energy), "Ambient light scales down to pitch black (0.0 energy)")
-	test_check(is_zero_approx(env_node.environment.fog_light_energy), "Fog light energy scales down to pitch black (0.0 energy)")
-	test_check(env_node.environment.fog_depth_curve > 2.0, "In darkness, depth fog curve is steepened (> 2.0) to make fog transparent near surface")
-	test_check(env_node.environment.fog_depth_begin > 400.0, "In darkness, fog depth begin is pushed out (> 400m) to clear near/mid distances for surface lights")
+	test_check(env_node.environment.fog_light_energy >= 0.35, "Night atmospheric fog energy maintains nocturnal floor (>= 0.35)")
+	test_check(is_equal_approx(env_node.environment.fog_depth_curve, 1.1), "Depth fog curve maintains consistent 1.1")
+	test_check(is_equal_approx(env_node.environment.fog_depth_begin, 200.0), "Fog depth begin remains at 200.0m for night atmosphere")
 
 	hud_node._on_light_intensity_changed(3.5)
 	test_check(is_equal_approx(light_bar.global_intensity_multiplier, 3.5), "Intensity multiplier at 3.5 verified")
