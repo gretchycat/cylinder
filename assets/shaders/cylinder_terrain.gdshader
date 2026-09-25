@@ -18,10 +18,10 @@ uniform float max_elevation = 100.0;
 uniform vec4 air_color : source_color = vec4(0.52, 0.72, 0.88, 1.0);
 uniform float air_density : hint_range(0.0, 1.0) = 0.65;
 uniform float air_distance_min = 200.0;
-uniform float air_distance_max = 8000.0;
+uniform float air_distance_max = 18000.0;
 
 varying vec3 world_pos;
-varying vec4 vert_attr; // r: elevation_ratio (0..1), g: terrain_type_id (0..8)
+varying vec4 vert_attr; // r: elevation_ratio (0..1), g: terrain_type_id (0..8), b: is_end_cap (0..1)
 
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -29,15 +29,22 @@ void vertex() {
 }
 
 void fragment() {
-	// Circumference arc distance and Z distance on cylinder
+	float is_end_cap = vert_attr.b;
+	vec2 terrain_uv;
 	float angle = atan(world_pos.y, world_pos.x);
 	if (angle < 0.0) {
 		angle += 6.28318530718;
 	}
-	float arc_dist = angle * cylinder_radius;
-	float z_dist = world_pos.z;
 
-	vec2 terrain_uv = vec2(arc_dist, z_dist) * uv_scale;
+	if (is_end_cap > 0.5) {
+		// Planar UV projection on end caps: no stretching or radial smearing
+		terrain_uv = world_pos.xy * uv_scale;
+	} else {
+		// Circumference arc distance and Z distance on cylinder barrel
+		float arc_dist = angle * cylinder_radius;
+		float z_dist = world_pos.z;
+		terrain_uv = vec2(arc_dist, z_dist) * uv_scale;
+	}
 
 	// Sample terrain textures
 	vec3 col_sand = texture(tex_sand, terrain_uv).rgb;
@@ -101,9 +108,34 @@ void fragment() {
 	float contour = sin(elev * 3.14159265);
 	final_color = mix(final_color * 0.95, final_color * 1.05, (contour + 1.0) * 0.5);
 
+	// Structural detailing on end cap bulkheads
+	if (is_end_cap > 0.5) {
+		float r_axis = length(world_pos.xy);
+		// Concentric structural bulkhead rings (every 250 m)
+		float ring_dist = abs(fract(r_axis / 250.0 + 0.5) - 0.5) * 250.0;
+		float ring_line = smoothstep(10.0, 0.0, ring_dist);
+
+		// 16 radial structural compression ribs
+		float spoke_val = abs(fract(angle / (6.28318530718 / 16.0) + 0.5) - 0.5);
+		float spoke_line = smoothstep(0.015, 0.0, spoke_val);
+
+		// Central Zero-G spaceport docking ring (radius <= 250 m)
+		if (r_axis < 250.0) {
+			float dock_circle = abs(r_axis - 180.0);
+			if (dock_circle < 10.0) {
+				final_color = vec3(0.95, 0.78, 0.25); // Golden aerospace guidance ring
+				roughness_val = 0.25;
+				metallic_val = 0.85;
+			}
+		}
+
+		// Darker structural accent grooves on the bulkhead rings and ribs
+		final_color = mix(final_color, col_concrete * 0.45, ring_line * 0.4 + spoke_line * 0.35);
+	}
+
 	// Tint the volume where the water exists:
 	// Submerged seabed terrain below water_level is colored by the aquatic water column above it
-	if (elev < water_level) {
+	if (elev < water_level && is_end_cap < 0.5) {
 		float water_depth = water_level - elev;
 		float depth_factor = clamp(water_depth / 16.0, 0.0, 1.0);
 		vec3 water_volume_tint = vec3(0.03, 0.20, 0.42);

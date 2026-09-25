@@ -2,10 +2,10 @@
 class_name ReferenceObjects
 extends Node3D
 
-@export_category("Cylinder Dimensions (8 km x 8 km)")
+@export_category("Cylinder Dimensions (8 km dia x 18 km length)")
 @export var cylinder_radius: float = 4000.0
-@export var cylinder_length: float = 8000.0
-@export var num_scattered_balls: int = 40
+@export var cylinder_length: float = 18000.0
+@export var num_scattered_balls: int = 50
 @export var spawn_ring_markers: bool = true
 @export var spawn_dynamic_balls: bool = true
 
@@ -42,8 +42,8 @@ func _create_sphere_material(color: Color, roughness: float = 0.3, metallic: flo
 	return mat
 
 func _spawn_reference_rings() -> void:
-	# Rings of spheres along Z to mark distance and angle in the 8 km cylinder
-	var z_positions = [-3000.0, -1500.0, 0.0, 1500.0, 3000.0]
+	# Rings of spheres along Z to mark distance and angle in the 18 km cylinder
+	var z_positions = [-7000.0, -3500.0, 0.0, 3500.0, 7000.0]
 	var ring_colors = [
 		Color(0.95, 0.25, 0.25), # Red
 		Color(0.25, 0.85, 0.35), # Green
@@ -96,12 +96,14 @@ func _spawn_reference_rings() -> void:
 			add_child(body)
 
 func _spawn_landmark_spheres() -> void:
-	# Major landmark beacons across the 8 km landscape
+	# Major landmark beacons across the 18 km landscape
 	var landmarks = [
-		{"theta": 0.0, "z": -1800.0, "radius": 60.0, "color": Color(0.98, 0.3, 0.1), "name": "Alpha_Sphere"},
-		{"theta": PI * 0.5, "z": 1800.0, "radius": 70.0, "color": Color(0.1, 0.7, 0.95), "name": "Beta_Sphere"},
-		{"theta": PI, "z": -900.0, "radius": 55.0, "color": Color(0.9, 0.8, 0.1), "name": "Gamma_Sphere"},
-		{"theta": PI * 1.5, "z": 900.0, "radius": 65.0, "color": Color(0.7, 0.2, 0.9), "name": "Delta_Sphere"},
+		{"theta": 0.0, "z": -5000.0, "radius": 75.0, "color": Color(0.98, 0.3, 0.1), "name": "Alpha_Sphere"},
+		{"theta": PI * 0.5, "z": 5000.0, "radius": 80.0, "color": Color(0.1, 0.7, 0.95), "name": "Beta_Sphere"},
+		{"theta": PI, "z": -2500.0, "radius": 65.0, "color": Color(0.9, 0.8, 0.1), "name": "Gamma_Sphere"},
+		{"theta": PI * 1.5, "z": 2500.0, "radius": 70.0, "color": Color(0.7, 0.2, 0.9), "name": "Delta_Sphere"},
+		{"theta": 0.0, "z": -8700.0, "radius": 90.0, "color": Color(0.2, 0.9, 0.95), "name": "Aft_Spaceport_Beacon"},
+		{"theta": PI, "z": 8700.0, "radius": 90.0, "color": Color(0.95, 0.85, 0.2), "name": "Forward_Spaceport_Beacon"},
 	]
 
 	for lm in landmarks:

@@ -297,9 +297,11 @@ func _init() -> void:
 	# --- TEST 9: PNG Elevation Map & 2D RPG Tilemap System ---
 	print("\n--- TEST 9: PNG Elevation Map (0-100m) & RPG Tilemap (Water at 20m) ---")
 	test_check(cylinder_world.radius == 4000.0, "Cylinder radius must be 4 km (8 km diameter)")
-	test_check(cylinder_world.cylinder_length == 8000.0, "Cylinder length must be 8 km")
+	test_check(cylinder_world.cylinder_length == 18000.0, "Cylinder length must be 18 km")
 	test_check(cylinder_world.elevation_variance == 100.0, "Elevation variance must be 100 m (0 to 100m valid range)")
 	test_check(cylinder_world.water_level == 20.0, "Water level must be 20.0 m from elevation 0")
+	test_check(cylinder_world.include_end_caps, "End caps must be enabled on the cylinder")
+	test_check(cylinder_world.mesh_instance != null and cylinder_world.mesh_instance.mesh != null, "Cylinder mesh with end caps must be generated")
 
 	var elev_sample_spawn = cylinder_world.get_elevation_at(-PI * 0.5, 0.0)
 	print("Elevation at player spawn: %.2f m (variance range: 0.0 - 100.0 m)" % elev_sample_spawn)
@@ -358,20 +360,20 @@ func _init() -> void:
 	test_check(cylinder_world.water_material.get_shader_parameter("water_level") == 20.0, "Water level in water shader must match configured 20.0 m")
 	print("[PASS] Test 9: PNG elevation heightmap (0-100m) and RPG tilemap (water at 20m) verified.")
 
-	# --- TEST 10: Max On Daylight Lighting System ---
-	print("\n--- TEST 10: Max On Daylight Lighting System & Scale ---")
-	test_check(light_bar.bar_length == 8000.0, "Axis light bar length must match 8 km cylinder")
+	# --- TEST 10: Max On Daylight Lighting System & 18 km Scale ---
+	print("\n--- TEST 10: Max On Daylight Lighting System & 18 km Scale with End Caps ---")
+	test_check(light_bar.bar_length == 18000.0, "Axis light bar length must match 18 km cylinder")
 	test_check(light_bar.cylinder_radius == 4000.0, "Axis light bar radius must match 4 km radius")
 	test_check(light_bar.global_intensity_multiplier >= 3.0, "Max On lighting intensity must be at full illumination level (>= 3.0)")
 	for light in light_bar.light_nodes:
 		test_check(light.omni_range >= 6000.0, "Axial omni light range must cover 4 km radial distance")
 
-	# Verify 8 km atmospheric air tinting across cylinder materials and WorldEnvironment
+	# Verify 18 km atmospheric air tinting across cylinder materials and WorldEnvironment
 	var world_env = root_node.get_node_or_null("WorldEnvironment") as WorldEnvironment
 	test_check(world_env != null and world_env.environment != null, "WorldEnvironment must exist with configured Environment")
 	test_check(world_env.environment.fog_enabled, "Depth fog must be enabled for atmospheric aerial perspective")
 	test_check(world_env.environment.fog_mode == Environment.FOG_MODE_DEPTH, "Fog mode must be depth-based (FOG_MODE_DEPTH)")
-	test_check(world_env.environment.fog_depth_end == 8000.0, "Fog depth end must reach 8 km across the cylinder")
+	test_check(world_env.environment.fog_depth_end == 18000.0, "Fog depth end must reach 18 km across the cylinder")
 	print("WorldEnvironment depth fog verified: light_color=%s, begin=%.1f m, end=%.1f m" % [
 		world_env.environment.fog_light_color, world_env.environment.fog_depth_begin, world_env.environment.fog_depth_end
 	])
@@ -387,11 +389,16 @@ func _init() -> void:
 	print("Water air tint: color=%s, max_dist=%.1f m" % [water_air_col, water_air_max])
 
 	test_check(terr_air_col != null and terr_air_col.b > terr_air_col.r, "Terrain air color must have cyan/blue Rayleigh scattering tint")
-	test_check(terr_air_max == 8000.0, "Terrain air tint distance max must be 8 km")
+	test_check(terr_air_max == 18000.0, "Terrain air tint distance max must be 18 km")
 	test_check(terr_air_density > 0.0 and terr_air_density <= 1.0, "Terrain air density must be within (0, 1]")
-	test_check(water_air_col != null and water_air_max == 8000.0, "Water air tint must reach 8 km")
+	test_check(water_air_col != null and water_air_max == 18000.0, "Water air tint must reach 18 km")
 
-	print("[PASS] Test 10: Max On daylight lighting level, 8 km cylinder scale, and atmospheric air tinting verified.")
+	# Verify end cap mesh structure
+	var face_count = cylinder_world.mesh_instance.mesh.get_faces().size() / 3
+	print("Mesh generated: %d triangles (barrel + concentric end caps)" % face_count)
+	test_check(face_count > 30000, "Mesh must contain high-fidelity barrel and concentric end cap bulkheads")
+
+	print("[PASS] Test 10: Max On daylight lighting level, 18 km cylinder scale, and atmospheric air tinting verified.")
 
 	print("\n=======================================================")
 	print(" ALL O'NEILL CYLINDER SIMULATION TESTS PASSED (10/10)! ")

@@ -10,8 +10,8 @@ enum LightingPreset {
 	WARM_SUNSET
 }
 
-@export_category("Dimensions (8 km Scale)")
-@export var bar_length: float = 8000.0:
+@export_category("Dimensions (18 km Scale)")
+@export var bar_length: float = 18000.0:
 	set(val):
 		bar_length = max(val, 10.0)
 		if is_inside_tree():
@@ -23,9 +23,9 @@ enum LightingPreset {
 		if is_inside_tree():
 			_update_light_ranges()
 
-@export var num_segments: int = 16:
+@export var num_segments: int = 36:
 	set(val):
-		num_segments = clampi(val, 2, 32)
+		num_segments = clampi(val, 2, 64)
 		if is_inside_tree():
 			rebuild_light_bar()
 

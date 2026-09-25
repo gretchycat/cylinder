@@ -13,7 +13,7 @@ uniform float metallic : hint_range(0.0, 1.0) = 0.15;
 uniform vec4 air_color : source_color = vec4(0.52, 0.72, 0.88, 1.0);
 uniform float air_density : hint_range(0.0, 1.0) = 0.65;
 uniform float air_distance_min = 200.0;
-uniform float air_distance_max = 8000.0;
+uniform float air_distance_max = 18000.0;
 
 varying vec3 world_pos;
 
@@ -32,13 +32,17 @@ void fragment() {
 	float arc_dist = angle * radius;
 	float z_dist = world_pos.z;
 
-	// Minor grid
-	vec2 minor_uv = vec2(arc_dist, z_dist) / minor_grid_spacing;
-	vec2 minor_grid = abs(fract(minor_uv - 0.5) - 0.5) / fwidth(minor_uv);
-	float minor_line = 1.0 - min(min(minor_grid.x, minor_grid.y), 1.0);
-
-	// Major grid
-	vec2 major_uv = vec2(arc_dist, z_dist) / major_grid_spacing;
+	vec2 minor_uv;
+	vec2 major_uv;
+	if (abs(NORMAL.z) > 0.5) {
+		// Planar projection for end cap bulkheads
+		minor_uv = world_pos.xy / minor_grid_spacing;
+		major_uv = world_pos.xy / major_grid_spacing;
+	} else {
+		// Cylindrical projection for cylinder barrel
+		minor_uv = vec2(arc_dist, z_dist) / minor_grid_spacing;
+		major_uv = vec2(arc_dist, z_dist) / major_grid_spacing;
+	}
 	vec2 major_grid = abs(fract(major_uv - 0.5) - 0.5) / fwidth(major_uv);
 	float major_line = 1.0 - min(min(major_grid.x, major_grid.y), 1.0);
 
