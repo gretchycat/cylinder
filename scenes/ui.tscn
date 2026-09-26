@@ -186,154 +186,58 @@ anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -350.0
-offset_top = 185.0
+offset_left = -365.0
+offset_top = 180.0
 offset_right = -15.0
 offset_bottom = -15.0
 grow_horizontal = 0
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="ScrollContainer" type="ScrollContainer" parent="UIRoot/ControlPanel"]
+[node name="TabContainer" type="TabContainer" parent="UIRoot/ControlPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+tab_alignment = 1
+current_tab = 0
+
+[node name="Weather" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
 layout_mode = 2
 horizontal_scroll_mode = 0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer"]
+[node name="VBoxWeather" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/Weather"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 7
 
-[node name="PanelTitle" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
+[node name="Lighting" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
+visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
-theme_override_font_sizes/font_size = 13
-text = "LIVE SYSTEM TUNING"
+horizontal_scroll_mode = 0
 
-[node name="HBoxScale" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale/HBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 11
-text = "UI Scaling Factor:"
-
-[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale/HBox"]
+[node name="VBoxLighting" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/Lighting"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 11
-text = "1.85x [Auto]"
-horizontal_alignment = 2
+theme_override_constants/separation = 7
 
-[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale"]
+[node name="Physics" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
+visible = false
 layout_mode = 2
-min_value = 0.75
-max_value = 2.75
-step = 0.05
-value = 1.85
+horizontal_scroll_mode = 0
 
-[node name="ResetScaleButton" type="Button" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 10
-text = "Reset to Auto-Calculated Scale"
-
-[node name="HSeparator2" type="HSeparator" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="HBoxPreset" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxPreset"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 11
-text = "Lighting Preset:"
-
-[node name="OptionButton" type="OptionButton" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxPreset"]
-layout_mode = 2
-
-[node name="HBoxIntensity" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity/HBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 11
-text = "Light Bar Intensity:"
-
-[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity/HBox"]
+[node name="VBoxPhysics" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/Physics"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 11
-text = "1.8x"
-horizontal_alignment = 2
+theme_override_constants/separation = 7
 
-[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity"]
+[node name="System" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
+visible = false
 layout_mode = 2
+horizontal_scroll_mode = 0
 
-[node name="HBoxFog" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog/HBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 11
-text = "Fog Opacity / Density:"
-
-[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog/HBox"]
+[node name="VBoxSystem" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/System"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 11
-text = "125%"
-horizontal_alignment = 2
-
-[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog"]
-layout_mode = 2
-max_value = 2.0
-step = 0.01
-value = 1.25
-
-[node name="HBoxGravity" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity/HBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 11
-text = "Base Surface Gravity:"
-
-[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity/HBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 11
-text = "-9.5 m/s²"
-horizontal_alignment = 2
-
-[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity"]
-layout_mode = 2
-max_value = 25.0
-step = 0.5
-value = 9.5
-
-[node name="HSeparator" type="HSeparator" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="WobbleTestButton" type="Button" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Perturb Horizon Roll (+25°)"
-
-[node name="ResetSpawnButton" type="Button" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Reset to Spawn"
+theme_override_constants/separation = 7
 
 [node name="TouchControls" type="Control" parent="UIRoot"]
 layout_mode = 1

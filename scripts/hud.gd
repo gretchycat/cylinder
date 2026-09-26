@@ -9,6 +9,10 @@ const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
 
 # Root Container for Adaptive Scaling
 @onready var ui_root: Control = $UIRoot
+@onready var control_panel: PanelContainer = $UIRoot/ControlPanel
+@onready var tab_container: TabContainer = get_node_or_null("UIRoot/ControlPanel/TabContainer")
+@onready var toggle_controls_btn: Button = $UIRoot/ToggleControlsButton
+@onready var touch_controls: MobileTouchControls = $UIRoot/TouchControls
 
 # UI Node References (under UIRoot)
 @onready var telemetry_label: Label = $UIRoot/TelemetryPanel/VBoxContainer/TelemetryLabel
@@ -17,38 +21,11 @@ const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
 @onready var artificial_horizon: Control = get_node_or_null("UIRoot/HorizonContainer/VBoxContainer/ArtificialHorizon")
 @onready var horizon_angle_label: Label = get_node_or_null("UIRoot/HorizonContainer/VBoxContainer/HorizonAngleLabel")
 
-@onready var light_preset_option: OptionButton = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxPreset/OptionButton
-@onready var light_intensity_slider: HSlider = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity/HSlider
-@onready var light_intensity_val: Label = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity/HBox/ValLabel
-@onready var fog_slider: HSlider = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog/HSlider
-@onready var fog_val: Label = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog/HBox/ValLabel
-@onready var gravity_slider: HSlider = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity/HSlider
-@onready var gravity_val: Label = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity/HBox/ValLabel
-@onready var toggle_controls_btn: Button = $UIRoot/ToggleControlsButton
-@onready var control_panel: PanelContainer = $UIRoot/ControlPanel
-@onready var touch_controls: MobileTouchControls = $UIRoot/TouchControls
-
-@onready var wobble_test_btn: Button = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/WobbleTestButton
-@onready var reset_spawn_btn: Button = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/ResetSpawnButton
-var south_cap_btn: Button = null
-var north_cap_btn: Button = null
-var deploy_campfire_btn: Button = null
-var deploy_lamp_btn: Button = null
-
-# Solar Cycle Day/Night UI Controls
 var solar_badge_label: Label = null
-var solar_time_slider: HSlider = null
-var solar_time_val: Label = null
-var sync_real_time_btn: Button = null
-var latitude_slider: HSlider = null
-var latitude_val: Label = null
-var solar_status_label: Label = null
-
-# Atmospheric Weather & HVAC UI Controls
 var weather_badge_label: Label = null
+
+# Tab 1: Weather & Atmosphere UI Controls
 var spin_direction_btn: Button = null
-var humidity_slider: HSlider = null
-var humidity_val: Label = null
 var cloud_cover_slider: HSlider = null
 var cloud_cover_val: Label = null
 var cloud_thickness_slider: HSlider = null
@@ -57,16 +34,41 @@ var precipitation_slider: HSlider = null
 var precipitation_val: Label = null
 var dust_slider: HSlider = null
 var dust_val: Label = null
+var fog_slider: HSlider = null
+var fog_val: Label = null
+var humidity_slider: HSlider = null
+var humidity_val: Label = null
 var hvac_air_slider: HSlider = null
 var hvac_air_val: Label = null
 var water_pipe_slider: HSlider = null
 var water_pipe_val: Label = null
 var cloud_status_label: Label = null
 
-# UI Scaling Controls
-@onready var scale_slider: HSlider = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale/HSlider
-@onready var scale_val: Label = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale/HBox/ValLabel
-@onready var reset_scale_btn: Button = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale/ResetScaleButton
+# Tab 2: Lighting & Solar UI Controls
+var light_preset_option: OptionButton = null
+var light_intensity_slider: HSlider = null
+var light_intensity_val: Label = null
+var solar_time_slider: HSlider = null
+var solar_time_val: Label = null
+var sync_real_time_btn: Button = null
+var latitude_slider: HSlider = null
+var latitude_val: Label = null
+var solar_status_label: Label = null
+
+# Tab 3: Physics & Habitat UI Controls
+var gravity_slider: HSlider = null
+var gravity_val: Label = null
+var wobble_test_btn: Button = null
+var reset_spawn_btn: Button = null
+var south_cap_btn: Button = null
+var north_cap_btn: Button = null
+
+# Tab 4: System & Scale UI Controls
+var scale_slider: HSlider = null
+var scale_val: Label = null
+var reset_scale_btn: Button = null
+var deploy_campfire_btn: Button = null
+var deploy_lamp_btn: Button = null
 
 var current_ui_scale: float = 1.0
 var is_scale_auto: bool = true
@@ -211,412 +213,255 @@ static func intensity_to_slider_pos(intensity: float) -> float:
 		return 0.0
 	return clampf(log(intensity / MIN_INTENSITY) / log(MAX_INTENSITY / MIN_INTENSITY), 0.0, 1.0)
 
+func _create_slider_row(parent: VBoxContainer, label_text: String, min_val: float, max_val: float, step_val: float, init_val: float, callback: Callable) -> Array:
+	var box = VBoxContainer.new()
+	var header = HBoxContainer.new()
+
+	var lbl = Label.new()
+	lbl.text = label_text
+	lbl.add_theme_font_size_override("font_size", 11)
+	header.add_child(lbl)
+
+	var vlbl = Label.new()
+	vlbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vlbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	vlbl.add_theme_font_size_override("font_size", 11)
+	header.add_child(vlbl)
+	box.add_child(header)
+
+	var slider = HSlider.new()
+	slider.focus_mode = Control.FOCUS_NONE
+	slider.min_value = min_val
+	slider.max_value = max_val
+	slider.step = step_val
+	slider.value = init_val
+	slider.value_changed.connect(callback)
+	box.add_child(slider)
+
+	parent.add_child(box)
+	return [slider, vlbl]
+
 func _setup_control_panel() -> void:
-	if light_preset_option:
-		light_preset_option.focus_mode = Control.FOCUS_NONE
-		light_preset_option.clear()
-		light_preset_option.add_item("Uniform Daylight", 0)
-		light_preset_option.add_item("Gradient (Diurnal Solar Cycle)", 1)
-		light_preset_option.add_item("Day/Night Wave (Animated)", 2)
-		light_preset_option.add_item("Neon Aurora (Animated)", 3)
-		light_preset_option.add_item("Warm Sunset", 4)
-		light_preset_option.add_item("Solar Day/Night Cycle", 5)
+	if tab_container:
+		tab_container.set_tab_title(0, "☁️ Weather")
+		tab_container.set_tab_title(1, "☀️ Lighting")
+		tab_container.set_tab_title(2, "🌐 Physics")
+		tab_container.set_tab_title(3, "⚙️ System")
 
-		var cur_sel = 1
-		if light_bar:
-			match light_bar.preset:
-				AxisLightBar.LightingPreset.UNIFORM: cur_sel = 0
-				AxisLightBar.LightingPreset.GRADIENT: cur_sel = 1
-				AxisLightBar.LightingPreset.DAY_NIGHT_WAVE: cur_sel = 2
-				AxisLightBar.LightingPreset.NEON_AURORA: cur_sel = 3
-				AxisLightBar.LightingPreset.WARM_SUNSET: cur_sel = 4
-				AxisLightBar.LightingPreset.SOLAR_CYCLE: cur_sel = 5
-		light_preset_option.select(cur_sel)
-		light_preset_option.item_selected.connect(_on_light_preset_selected)
+	var vbox_weather = get_node_or_null("UIRoot/ControlPanel/TabContainer/Weather/VBoxWeather") as VBoxContainer
+	if vbox_weather:
+		_setup_weather_tab(vbox_weather)
 
-	if light_intensity_slider:
-		light_intensity_slider.focus_mode = Control.FOCUS_NONE
-		light_intensity_slider.min_value = 0.0
-		light_intensity_slider.max_value = 1.0
-		light_intensity_slider.step = 0.002
-		var cur_intensity = light_bar.global_intensity_multiplier if light_bar else 3.5
-		light_intensity_slider.value = intensity_to_slider_pos(cur_intensity)
-		light_intensity_slider.value_changed.connect(_on_light_slider_changed)
-		_update_intensity_display(cur_intensity)
+	var vbox_lighting = get_node_or_null("UIRoot/ControlPanel/TabContainer/Lighting/VBoxLighting") as VBoxContainer
+	if vbox_lighting:
+		_setup_lighting_tab(vbox_lighting)
 
-	if fog_slider:
-		fog_slider.focus_mode = Control.FOCUS_NONE
-		fog_slider.min_value = 0.0
-		fog_slider.max_value = 2.0
-		fog_slider.step = 0.01
-		var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator
-		var cur_fog = cylinder_world.air_density if cylinder_world else 1.25
-		fog_slider.value = cur_fog
-		fog_slider.value_changed.connect(_on_fog_changed)
-		if fog_val:
-			fog_val.text = "%d%%" % int(round(cur_fog * 100.0))
+	var vbox_physics = get_node_or_null("UIRoot/ControlPanel/TabContainer/Physics/VBoxPhysics") as VBoxContainer
+	if vbox_physics:
+		_setup_physics_tab(vbox_physics)
 
-	if gravity_slider:
-		gravity_slider.focus_mode = Control.FOCUS_NONE
-		gravity_slider.min_value = 0.0
-		gravity_slider.max_value = 25.0
-		gravity_slider.step = 0.5
-		gravity_slider.value = player.base_gravity if player else 9.5
-		gravity_slider.value_changed.connect(_on_gravity_changed)
-		if gravity_val:
-			gravity_val.text = "-%.1f m/s²" % gravity_slider.value
-
-	var btn_vbox = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer
-	if btn_vbox:
-		# 1. Solar Time of Day Controls
-		var time_box = VBoxContainer.new()
-		time_box.name = "HBoxSolarTime"
-		var time_header = HBoxContainer.new()
-		var time_label = Label.new()
-		time_label.text = "Time of Day:"
-		time_label.add_theme_font_size_override("font_size", 11)
-		time_header.add_child(time_label)
-
-		solar_time_val = Label.new()
-		solar_time_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		solar_time_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		solar_time_val.add_theme_font_size_override("font_size", 11)
-		solar_time_val.text = "12:00 [Real-Time]"
-		time_header.add_child(solar_time_val)
-		time_box.add_child(time_header)
-
-		solar_time_slider = HSlider.new()
-		solar_time_slider.name = "SolarTimeSlider"
-		solar_time_slider.focus_mode = Control.FOCUS_NONE
-		solar_time_slider.min_value = 0.0
-		solar_time_slider.max_value = 24.0
-		solar_time_slider.step = 0.02
-		solar_time_slider.value = light_bar.time_of_day_hours if light_bar else 12.0
-		solar_time_slider.value_changed.connect(_on_solar_time_slider_changed)
-		time_box.add_child(solar_time_slider)
-
-		sync_real_time_btn = Button.new()
-		sync_real_time_btn.name = "SyncRealTimeButton"
-		sync_real_time_btn.text = "Sync to Real-Time Clock"
-		sync_real_time_btn.focus_mode = Control.FOCUS_NONE
-		sync_real_time_btn.add_theme_font_size_override("font_size", 10)
-		sync_real_time_btn.pressed.connect(_on_sync_real_time_pressed)
-		time_box.add_child(sync_real_time_btn)
-
-		btn_vbox.add_child(time_box)
-		btn_vbox.move_child(time_box, 4)
-
-		# 2. Earth Latitude Controls
-		var lat_box = VBoxContainer.new()
-		lat_box.name = "HBoxLatitude"
-		var lat_header = HBoxContainer.new()
-		var lat_label = Label.new()
-		lat_label.text = "Earth Latitude:"
-		lat_label.add_theme_font_size_override("font_size", 11)
-		lat_header.add_child(lat_label)
-
-		latitude_val = Label.new()
-		latitude_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		latitude_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		latitude_val.add_theme_font_size_override("font_size", 11)
-		latitude_val.text = "+40.0° N (Temperate)"
-		lat_header.add_child(latitude_val)
-		lat_box.add_child(lat_header)
-
-		latitude_slider = HSlider.new()
-		latitude_slider.name = "LatitudeSlider"
-		latitude_slider.focus_mode = Control.FOCUS_NONE
-		latitude_slider.min_value = -90.0
-		latitude_slider.max_value = 90.0
-		latitude_slider.step = 1.0
-		latitude_slider.value = light_bar.earth_latitude_deg if light_bar else 40.0
-		latitude_slider.value_changed.connect(_on_latitude_slider_changed)
-		lat_box.add_child(latitude_slider)
-
-		solar_status_label = Label.new()
-		solar_status_label.name = "SolarStatusLabel"
-		solar_status_label.add_theme_font_size_override("font_size", 10)
-		solar_status_label.text = "Solar Elev: +0.0°"
-		solar_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lat_box.add_child(solar_status_label)
-
-		btn_vbox.add_child(lat_box)
-		btn_vbox.move_child(lat_box, 5)
-
-		# 3. Atmospheric Weather & HVAC Thermal Controls
-		var weather_sep = HSeparator.new()
-		btn_vbox.add_child(weather_sep)
-		btn_vbox.move_child(weather_sep, 6)
-
-		var weather_header = Label.new()
-		weather_header.name = "WeatherHeader"
-		weather_header.text = "ATMOSPHERIC WEATHER & HVAC"
-		weather_header.add_theme_font_size_override("font_size", 12)
-		weather_header.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0))
-		btn_vbox.add_child(weather_header)
-		btn_vbox.move_child(weather_header, 7)
-
-		spin_direction_btn = Button.new()
-		spin_direction_btn.name = "SpinDirectionButton"
-		var is_ccw_init = (weather_system.spin_direction == WeatherSystem.SpinDirection.COUNTER_CLOCKWISE) if weather_system else true
-		spin_direction_btn.text = "Cylinder Spin: %s" % ("Counter-Clockwise (CCW)" if is_ccw_init else "Clockwise (CW)")
-		spin_direction_btn.focus_mode = Control.FOCUS_NONE
-		spin_direction_btn.add_theme_font_size_override("font_size", 11)
-		spin_direction_btn.pressed.connect(_on_spin_direction_toggle_pressed)
-		btn_vbox.add_child(spin_direction_btn)
-		btn_vbox.move_child(spin_direction_btn, 8)
-
-		# 1. Humidity Density Slider (g/m³)
-		var hum_box = VBoxContainer.new()
-		hum_box.name = "HBoxHumidity"
-		var hum_header = HBoxContainer.new()
-		var hum_label = Label.new()
-		hum_label.text = "Humidity Density:"
-		hum_label.add_theme_font_size_override("font_size", 11)
-		hum_header.add_child(hum_label)
-
-		humidity_val = Label.new()
-		humidity_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		humidity_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		humidity_val.add_theme_font_size_override("font_size", 11)
-		var cur_hum = weather_system.humidity_density_gm3 if weather_system else 14.5
-		humidity_val.text = "%.1f g/m³" % cur_hum
-		hum_header.add_child(humidity_val)
-		hum_box.add_child(hum_header)
-
-		humidity_slider = HSlider.new()
-		humidity_slider.name = "HumiditySlider"
-		humidity_slider.focus_mode = Control.FOCUS_NONE
-		humidity_slider.min_value = 2.0
-		humidity_slider.max_value = 30.0
-		humidity_slider.step = 0.5
-		humidity_slider.value = cur_hum
-		humidity_slider.value_changed.connect(_on_humidity_slider_changed)
-		hum_box.add_child(humidity_slider)
-		btn_vbox.add_child(hum_box)
-		btn_vbox.move_child(hum_box, 9)
-
-		# 2. Cloud Coverage Slider (%)
-		var cover_box = VBoxContainer.new()
-		cover_box.name = "HBoxCloudCover"
-		var cover_header = HBoxContainer.new()
-		var cover_label = Label.new()
-		cover_label.text = "Cloud Cover (Overcast):"
-		cover_label.add_theme_font_size_override("font_size", 11)
-		cover_header.add_child(cover_label)
-
-		cloud_cover_val = Label.new()
-		cloud_cover_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		cloud_cover_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		cloud_cover_val.add_theme_font_size_override("font_size", 11)
-		var cur_cov = weather_system.cloud_coverage if weather_system else 0.55
-		cloud_cover_val.text = "%d%%" % int(round(cur_cov * 100.0))
-		cover_header.add_child(cloud_cover_val)
-		cover_box.add_child(cover_header)
-
-		cloud_cover_slider = HSlider.new()
-		cloud_cover_slider.name = "CloudCoverSlider"
-		cloud_cover_slider.focus_mode = Control.FOCUS_NONE
-		cloud_cover_slider.min_value = 0.0
-		cloud_cover_slider.max_value = 1.0
-		cloud_cover_slider.step = 0.01
-		cloud_cover_slider.value = cur_cov
-		cloud_cover_slider.value_changed.connect(_on_cloud_cover_slider_changed)
-		cover_box.add_child(cloud_cover_slider)
-		btn_vbox.add_child(cover_box)
-		btn_vbox.move_child(cover_box, 10)
-
-		# 3. Cloud Deck Thickness Slider (m)
-		var thick_box = VBoxContainer.new()
-		thick_box.name = "HBoxCloudThickness"
-		var thick_header = HBoxContainer.new()
-		var thick_label = Label.new()
-		thick_label.text = "Cloud Deck Thickness:"
-		thick_label.add_theme_font_size_override("font_size", 11)
-		thick_header.add_child(thick_label)
-
-		cloud_thickness_val = Label.new()
-		cloud_thickness_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		cloud_thickness_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		cloud_thickness_val.add_theme_font_size_override("font_size", 11)
-		var cur_thick = weather_system.cloud_thickness_m if weather_system else 250.0
-		cloud_thickness_val.text = "%.0f m" % cur_thick
-		thick_header.add_child(cloud_thickness_val)
-		thick_box.add_child(thick_header)
-
-		cloud_thickness_slider = HSlider.new()
-		cloud_thickness_slider.name = "CloudThicknessSlider"
-		cloud_thickness_slider.focus_mode = Control.FOCUS_NONE
-		cloud_thickness_slider.min_value = 50.0
-		cloud_thickness_slider.max_value = 800.0
-		cloud_thickness_slider.step = 10.0
-		cloud_thickness_slider.value = cur_thick
-		cloud_thickness_slider.value_changed.connect(_on_cloud_thickness_slider_changed)
-		thick_box.add_child(cloud_thickness_slider)
-		btn_vbox.add_child(thick_box)
-		btn_vbox.move_child(thick_box, 11)
-
-		# 4. Precipitation Rate Slider (mm/hr)
-		var precip_box = VBoxContainer.new()
-		precip_box.name = "HBoxPrecipitation"
-		var precip_header = HBoxContainer.new()
-		var precip_label = Label.new()
-		precip_label.text = "Precipitation (Rain/Mist):"
-		precip_label.add_theme_font_size_override("font_size", 11)
-		precip_header.add_child(precip_label)
-
-		precipitation_val = Label.new()
-		precipitation_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		precipitation_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		precipitation_val.add_theme_font_size_override("font_size", 11)
-		var cur_precip = weather_system.precipitation_rate_mmh if weather_system else 0.0
-		precipitation_val.text = "%.1f mm/hr" % cur_precip if cur_precip > 0.0 else "0.0 mm/hr [None]"
-		precip_header.add_child(precipitation_val)
-		precip_box.add_child(precip_header)
-
-		precipitation_slider = HSlider.new()
-		precipitation_slider.name = "PrecipitationSlider"
-		precipitation_slider.focus_mode = Control.FOCUS_NONE
-		precipitation_slider.min_value = 0.0
-		precipitation_slider.max_value = 50.0
-		precipitation_slider.step = 0.5
-		precipitation_slider.value = cur_precip
-		precipitation_slider.value_changed.connect(_on_precipitation_slider_changed)
-		precip_box.add_child(precipitation_slider)
-		btn_vbox.add_child(precip_box)
-		btn_vbox.move_child(precip_box, 12)
-
-		# 5. Atmospheric Dust & Particulate Slider (%)
-		var dust_box = VBoxContainer.new()
-		dust_box.name = "HBoxDust"
-		var dust_header = HBoxContainer.new()
-		var dust_label = Label.new()
-		dust_label.text = "Atmospheric Dust & Haze:"
-		dust_label.add_theme_font_size_override("font_size", 11)
-		dust_header.add_child(dust_label)
-
-		dust_val = Label.new()
-		dust_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		dust_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		dust_val.add_theme_font_size_override("font_size", 11)
-		var cur_dust = weather_system.dust_density if weather_system else 0.20
-		dust_val.text = "%d%%" % int(round(cur_dust * 100.0))
-		dust_header.add_child(dust_val)
-		dust_box.add_child(dust_header)
-
-		dust_slider = HSlider.new()
-		dust_slider.name = "DustSlider"
-		dust_slider.focus_mode = Control.FOCUS_NONE
-		dust_slider.min_value = 0.0
-		dust_slider.max_value = 1.0
-		dust_slider.step = 0.01
-		dust_slider.value = cur_dust
-		dust_slider.value_changed.connect(_on_dust_slider_changed)
-		dust_box.add_child(dust_slider)
-		btn_vbox.add_child(dust_box)
-		btn_vbox.move_child(dust_box, 13)
-
-		# 6. HVAC End-Cap Air Temp Slider
-		var hvac_box = VBoxContainer.new()
-		hvac_box.name = "HBoxHVACAir"
-		var hvac_header = HBoxContainer.new()
-		var hvac_label = Label.new()
-		hvac_label.text = "HVAC End-Cap Air Temp:"
-		hvac_label.add_theme_font_size_override("font_size", 11)
-		hvac_header.add_child(hvac_label)
-
-		hvac_air_val = Label.new()
-		hvac_air_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		hvac_air_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		hvac_air_val.add_theme_font_size_override("font_size", 11)
-		var cur_hvac = weather_system.endcap_air_temperature_c if weather_system else 22.5
-		hvac_air_val.text = "%.1f °C" % cur_hvac
-		hvac_header.add_child(hvac_air_val)
-		hvac_box.add_child(hvac_header)
-
-		hvac_air_slider = HSlider.new()
-		hvac_air_slider.name = "HVACAirSlider"
-		hvac_air_slider.focus_mode = Control.FOCUS_NONE
-		hvac_air_slider.min_value = 10.0
-		hvac_air_slider.max_value = 40.0
-		hvac_air_slider.step = 0.5
-		hvac_air_slider.value = cur_hvac
-		hvac_air_slider.value_changed.connect(_on_hvac_air_slider_changed)
-		hvac_box.add_child(hvac_air_slider)
-		btn_vbox.add_child(hvac_box)
-		btn_vbox.move_child(hvac_box, 14)
-
-		# 7. Water Heating Pipe Temp Slider
-		var water_box = VBoxContainer.new()
-		water_box.name = "HBoxWaterPipe"
-		var water_header = HBoxContainer.new()
-		var water_label = Label.new()
-		water_label.text = "Water Heating Pipe Temp:"
-		water_label.add_theme_font_size_override("font_size", 11)
-		water_header.add_child(water_label)
-
-		water_pipe_val = Label.new()
-		water_pipe_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		water_pipe_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		water_pipe_val.add_theme_font_size_override("font_size", 11)
-		var cur_water = weather_system.water_pipe_temperature_c if weather_system else 24.0
-		water_pipe_val.text = "%.1f °C" % cur_water
-		water_header.add_child(water_pipe_val)
-		water_box.add_child(water_header)
-
-		water_pipe_slider = HSlider.new()
-		water_pipe_slider.name = "WaterPipeSlider"
-		water_pipe_slider.focus_mode = Control.FOCUS_NONE
-		water_pipe_slider.min_value = 10.0
-		water_pipe_slider.max_value = 40.0
-		water_pipe_slider.step = 0.5
-		water_pipe_slider.value = cur_water
-		water_pipe_slider.value_changed.connect(_on_water_pipe_slider_changed)
-		water_box.add_child(water_pipe_slider)
-		btn_vbox.add_child(water_box)
-		btn_vbox.move_child(water_box, 15)
-
-		cloud_status_label = Label.new()
-		cloud_status_label.name = "CloudStatusLabel"
-		cloud_status_label.add_theme_font_size_override("font_size", 10)
-		cloud_status_label.text = "Cloud Base: 1.25 km | RH: 68%"
-		cloud_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		btn_vbox.add_child(cloud_status_label)
-		btn_vbox.move_child(cloud_status_label, 16)
-
-		south_cap_btn = Button.new()
-		south_cap_btn.name = "ViewSouthCapButton"
-		south_cap_btn.text = "Inspect South End Cap (z = -8.5 km)"
-		south_cap_btn.focus_mode = Control.FOCUS_NONE
-		south_cap_btn.add_theme_font_size_override("font_size", 12)
-		south_cap_btn.pressed.connect(_on_view_south_cap_pressed)
-		btn_vbox.add_child(south_cap_btn)
-
-		north_cap_btn = Button.new()
-		north_cap_btn.name = "ViewNorthCapButton"
-		north_cap_btn.text = "Inspect North End Cap (z = +8.5 km)"
-		north_cap_btn.focus_mode = Control.FOCUS_NONE
-		north_cap_btn.add_theme_font_size_override("font_size", 12)
-		north_cap_btn.pressed.connect(_on_view_north_cap_pressed)
-		btn_vbox.add_child(north_cap_btn)
-
-		deploy_campfire_btn = Button.new()
-		deploy_campfire_btn.name = "DeployCampfireButton"
-		deploy_campfire_btn.text = "Deploy Campfire at Feet"
-		deploy_campfire_btn.focus_mode = Control.FOCUS_NONE
-		deploy_campfire_btn.add_theme_font_size_override("font_size", 12)
-		deploy_campfire_btn.pressed.connect(_on_deploy_campfire_pressed)
-		btn_vbox.add_child(deploy_campfire_btn)
-
-		deploy_lamp_btn = Button.new()
-		deploy_lamp_btn.name = "DeployLampButton"
-		deploy_lamp_btn.text = "Deploy Lamp Post at Feet"
-		deploy_lamp_btn.focus_mode = Control.FOCUS_NONE
-		deploy_lamp_btn.add_theme_font_size_override("font_size", 12)
-		deploy_lamp_btn.pressed.connect(_on_deploy_lamp_pressed)
-		btn_vbox.add_child(deploy_lamp_btn)
+	var vbox_system = get_node_or_null("UIRoot/ControlPanel/TabContainer/System/VBoxSystem") as VBoxContainer
+	if vbox_system:
+		_setup_system_tab(vbox_system)
 
 	_update_solar_ui()
+
+func _setup_weather_tab(vbox: VBoxContainer) -> void:
+	spin_direction_btn = Button.new()
+	var is_ccw_init = (weather_system.spin_direction == WeatherSystem.SpinDirection.COUNTER_CLOCKWISE) if weather_system else true
+	spin_direction_btn.text = "Cylinder Spin: %s" % ("Counter-Clockwise (CCW)" if is_ccw_init else "Clockwise (CW)")
+	spin_direction_btn.focus_mode = Control.FOCUS_NONE
+	spin_direction_btn.add_theme_font_size_override("font_size", 11)
+	spin_direction_btn.pressed.connect(_on_spin_direction_toggle_pressed)
+	vbox.add_child(spin_direction_btn)
+
+	var cur_cov = weather_system.cloud_coverage if weather_system else 0.55
+	var r_cov = _create_slider_row(vbox, "Cloud Cover (Overcast):", 0.0, 1.0, 0.01, cur_cov, _on_cloud_cover_slider_changed)
+	cloud_cover_slider = r_cov[0]
+	cloud_cover_val = r_cov[1]
+	cloud_cover_val.text = "%d%%" % int(round(cur_cov * 100.0))
+
+	var cur_thick = weather_system.cloud_thickness_m if weather_system else 250.0
+	var r_thick = _create_slider_row(vbox, "Cloud Deck Thickness:", 50.0, 800.0, 10.0, cur_thick, _on_cloud_thickness_slider_changed)
+	cloud_thickness_slider = r_thick[0]
+	cloud_thickness_val = r_thick[1]
+	cloud_thickness_val.text = "%.0f m" % cur_thick
+
+	var cur_precip = weather_system.precipitation_rate_mmh if weather_system else 0.0
+	var r_precip = _create_slider_row(vbox, "Precipitation (Rain/Mist):", 0.0, 50.0, 0.5, cur_precip, _on_precipitation_slider_changed)
+	precipitation_slider = r_precip[0]
+	precipitation_val = r_precip[1]
+	precipitation_val.text = "%.1f mm/hr" % cur_precip if cur_precip > 0.0 else "0.0 mm/hr [None]"
+
+	var cur_dust = weather_system.dust_density if weather_system else 0.20
+	var r_dust = _create_slider_row(vbox, "Atmospheric Dust & Haze:", 0.0, 1.0, 0.01, cur_dust, _on_dust_slider_changed)
+	dust_slider = r_dust[0]
+	dust_val = r_dust[1]
+	dust_val.text = "%d%%" % int(round(cur_dust * 100.0))
+
+	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
+	var cur_fog = cylinder_world.air_density if cylinder_world else 1.25
+	var r_fog = _create_slider_row(vbox, "Fog Opacity / Density:", 0.0, 2.0, 0.01, cur_fog, _on_fog_changed)
+	fog_slider = r_fog[0]
+	fog_val = r_fog[1]
+	fog_val.text = "%d%%" % int(round(cur_fog * 100.0))
+
+	var cur_hum = weather_system.humidity_density_gm3 if weather_system else 14.5
+	var r_hum = _create_slider_row(vbox, "Humidity Density:", 2.0, 30.0, 0.5, cur_hum, _on_humidity_slider_changed)
+	humidity_slider = r_hum[0]
+	humidity_val = r_hum[1]
+	humidity_val.text = "%.1f g/m³" % cur_hum
+
+	var cur_hvac = weather_system.endcap_air_temperature_c if weather_system else 22.5
+	var r_hvac = _create_slider_row(vbox, "HVAC End-Cap Air Temp:", 10.0, 40.0, 0.5, cur_hvac, _on_hvac_air_slider_changed)
+	hvac_air_slider = r_hvac[0]
+	hvac_air_val = r_hvac[1]
+	hvac_air_val.text = "%.1f °C" % cur_hvac
+
+	var cur_water = weather_system.water_pipe_temperature_c if weather_system else 24.0
+	var r_water = _create_slider_row(vbox, "Water Heating Pipe Temp:", 10.0, 40.0, 0.5, cur_water, _on_water_pipe_slider_changed)
+	water_pipe_slider = r_water[0]
+	water_pipe_val = r_water[1]
+	water_pipe_val.text = "%.1f °C" % cur_water
+
+	cloud_status_label = Label.new()
+	cloud_status_label.name = "CloudStatusLabel"
+	cloud_status_label.add_theme_font_size_override("font_size", 10)
+	cloud_status_label.text = "Cloud Base: 1.25 km | RH: 68%"
+	cloud_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(cloud_status_label)
+
+func _setup_lighting_tab(vbox: VBoxContainer) -> void:
+	var preset_box = VBoxContainer.new()
+	var preset_lbl = Label.new()
+	preset_lbl.text = "Lighting Preset:"
+	preset_lbl.add_theme_font_size_override("font_size", 11)
+	preset_box.add_child(preset_lbl)
+
+	light_preset_option = OptionButton.new()
+	light_preset_option.focus_mode = Control.FOCUS_NONE
+	light_preset_option.add_item("Uniform Daylight", 0)
+	light_preset_option.add_item("Gradient (Diurnal Solar Cycle)", 1)
+	light_preset_option.add_item("Day/Night Wave (Animated)", 2)
+	light_preset_option.add_item("Neon Aurora (Animated)", 3)
+	light_preset_option.add_item("Warm Sunset", 4)
+	light_preset_option.add_item("Solar Day/Night Cycle", 5)
+
+	var cur_sel = 1
+	if light_bar:
+		match light_bar.preset:
+			AxisLightBar.LightingPreset.UNIFORM: cur_sel = 0
+			AxisLightBar.LightingPreset.GRADIENT: cur_sel = 1
+			AxisLightBar.LightingPreset.DAY_NIGHT_WAVE: cur_sel = 2
+			AxisLightBar.LightingPreset.NEON_AURORA: cur_sel = 3
+			AxisLightBar.LightingPreset.WARM_SUNSET: cur_sel = 4
+			AxisLightBar.LightingPreset.SOLAR_CYCLE: cur_sel = 5
+	light_preset_option.select(cur_sel)
+	light_preset_option.item_selected.connect(_on_light_preset_selected)
+	preset_box.add_child(light_preset_option)
+	vbox.add_child(preset_box)
+
+	var cur_intensity = light_bar.global_intensity_multiplier if light_bar else 3.5
+	var r_int = _create_slider_row(vbox, "Light Bar Intensity:", 0.0, 1.0, 0.002, intensity_to_slider_pos(cur_intensity), _on_light_slider_changed)
+	light_intensity_slider = r_int[0]
+	light_intensity_val = r_int[1]
+	_update_intensity_display(cur_intensity)
+
+	# Solar Time of Day
+	var cur_time = light_bar.time_of_day_hours if light_bar else 12.0
+	var r_time = _create_slider_row(vbox, "Time of Day:", 0.0, 24.0, 0.02, cur_time, _on_solar_time_slider_changed)
+	solar_time_slider = r_time[0]
+	solar_time_val = r_time[1]
+	solar_time_val.text = "12:00 [Real-Time]"
+
+	sync_real_time_btn = Button.new()
+	sync_real_time_btn.text = "Sync to Real-Time Clock"
+	sync_real_time_btn.focus_mode = Control.FOCUS_NONE
+	sync_real_time_btn.add_theme_font_size_override("font_size", 10)
+	sync_real_time_btn.pressed.connect(_on_sync_real_time_pressed)
+	vbox.add_child(sync_real_time_btn)
+
+	# Earth Latitude
+	var cur_lat = light_bar.earth_latitude_deg if light_bar else 40.0
+	var r_lat = _create_slider_row(vbox, "Earth Latitude:", -90.0, 90.0, 1.0, cur_lat, _on_latitude_slider_changed)
+	latitude_slider = r_lat[0]
+	latitude_val = r_lat[1]
+	latitude_val.text = "+40.0° N (Temperate)"
+
+	solar_status_label = Label.new()
+	solar_status_label.name = "SolarStatusLabel"
+	solar_status_label.add_theme_font_size_override("font_size", 10)
+	solar_status_label.text = "Solar Elev: +0.0°"
+	solar_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(solar_status_label)
+
+func _setup_physics_tab(vbox: VBoxContainer) -> void:
+	var cur_grav = player.base_gravity if player else 9.5
+	var r_grav = _create_slider_row(vbox, "Base Surface Gravity:", 0.0, 25.0, 0.5, cur_grav, _on_gravity_changed)
+	gravity_slider = r_grav[0]
+	gravity_val = r_grav[1]
+	gravity_val.text = "-%.1f m/s²" % cur_grav
+
+	wobble_test_btn = Button.new()
+	wobble_test_btn.text = "Perturb Horizon Roll (+25°)"
+	wobble_test_btn.focus_mode = Control.FOCUS_NONE
+	wobble_test_btn.add_theme_font_size_override("font_size", 12)
+	wobble_test_btn.pressed.connect(_on_wobble_test_pressed)
+	vbox.add_child(wobble_test_btn)
+
+	reset_spawn_btn = Button.new()
+	reset_spawn_btn.text = "Reset to Spawn"
+	reset_spawn_btn.focus_mode = Control.FOCUS_NONE
+	reset_spawn_btn.add_theme_font_size_override("font_size", 12)
+	reset_spawn_btn.pressed.connect(_on_reset_spawn_pressed)
+	vbox.add_child(reset_spawn_btn)
+
+	var sep = HSeparator.new()
+	vbox.add_child(sep)
+
+	south_cap_btn = Button.new()
+	south_cap_btn.text = "Inspect South End Cap (z = -8.5 km)"
+	south_cap_btn.focus_mode = Control.FOCUS_NONE
+	south_cap_btn.add_theme_font_size_override("font_size", 11)
+	south_cap_btn.pressed.connect(_on_view_south_cap_pressed)
+	vbox.add_child(south_cap_btn)
+
+	north_cap_btn = Button.new()
+	north_cap_btn.text = "Inspect North End Cap (z = +8.5 km)"
+	north_cap_btn.focus_mode = Control.FOCUS_NONE
+	north_cap_btn.add_theme_font_size_override("font_size", 11)
+	north_cap_btn.pressed.connect(_on_view_north_cap_pressed)
+	vbox.add_child(north_cap_btn)
+
+func _setup_system_tab(vbox: VBoxContainer) -> void:
+	var r_scale = _create_slider_row(vbox, "UI Scaling Factor:", 0.75, 2.75, 0.05, current_ui_scale, _on_scale_slider_changed)
+	scale_slider = r_scale[0]
+	scale_val = r_scale[1]
+	_update_scale_slider_ui()
+
+	reset_scale_btn = Button.new()
+	reset_scale_btn.text = "Reset to Auto-Calculated Scale"
+	reset_scale_btn.focus_mode = Control.FOCUS_NONE
+	reset_scale_btn.add_theme_font_size_override("font_size", 10)
+	reset_scale_btn.pressed.connect(_on_reset_scale_pressed)
+	vbox.add_child(reset_scale_btn)
+
+	var sep = HSeparator.new()
+	vbox.add_child(sep)
+
+	deploy_campfire_btn = Button.new()
+	deploy_campfire_btn.text = "Deploy Campfire at Feet (C)"
+	deploy_campfire_btn.focus_mode = Control.FOCUS_NONE
+	deploy_campfire_btn.add_theme_font_size_override("font_size", 11)
+	deploy_campfire_btn.pressed.connect(_on_deploy_campfire_pressed)
+	vbox.add_child(deploy_campfire_btn)
+
+	deploy_lamp_btn = Button.new()
+	deploy_lamp_btn.text = "Deploy Lamp Post at Feet (L)"
+	deploy_lamp_btn.focus_mode = Control.FOCUS_NONE
+	deploy_lamp_btn.add_theme_font_size_override("font_size", 11)
+	deploy_lamp_btn.pressed.connect(_on_deploy_lamp_pressed)
+	vbox.add_child(deploy_lamp_btn)
 
 func _on_telemetry_updated(data: Dictionary) -> void:
 	var is_flying: bool = data.get("is_flying", false)
