@@ -651,92 +651,95 @@ func _build_rain_sheets() -> void:
 		rain_sheet_material.render_priority = 8
 		rain_sheets_mesh_instance.material_override = rain_sheet_material
 
-	# Generate multi-layered curtain cage mesh around player for seamless volumetric depth
+	# Generate multi-layered hexagonal cylinder cage with circumference and opposite-vertex interior sheets
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-
-	# Concentric layers with varied radii, heights, and UV scales: [radius, num_planes, height, width, uv_sx]
-	var layers = [
-		[1.6, 5, 14.0, 3.2, 1.0],   # Close foreground (outside player capsule)
-		[3.0, 6, 16.0, 5.0, 1.5],   # Near field
-		[5.5, 7, 20.0, 8.0, 2.2],   # Mid-inner
-		[10.0, 8, 26.0, 13.0, 3.2],  # Mid
-		[18.0, 8, 34.0, 20.0, 4.5],  # Mid-outer
-		[28.0, 10, 42.0, 28.0, 6.0], # Far
-		[42.0, 12, 52.0, 38.0, 8.0]  # Horizon perimeter
-	]
 
 	var rng = RandomNumberGenerator.new()
 	rng.seed = 4242
 
-	# Concentric ring sheets spanning overhead from ground level
-	for layer in layers:
-		var rad: float = layer[0]
-		var count: int = layer[1]
-		var h: float = layer[2]
-		var w: float = layer[3]
-		var uv_sx: float = layer[4]
+	# Hexagonal cylinder tiers: [radius, height, angle_offset_deg]
+	var hex_tiers = [
+		[4.0, 16.0, 0.0],    # Close & immediate interior
+		[12.0, 24.0, 20.0],  # Mid-range
+		[26.0, 36.0, 40.0],  # Far-range
+		[46.0, 52.0, 10.0]   # Horizon perimeter
+	]
 
-		var d_ang = TAU / float(count)
-		var angle_offset = rng.randf_range(0.0, TAU)
+	for tier in hex_tiers:
+		var rad: float = tier[0]
+		var h: float = tier[1]
+		var angle_offset: float = deg_to_rad(tier[2])
+		var y_bottom = -0.5
 
-		for i in range(count):
-			var ang = float(i) * d_ang + angle_offset
-			var cos_a = cos(ang)
-			var sin_a = sin(ang)
+		# Compute the 6 outer vertices of the regular hexagon
+		var verts: Array[Vector3] = []
+		for k in range(6):
+			var ang = angle_offset + float(k) * (TAU / 6.0)
+			verts.append(Vector3(cos(ang) * rad, 0.0, sin(ang) * rad))
 
-			var center = Vector3(cos_a * rad, 0.0, sin_a * rad)
-			var right_dir = Vector3(-sin_a, 0.0, cos_a)
-			var up_dir = Vector3.UP
+		# 1. Six circumference sheets (outer hexagon edges)
+		for k in range(6):
+			var v_start = verts[k]
+			var v_end = verts[(k + 1) % 6]
+			_add_rain_quad(st, v_start, v_end, y_bottom, h, rng)
 
-			var half_w = w * 0.5
-			var y_bottom = -0.5
-			var y_top = y_bottom + h
-
-			var p0 = center - (right_dir * half_w) + (up_dir * y_bottom)
-			var p1 = center + (right_dir * half_w) + (up_dir * y_bottom)
-			var p2 = center + (right_dir * half_w) + (up_dir * y_top)
-			var p3 = center - (right_dir * half_w) + (up_dir * y_top)
-
-			var u_off = rng.randf()
-
-			# UV.y is 0.0 at bottom (y_bottom) and 1.0 at top (y_top) for vertical edge feathering
-			var uv0 = Vector2(u_off, 0.0)
-			var uv1 = Vector2(u_off + uv_sx, 0.0)
-			var uv2 = Vector2(u_off + uv_sx, 1.0)
-			var uv3 = Vector2(u_off, 1.0)
-
-			var norm = Vector3(cos_a, 0.0, sin_a)
-
-			# Triangle 1
-			st.set_normal(norm)
-			st.set_uv(uv0)
-			st.add_vertex(p0)
-
-			st.set_normal(norm)
-			st.set_uv(uv1)
-			st.add_vertex(p1)
-
-			st.set_normal(norm)
-			st.set_uv(uv2)
-			st.add_vertex(p2)
-
-			# Triangle 2
-			st.set_normal(norm)
-			st.set_uv(uv0)
-			st.add_vertex(p0)
-
-			st.set_normal(norm)
-			st.set_uv(uv2)
-			st.add_vertex(p2)
-
-			st.set_normal(norm)
-			st.set_uv(uv3)
-			st.add_vertex(p3)
+		# 2. Three interior sheets going between opposite vertices (0-3, 1-4, 2-5)
+		for k in range(3):
+			var v_start = verts[k]
+			var v_end = verts[k + 3]
+			_add_rain_quad(st, v_start, v_end, y_bottom, h, rng)
 
 	var mesh = st.commit()
 	rain_sheets_mesh_instance.mesh = mesh
 	rain_sheets_root.visible = false
+
+func _add_rain_quad(st: SurfaceTool, A: Vector3, B: Vector3, y_bottom: float, h: float, rng: RandomNumberGenerator) -> void:
+	var edge = B - A
+	var w = edge.length()
+	var edge_dir = edge.normalized() if w > 0.001 else Vector3.RIGHT
+	var up_dir = Vector3.UP
+	var norm = edge_dir.cross(up_dir).normalized()
+
+	var y_top = y_bottom + h
+	var p0 = A + Vector3(0.0, y_bottom, 0.0)
+	var p1 = B + Vector3(0.0, y_bottom, 0.0)
+	var p2 = B + Vector3(0.0, y_top, 0.0)
+	var p3 = A + Vector3(0.0, y_top, 0.0)
+
+	var u_off = rng.randf()
+	var u_span = maxf(w * 0.35, 0.8)
+
+	var uv0 = Vector2(u_off, 0.0)
+	var uv1 = Vector2(u_off + u_span, 0.0)
+	var uv2 = Vector2(u_off + u_span, 1.0)
+	var uv3 = Vector2(u_off, 1.0)
+
+	# Triangle 1
+	st.set_normal(norm)
+	st.set_uv(uv0)
+	st.add_vertex(p0)
+
+	st.set_normal(norm)
+	st.set_uv(uv1)
+	st.add_vertex(p1)
+
+	st.set_normal(norm)
+	st.set_uv(uv2)
+	st.add_vertex(p2)
+
+	# Triangle 2
+	st.set_normal(norm)
+	st.set_uv(uv0)
+	st.add_vertex(p0)
+
+	st.set_normal(norm)
+	st.set_uv(uv2)
+	st.add_vertex(p2)
+
+	st.set_normal(norm)
+	st.set_uv(uv3)
+	st.add_vertex(p3)
 
 func _get_density_tier(precip_rate: float) -> int:
 	if precip_rate <= 0.05:
