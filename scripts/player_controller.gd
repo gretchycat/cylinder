@@ -485,23 +485,23 @@ func _emit_telemetry() -> void:
 	last_telemetry = telemetry
 	telemetry_updated.emit(telemetry)
 
-func launch_aimed_particle(speed: float = 35.0) -> void:
+func launch_aimed_particle(speed: float = 40.0) -> void:
 	var emitter = get_tree().get_first_node_in_group("particle_emitter") as CylinderParticleEmitter if is_inside_tree() else null
 	if emitter:
 		var cam_forward = -camera.global_transform.basis.z.normalized() if camera else -global_transform.basis.z.normalized()
-		var spawn_pos = (camera.global_position if camera else global_position) + cam_forward * 1.5
+		var spawn_pos = (camera.global_position if camera else global_position) + cam_forward * 2.0
 		emitter.launch_particle(spawn_pos, cam_forward * speed, {
-			"color": Color(0.2, 0.9, 1.0, 1.0),
-			"size": 1.2,
-			"bounces": 2
+			"color": Color(0.2, 0.95, 1.0, 1.0),
+			"size": 4.0,
+			"bounces": 3
 		})
 
-func launch_vertical_particle(speed: float = 30.0) -> void:
+func launch_vertical_particle(speed: float = 35.0) -> void:
 	var emitter = get_tree().get_first_node_in_group("particle_emitter") as CylinderParticleEmitter if is_inside_tree() else null
 	if emitter:
-		var spawn_pos = global_position + global_basis.y * 1.8
+		var spawn_pos = global_position + global_basis.y * 2.5
 		emitter.launch_relative_to_surface(spawn_pos, 0.0, speed, 0.0, {
 			"color": Color(1.0, 0.85, 0.2, 1.0),
-			"size": 1.4,
-			"bounces": 2
+			"size": 4.5,
+			"bounces": 3
 		})

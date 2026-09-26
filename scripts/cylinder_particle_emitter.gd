@@ -12,23 +12,22 @@ signal particle_landed(particle_id: int, impact_pos: Vector3, flight_time: float
 @export var air_drag_coefficient: float = 0.0 # 0.0 = vacuum rotating frame, >0 = aerodynamic drag
 
 @export_category("Particle Properties")
-@export var max_particles: int = 500
-@export var particle_lifetime: float = 30.0
-@export var trail_lifetime: float = 45.0
-@export var max_trail_points: int = 250
-@export var bounciness: float = 0.25
+@export var max_particles: int = 1500
+@export var particle_lifetime: float = 60.0
+@export var trail_lifetime: float = 90.0
+@export var max_trail_points: int = 300
+@export var bounciness: float = 0.35
 @export var max_bounces: int = 1
 
 @export_category("Visuals & Trajectory Rendering")
 @export var show_trajectories: bool = true
 @export var show_particles: bool = true
-@export var trajectory_line_width: float = 2.0
-@export var default_particle_color: Color = Color(0.2, 0.85, 1.0, 1.0)
-@export var impact_marker_color: Color = Color(1.0, 0.4, 0.2, 0.9)
+@export var default_particle_color: Color = Color(0.25, 0.90, 1.0, 1.0)
+@export var impact_marker_color: Color = Color(1.0, 0.45, 0.2, 0.95)
 
 @export_category("Continuous Stream / Rain Generator")
 @export var rain_stream_enabled: bool = false
-@export var rain_stream_rate: float = 5.0 # particles per second
+@export var rain_stream_rate: float = 30.0 # particles per second
 @export var rain_stream_altitude: float = 1250.0 # meters above floor (cloud base)
 
 class ParticleData:
@@ -40,7 +39,7 @@ class ParticleData:
 	var bounces_remaining: int = 0
 	var trail: Array[Vector3] = []
 	var color: Color = Color.WHITE
-	var size: float = 1.0
+	var size: float = 2.5
 	var flight_time: float = 0.0
 	var impact_pos: Vector3 = Vector3.ZERO
 	var has_landed: bool = false
@@ -74,39 +73,45 @@ func _fetch_references() -> void:
 		terrain_manager = cylinder_world.terrain_manager
 
 func _setup_visual_nodes() -> void:
-	# 1. Trajectory line renderer using ImmediateMesh
+	# 1. Trajectory line renderer using ImmediateMesh with expansive AABB to prevent frustum culling
 	trail_mesh_instance = MeshInstance3D.new()
 	trail_mesh_instance.name = "TrajectoryLineRenderer"
 	trail_mesh = ImmediateMesh.new()
 	trail_mesh_instance.mesh = trail_mesh
+	trail_mesh_instance.custom_aabb = AABB(Vector3(-6000, -6000, -15000), Vector3(12000, 12000, 30000))
+	trail_mesh_instance.extra_cull_margin = 15000.0
 
 	var line_mat = StandardMaterial3D.new()
 	line_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	line_mat.vertex_color_use_as_albedo = true
 	line_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	line_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	line_mat.render_priority = 8
+	line_mat.render_priority = 11
 	trail_mesh_instance.material_override = line_mat
 	add_child(trail_mesh_instance)
 
 	# 2. Particle sphere rendering via MultiMeshInstance3D for high performance
 	particle_multimesh_instance = MultiMeshInstance3D.new()
 	particle_multimesh_instance.name = "ParticleMultiMesh"
+	particle_multimesh_instance.custom_aabb = AABB(Vector3(-6000, -6000, -15000), Vector3(12000, 12000, 30000))
+	particle_multimesh_instance.extra_cull_margin = 15000.0
+
 	particle_multimesh = MultiMesh.new()
 	particle_multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	particle_multimesh.use_colors = true
 	particle_multimesh.instance_count = max_particles
 
 	var sphere_mesh = SphereMesh.new()
-	sphere_mesh.radius = 1.2
-	sphere_mesh.height = 2.4
+	sphere_mesh.radius = 2.0
+	sphere_mesh.height = 4.0
 	particle_multimesh.mesh = sphere_mesh
 
 	var p_mat = StandardMaterial3D.new()
 	p_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	p_mat.vertex_color_use_as_albedo = true
 	p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	p_mat.render_priority = 9
+	p_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	p_mat.render_priority = 12
 	particle_multimesh_instance.material_override = p_mat
 	particle_multimesh_instance.multimesh = particle_multimesh
 	add_child(particle_multimesh_instance)
@@ -127,6 +132,13 @@ func _update_physics_parameters() -> void:
 	if weather:
 		spin_direction = int(weather.spin_direction)
 		base_gravity = weather.base_gravity
+		if weather.precipitation_rate_mmh > 0.05:
+			rain_stream_enabled = true
+			var intensity_norm = clampf(weather.precipitation_rate_mmh / 40.0, 0.05, 1.0)
+			rain_stream_rate = lerpf(15.0, 120.0, intensity_norm)
+			rain_stream_altitude = weather.cloud_altitude_m
+		else:
+			rain_stream_enabled = false
 
 func get_omega() -> float:
 	return sqrt(base_gravity / maxf(cylinder_radius, 1.0))
@@ -241,22 +253,28 @@ func _process_continuous_rain_stream(delta: float) -> void:
 	while rain_stream_accum >= 1.0:
 		rain_stream_accum -= 1.0
 
-		# Spawn droplet from cloud base altitude (e.g. r = 4000 - 1250 = 2750m)
-		var spawn_r = cylinder_radius - rain_stream_altitude
-		var spawn_theta = player_theta + randf_range(-0.25, 0.25)
-		var spawn_z = player_z + randf_range(-250.0, 250.0)
+		# Distribute droplets from cloud base down through the atmospheric column
+		var r_cloud = cylinder_radius - rain_stream_altitude
+		var spawn_r = lerpf(r_cloud, cylinder_radius - 20.0, randf() * randf())
+		var spawn_theta = player_theta + randf_range(-0.35, 0.35)
+		var spawn_z = player_z + randf_range(-350.0, 350.0)
 
 		var cos_t = cos(spawn_theta)
 		var sin_t = sin(spawn_theta)
 		var origin = Vector3(spawn_r * cos_t, spawn_r * sin_t, spawn_z)
 
-		# Initial condensation downward velocity directed radially outward (+r direction toward ground)
+		# Initial downward condensation fall velocity directed radially outward (+r direction toward ground)
 		var out_dir = Vector3(cos_t, sin_t, 0.0)
-		var v_init = (out_dir * randf_range(3.0, 8.0)) + Vector3(randf_range(-0.5, 0.5), randf_range(-0.5, 0.5), randf_range(-0.5, 0.5))
+		var spin_sign = float(spin_direction)
+		var tangent_dir = Vector3(-sin_t, cos_t, 0.0) * spin_sign
+
+		# Droplet terminal fall speed and retrograde Coriolis tilt
+		var fall_speed = randf_range(12.0, 24.0)
+		var v_init = (out_dir * fall_speed) + (tangent_dir * (-2.0 * get_omega() * fall_speed * 0.4)) + Vector3(0, 0, randf_range(-1.0, 1.0))
 
 		launch_particle(origin, v_init, {
-			"color": Color(0.70, 0.88, 1.0, 0.75),
-			"size": 0.9,
+			"color": Color(0.75, 0.90, 1.0, 0.85),
+			"size": randf_range(1.5, 3.0),
 			"bounces": 0
 		})
 
@@ -274,7 +292,7 @@ func launch_particle(origin: Vector3, velocity_world: Vector3, custom_data: Dict
 	p.is_active = true
 	p.bounces_remaining = custom_data.get("bounces", max_bounces)
 	p.color = custom_data.get("color", default_particle_color)
-	p.size = custom_data.get("size", 1.0)
+	p.size = custom_data.get("size", 2.5)
 	p.trail = [origin]
 
 	particles.append(p)
@@ -334,7 +352,19 @@ func _update_visuals() -> void:
 		if i < num_p and show_particles:
 			var p = particles[i]
 			var scale_factor = p.size if p.is_active else p.size * 0.6
-			var t = Transform3D(Basis().scaled(Vector3.ONE * scale_factor), p.position)
+
+			# Orient moving particles along velocity vector for elongated droplet streaks
+			var t: Transform3D
+			if p.velocity.length_squared() > 4.0:
+				var v_dir = p.velocity.normalized()
+				var v_up = Vector3.UP if abs(v_dir.y) < 0.9 else Vector3.FORWARD
+				var b = Basis.looking_at(v_dir, v_up)
+				var stretch = clampf(p.velocity.length() * 0.12, 1.0, 5.0)
+				b = b.scaled(Vector3(scale_factor, scale_factor, scale_factor * stretch))
+				t = Transform3D(b, p.position)
+			else:
+				t = Transform3D(Basis().scaled(Vector3.ONE * scale_factor), p.position)
+
 			particle_multimesh.set_instance_transform(i, t)
 			var fade = clampf(1.0 - (p.age / trail_lifetime), 0.0, 1.0)
 			particle_multimesh.set_instance_color(i, Color(p.color.r, p.color.g, p.color.b, p.color.a * fade))
@@ -360,8 +390,8 @@ func _update_visuals() -> void:
 			var seg_frac0 = float(j) / float(max(pt_count - 1, 1))
 			var seg_frac1 = float(j + 1) / float(max(pt_count - 1, 1))
 
-			var col0 = Color(p.color.r, p.color.g, p.color.b, p.color.a * fade * seg_frac0 * 0.9)
-			var col1 = Color(p.color.r, p.color.g, p.color.b, p.color.a * fade * seg_frac1 * 0.9)
+			var col0 = Color(p.color.r, p.color.g, p.color.b, p.color.a * fade * (0.2 + 0.8 * seg_frac0))
+			var col1 = Color(p.color.r, p.color.g, p.color.b, p.color.a * fade * (0.2 + 0.8 * seg_frac1))
 
 			trail_mesh.surface_set_color(col0)
 			trail_mesh.surface_add_vertex(pts[j])
@@ -371,7 +401,7 @@ func _update_visuals() -> void:
 		# Draw impact marker diamond if landed
 		if p.has_landed:
 			var imp = p.impact_pos
-			var imp_r = 3.5
+			var imp_r = 6.0
 			var c_imp = impact_marker_color
 			c_imp.a *= fade
 
