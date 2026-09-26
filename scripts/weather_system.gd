@@ -915,8 +915,6 @@ func _update_precipitation_emitter() -> void:
 		rain_sheets_root.visible = false
 		return
 
-	rain_sheets_root.visible = true
-
 	var tier = _get_density_tier(precipitation_rate_mmh)
 	if tier != current_rendered_density_tier:
 		current_rendered_density_tier = tier
@@ -932,7 +930,6 @@ func _update_precipitation_emitter() -> void:
 	var uv_scroll_y = fall_speed * 0.16
 	var uv_scroll_x = coriolis_drift * 0.10
 	rain_sheet_material.set_shader_parameter("uv_scroll_speed", Vector2(uv_scroll_x, uv_scroll_y))
-	rain_sheet_material.set_shader_parameter("rain_alpha_multiplier", lerpf(0.75, 1.25, intensity_norm))
 
 func _update_dust_emitter() -> void:
 	if not dust_particles:
@@ -960,22 +957,42 @@ func _update_particle_positions() -> void:
 
 	var p_pos = target_player.global_position
 	var r_vec = Vector2(p_pos.x, p_pos.y)
+	var player_radius = r_vec.length()
+	var player_altitude = maxf(cylinder_radius - player_radius, 0.0)
+
 	var r_dir = r_vec.normalized() if r_vec.length_squared() > 1.0 else Vector2(0, -1)
 	var down_3d = Vector3(r_dir.x, r_dir.y, 0.0) # Radially outward toward floor
 	var up_sky_3d = -down_3d                     # Radially inward toward axis / cloud base
 	var tangent_3d = Vector3(-r_dir.y, r_dir.x, 0.0)
 	var spin_sign = float(spin_direction)
 
-	if rain_sheets_root and rain_sheets_root.is_inside_tree() and rain_sheets_root.visible:
-		rain_sheets_root.global_position = p_pos
-		var local_up = up_sky_3d
-		var local_forward = Vector3(0, 0, 1)
-		var local_right = tangent_3d * spin_sign
+	# Calculate cloud altitude factor:
+	# Below cloud base (altitude < cloud_altitude_m - 80m): full rain (1.0)
+	# Transition zone (cloud_altitude_m - 80m to cloud_altitude_m + 40m): smooth fade out
+	# Above cloud deck (altitude >= cloud_altitude_m + 40m): no rain (0.0)
+	var fade_start = cloud_altitude_m - 80.0
+	var fade_end = cloud_altitude_m + 40.0
+	var altitude_rain_factor = clampf(1.0 - (player_altitude - fade_start) / maxf(fade_end - fade_start, 1.0), 0.0, 1.0)
 
-		var tilt_rad = deg_to_rad(coriolis_rain_tilt_deg)
-		var basis_rain = Basis(local_right, local_up, local_forward)
-		basis_rain = basis_rain.rotated(local_forward, tilt_rad)
-		rain_sheets_root.global_basis = basis_rain
+	if rain_sheets_root and rain_sheets_root.is_inside_tree():
+		if precipitation_rate_mmh <= 0.05 or altitude_rain_factor <= 0.001:
+			rain_sheets_root.visible = false
+		else:
+			rain_sheets_root.visible = true
+			rain_sheets_root.global_position = p_pos
+			var local_up = up_sky_3d
+			var local_forward = Vector3(0, 0, 1)
+			var local_right = tangent_3d * spin_sign
+
+			var tilt_rad = deg_to_rad(coriolis_rain_tilt_deg)
+			var basis_rain = Basis(local_right, local_up, local_forward)
+			basis_rain = basis_rain.rotated(local_forward, tilt_rad)
+			rain_sheets_root.global_basis = basis_rain
+
+			if rain_sheet_material:
+				var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
+				var base_alpha = lerpf(0.75, 1.25, intensity_norm)
+				rain_sheet_material.set_shader_parameter("rain_alpha_multiplier", base_alpha * altitude_rain_factor)
 
 	if dust_particles and dust_particles.is_inside_tree() and dust_particles.emitting:
 		dust_particles.global_position = p_pos
