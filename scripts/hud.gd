@@ -93,7 +93,6 @@ var solar_status_label: Label = null
 # Tab 4: Physics & Habitat UI Controls
 var gravity_slider: HSlider = null
 var gravity_val: Label = null
-var wobble_test_btn: Button = null
 var reset_spawn_btn: Button = null
 var south_cap_btn: Button = null
 var north_cap_btn: Button = null
@@ -180,9 +179,6 @@ func _ready() -> void:
 		toggle_controls_btn.focus_mode = Control.FOCUS_NONE
 		toggle_controls_btn.pressed.connect(_on_toggle_controls_pressed)
 
-	if wobble_test_btn and not wobble_test_btn.pressed.is_connected(_on_wobble_test_pressed):
-		wobble_test_btn.focus_mode = Control.FOCUS_NONE
-		wobble_test_btn.pressed.connect(_on_wobble_test_pressed)
 	if reset_spawn_btn and not reset_spawn_btn.pressed.is_connected(_on_reset_spawn_pressed):
 		reset_spawn_btn.focus_mode = Control.FOCUS_NONE
 		reset_spawn_btn.pressed.connect(_on_reset_spawn_pressed)
@@ -700,13 +696,6 @@ func _setup_physics_tab(vbox: VBoxContainer) -> void:
 	gravity_slider = r_grav[0]
 	gravity_val = r_grav[1]
 	gravity_val.text = "-%.1f m/s²" % cur_grav
-
-	wobble_test_btn = Button.new()
-	wobble_test_btn.text = "Perturb Horizon Roll (+25°)"
-	wobble_test_btn.focus_mode = Control.FOCUS_NONE
-	wobble_test_btn.add_theme_font_size_override("font_size", 12)
-	wobble_test_btn.pressed.connect(_on_wobble_test_pressed)
-	vbox.add_child(wobble_test_btn)
 
 	reset_spawn_btn = Button.new()
 	reset_spawn_btn.text = "Reset to Spawn"
@@ -1609,12 +1598,6 @@ func _on_toggle_controls_pressed() -> void:
 		toggle_controls_btn.release_focus()
 	if control_panel:
 		control_panel.visible = not control_panel.visible
-
-func _on_wobble_test_pressed() -> void:
-	if wobble_test_btn:
-		wobble_test_btn.release_focus()
-	if player:
-		player.wobble_impulse(25.0)
 
 func _on_reset_spawn_pressed() -> void:
 	if reset_spawn_btn:
