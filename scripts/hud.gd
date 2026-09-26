@@ -25,6 +25,9 @@ const CylinderParticleEmitter = preload("res://scripts/cylinder_particle_emitter
 
 var solar_badge_label: Label = null
 var weather_badge_label: Label = null
+var fps_label: Label = null
+var system_fps_label: Label = null
+var fps_update_timer: float = 0.0
 
 # Tab 1: Weather & Atmosphere UI Controls
 var auto_cycle_btn: Button = null
@@ -126,6 +129,25 @@ func _ready() -> void:
 
 	var telem_vbox = get_node_or_null("UIRoot/TelemetryPanel/VBoxContainer")
 	if telem_vbox:
+		var title_node = telem_vbox.get_node_or_null("TitleLabel")
+		var header_hbox = HBoxContainer.new()
+		header_hbox.name = "HeaderHBox"
+		header_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		telem_vbox.add_child(header_hbox)
+		telem_vbox.move_child(header_hbox, 0)
+
+		if title_node:
+			title_node.reparent(header_hbox)
+			title_node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+		fps_label = Label.new()
+		fps_label.name = "FPSLabel"
+		fps_label.add_theme_font_size_override("font_size", 12)
+		fps_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		fps_label.text = "-- FPS"
+		fps_label.modulate = Color(0.3, 1.0, 0.4)
+		header_hbox.add_child(fps_label)
+
 		solar_badge_label = Label.new()
 		solar_badge_label.name = "SolarBadgeLabel"
 		solar_badge_label.add_theme_font_size_override("font_size", 12)
@@ -153,8 +175,9 @@ func _ready() -> void:
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	_update_solar_ui()
+	_update_fps_display(delta)
 
 func _setup_underwater_overlay() -> void:
 	underwater_overlay = ColorRect.new()
@@ -690,6 +713,46 @@ func _setup_system_tab(vbox: VBoxContainer) -> void:
 	deploy_lamp_btn.add_theme_font_size_override("font_size", 11)
 	deploy_lamp_btn.pressed.connect(_on_deploy_lamp_pressed)
 	vbox.add_child(deploy_lamp_btn)
+
+	var stats_sep = HSeparator.new()
+	vbox.add_child(stats_sep)
+
+	system_fps_label = Label.new()
+	system_fps_label.name = "SystemPerformanceLabel"
+	system_fps_label.add_theme_font_size_override("font_size", 10)
+	system_fps_label.text = "Performance: Initializing..."
+	system_fps_label.modulate = Color(0.6, 0.9, 1.0)
+	vbox.add_child(system_fps_label)
+
+func _update_fps_display(delta: float) -> void:
+	fps_update_timer += delta
+	if fps_update_timer < 0.1:
+		return
+	fps_update_timer = 0.0
+
+	var fps = Engine.get_frames_per_second()
+	var frame_ms = (1.0 / maxf(float(fps), 1.0)) * 1000.0
+	if is_zero_approx(fps):
+		frame_ms = delta * 1000.0
+
+	if fps_label:
+		fps_label.text = "%d FPS (%.1f ms)" % [fps, frame_ms]
+		if fps >= 55:
+			fps_label.modulate = Color(0.3, 1.0, 0.4)
+		elif fps >= 30:
+			fps_label.modulate = Color(1.0, 0.85, 0.2)
+		else:
+			fps_label.modulate = Color(1.0, 0.35, 0.3)
+
+	if system_fps_label and is_instance_valid(system_fps_label) and system_fps_label.is_visible_in_tree():
+		var draw_calls = Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)
+		var objects = Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)
+		var vram_mb = Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / (1024.0 * 1024.0)
+		var process_ms = Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+		var physics_ms = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+		system_fps_label.text = "Engine: %d FPS | Frame: %.1f ms (Proc: %.1f ms | Phys: %.1f ms)\nDraw Calls: %d | Objects: %d | VRAM: %.1f MB" % [
+			fps, frame_ms, process_ms, physics_ms, int(draw_calls), int(objects), vram_mb
+		]
 
 func _on_telemetry_updated(data: Dictionary) -> void:
 	var is_flying: bool = data.get("is_flying", false)
