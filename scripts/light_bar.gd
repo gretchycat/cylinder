@@ -602,9 +602,9 @@ func set_time_of_day(hours: float, manual: bool = true) -> void:
 
 func sync_to_system_clock() -> void:
 	use_real_time = true
-	time_of_day_hours = _get_system_time_hours()
-	day_of_year = _get_effective_day_of_year()
-	_apply_current_preset()
+	var d_dict = Time.get_date_dict_from_system()
+	day_of_year = SolarCycleSimulator.get_day_of_year(d_dict["year"], d_dict["month"], d_dict["day"])
+	set_time_of_day(_get_system_time_hours(), false)
 
 func set_earth_latitude(lat_deg: float) -> void:
 	earth_latitude_deg = clampf(lat_deg, -90.0, 90.0)
