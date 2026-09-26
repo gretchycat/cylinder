@@ -49,6 +49,14 @@ var weather_badge_label: Label = null
 var spin_direction_btn: Button = null
 var humidity_slider: HSlider = null
 var humidity_val: Label = null
+var cloud_cover_slider: HSlider = null
+var cloud_cover_val: Label = null
+var cloud_thickness_slider: HSlider = null
+var cloud_thickness_val: Label = null
+var precipitation_slider: HSlider = null
+var precipitation_val: Label = null
+var dust_slider: HSlider = null
+var dust_val: Label = null
 var hvac_air_slider: HSlider = null
 var hvac_air_val: Label = null
 var water_pipe_slider: HSlider = null
@@ -358,7 +366,7 @@ func _setup_control_panel() -> void:
 		btn_vbox.add_child(spin_direction_btn)
 		btn_vbox.move_child(spin_direction_btn, 8)
 
-		# Humidity Density Slider (g/m³)
+		# 1. Humidity Density Slider (g/m³)
 		var hum_box = VBoxContainer.new()
 		hum_box.name = "HBoxHumidity"
 		var hum_header = HBoxContainer.new()
@@ -388,7 +396,127 @@ func _setup_control_panel() -> void:
 		btn_vbox.add_child(hum_box)
 		btn_vbox.move_child(hum_box, 9)
 
-		# HVAC End-Cap Air Temp Slider
+		# 2. Cloud Coverage Slider (%)
+		var cover_box = VBoxContainer.new()
+		cover_box.name = "HBoxCloudCover"
+		var cover_header = HBoxContainer.new()
+		var cover_label = Label.new()
+		cover_label.text = "Cloud Cover (Overcast):"
+		cover_label.add_theme_font_size_override("font_size", 11)
+		cover_header.add_child(cover_label)
+
+		cloud_cover_val = Label.new()
+		cloud_cover_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		cloud_cover_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		cloud_cover_val.add_theme_font_size_override("font_size", 11)
+		var cur_cov = weather_system.cloud_coverage if weather_system else 0.55
+		cloud_cover_val.text = "%d%%" % int(round(cur_cov * 100.0))
+		cover_header.add_child(cloud_cover_val)
+		cover_box.add_child(cover_header)
+
+		cloud_cover_slider = HSlider.new()
+		cloud_cover_slider.name = "CloudCoverSlider"
+		cloud_cover_slider.focus_mode = Control.FOCUS_NONE
+		cloud_cover_slider.min_value = 0.0
+		cloud_cover_slider.max_value = 1.0
+		cloud_cover_slider.step = 0.01
+		cloud_cover_slider.value = cur_cov
+		cloud_cover_slider.value_changed.connect(_on_cloud_cover_slider_changed)
+		cover_box.add_child(cloud_cover_slider)
+		btn_vbox.add_child(cover_box)
+		btn_vbox.move_child(cover_box, 10)
+
+		# 3. Cloud Deck Thickness Slider (m)
+		var thick_box = VBoxContainer.new()
+		thick_box.name = "HBoxCloudThickness"
+		var thick_header = HBoxContainer.new()
+		var thick_label = Label.new()
+		thick_label.text = "Cloud Deck Thickness:"
+		thick_label.add_theme_font_size_override("font_size", 11)
+		thick_header.add_child(thick_label)
+
+		cloud_thickness_val = Label.new()
+		cloud_thickness_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		cloud_thickness_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		cloud_thickness_val.add_theme_font_size_override("font_size", 11)
+		var cur_thick = weather_system.cloud_thickness_m if weather_system else 250.0
+		cloud_thickness_val.text = "%.0f m" % cur_thick
+		thick_header.add_child(cloud_thickness_val)
+		thick_box.add_child(thick_header)
+
+		cloud_thickness_slider = HSlider.new()
+		cloud_thickness_slider.name = "CloudThicknessSlider"
+		cloud_thickness_slider.focus_mode = Control.FOCUS_NONE
+		cloud_thickness_slider.min_value = 50.0
+		cloud_thickness_slider.max_value = 800.0
+		cloud_thickness_slider.step = 10.0
+		cloud_thickness_slider.value = cur_thick
+		cloud_thickness_slider.value_changed.connect(_on_cloud_thickness_slider_changed)
+		thick_box.add_child(cloud_thickness_slider)
+		btn_vbox.add_child(thick_box)
+		btn_vbox.move_child(thick_box, 11)
+
+		# 4. Precipitation Rate Slider (mm/hr)
+		var precip_box = VBoxContainer.new()
+		precip_box.name = "HBoxPrecipitation"
+		var precip_header = HBoxContainer.new()
+		var precip_label = Label.new()
+		precip_label.text = "Precipitation (Rain/Mist):"
+		precip_label.add_theme_font_size_override("font_size", 11)
+		precip_header.add_child(precip_label)
+
+		precipitation_val = Label.new()
+		precipitation_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		precipitation_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		precipitation_val.add_theme_font_size_override("font_size", 11)
+		var cur_precip = weather_system.precipitation_rate_mmh if weather_system else 0.0
+		precipitation_val.text = "%.1f mm/hr" % cur_precip if cur_precip > 0.0 else "0.0 mm/hr [None]"
+		precip_header.add_child(precipitation_val)
+		precip_box.add_child(precip_header)
+
+		precipitation_slider = HSlider.new()
+		precipitation_slider.name = "PrecipitationSlider"
+		precipitation_slider.focus_mode = Control.FOCUS_NONE
+		precipitation_slider.min_value = 0.0
+		precipitation_slider.max_value = 50.0
+		precipitation_slider.step = 0.5
+		precipitation_slider.value = cur_precip
+		precipitation_slider.value_changed.connect(_on_precipitation_slider_changed)
+		precip_box.add_child(precipitation_slider)
+		btn_vbox.add_child(precip_box)
+		btn_vbox.move_child(precip_box, 12)
+
+		# 5. Atmospheric Dust & Particulate Slider (%)
+		var dust_box = VBoxContainer.new()
+		dust_box.name = "HBoxDust"
+		var dust_header = HBoxContainer.new()
+		var dust_label = Label.new()
+		dust_label.text = "Atmospheric Dust & Haze:"
+		dust_label.add_theme_font_size_override("font_size", 11)
+		dust_header.add_child(dust_label)
+
+		dust_val = Label.new()
+		dust_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		dust_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		dust_val.add_theme_font_size_override("font_size", 11)
+		var cur_dust = weather_system.dust_density if weather_system else 0.20
+		dust_val.text = "%d%%" % int(round(cur_dust * 100.0))
+		dust_header.add_child(dust_val)
+		dust_box.add_child(dust_header)
+
+		dust_slider = HSlider.new()
+		dust_slider.name = "DustSlider"
+		dust_slider.focus_mode = Control.FOCUS_NONE
+		dust_slider.min_value = 0.0
+		dust_slider.max_value = 1.0
+		dust_slider.step = 0.01
+		dust_slider.value = cur_dust
+		dust_slider.value_changed.connect(_on_dust_slider_changed)
+		dust_box.add_child(dust_slider)
+		btn_vbox.add_child(dust_box)
+		btn_vbox.move_child(dust_box, 13)
+
+		# 6. HVAC End-Cap Air Temp Slider
 		var hvac_box = VBoxContainer.new()
 		hvac_box.name = "HBoxHVACAir"
 		var hvac_header = HBoxContainer.new()
@@ -416,9 +544,9 @@ func _setup_control_panel() -> void:
 		hvac_air_slider.value_changed.connect(_on_hvac_air_slider_changed)
 		hvac_box.add_child(hvac_air_slider)
 		btn_vbox.add_child(hvac_box)
-		btn_vbox.move_child(hvac_box, 10)
+		btn_vbox.move_child(hvac_box, 14)
 
-		# Water Heating Pipe Temp Slider
+		# 7. Water Heating Pipe Temp Slider
 		var water_box = VBoxContainer.new()
 		water_box.name = "HBoxWaterPipe"
 		var water_header = HBoxContainer.new()
@@ -446,7 +574,7 @@ func _setup_control_panel() -> void:
 		water_pipe_slider.value_changed.connect(_on_water_pipe_slider_changed)
 		water_box.add_child(water_pipe_slider)
 		btn_vbox.add_child(water_box)
-		btn_vbox.move_child(water_box, 11)
+		btn_vbox.move_child(water_box, 15)
 
 		cloud_status_label = Label.new()
 		cloud_status_label.name = "CloudStatusLabel"
@@ -454,7 +582,7 @@ func _setup_control_panel() -> void:
 		cloud_status_label.text = "Cloud Base: 1.25 km | RH: 68%"
 		cloud_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		btn_vbox.add_child(cloud_status_label)
-		btn_vbox.move_child(cloud_status_label, 12)
+		btn_vbox.move_child(cloud_status_label, 16)
 
 		south_cap_btn = Button.new()
 		south_cap_btn.name = "ViewSouthCapButton"
@@ -689,9 +817,17 @@ func _on_weather_updated(data: Dictionary) -> void:
 		var w_state = data.get("weather_state", "Fair Cumulus")
 		var rh = data.get("relative_humidity_pct", 68.0)
 		var cloud_km = data.get("cloud_altitude_km", 1.25)
+		var cloud_th = data.get("cloud_thickness_m", 250.0)
 		var density_gm3 = data.get("humidity_density_gm3", 14.5)
-		weather_badge_label.text = "WEATHER: [%s] | Hum: %.1f g/m³ (RH: %d%%)\nCLOUDS: Deck @ %.2f km AGL (r = %.0f m)" % [
-			w_state.to_upper(), density_gm3, int(round(rh)), cloud_km, data.get("cloud_radius_m", 2750.0)
+		var precip = data.get("precipitation_rate_mmh", 0.0)
+		var dust_pct = data.get("dust_density_pct", 20)
+
+		var precip_str = ""
+		if precip > 0.05:
+			precip_str = " | Rain: %.1f mm/h (Tilt: %+.1f°)" % [precip, data.get("coriolis_rain_tilt_deg", 0.0)]
+
+		weather_badge_label.text = "WEATHER: [%s] | Hum: %.1f g/m³ (RH: %d%%)%s\nCLOUDS: Deck @ %.2f km AGL (Thick: %.0fm) | Dust: %d%%" % [
+			w_state.to_upper(), density_gm3, int(round(rh)), precip_str, cloud_km, cloud_th, dust_pct
 		]
 		match w_state:
 			"Clear Sky":
@@ -700,17 +836,20 @@ func _on_weather_updated(data: Dictionary) -> void:
 				weather_badge_label.modulate = Color(0.5, 1.0, 0.7)
 			"Scattered Clouds":
 				weather_badge_label.modulate = Color(0.9, 0.9, 0.5)
-			"Overcast":
+			"Overcast Deck":
 				weather_badge_label.modulate = Color(0.8, 0.8, 0.9)
-			"Atmospheric Rain & Mist":
-				weather_badge_label.modulate = Color(0.6, 0.7, 1.0)
+			"Atmospheric Rain & Mist", "Light Rain & Mist", "Moderate Rain", "Heavy Atmospheric Downpour":
+				weather_badge_label.modulate = Color(0.55, 0.75, 1.0)
+			_:
+				weather_badge_label.modulate = Color(0.7, 0.9, 0.8)
 
 	if cloud_status_label:
 		var dew = data.get("dew_point_c", 15.2)
 		var hvac_t = data.get("endcap_air_temp_c", 22.5)
 		var water_t = data.get("water_pipe_temp_c", 24.0)
-		cloud_status_label.text = "Cloud Deck: %.2f km | Dew Point: %.1f°C\nHVAC Air: %.1f°C | Water Pipes: %.1f°C" % [
-			data.get("cloud_altitude_km", 1.25), dew, hvac_t, water_t
+		var precip = data.get("precipitation_rate_mmh", 0.0)
+		cloud_status_label.text = "LCL Base: %.2f km | Dew: %.1f°C | Rain: %.1f mm/h\nHVAC Air: %.1f°C | Water Pipes: %.1f°C" % [
+			data.get("cloud_altitude_km", 1.25), dew, precip, hvac_t, water_t
 		]
 
 func _on_spin_direction_toggle_pressed() -> void:
@@ -729,6 +868,37 @@ func _on_humidity_slider_changed(val: float) -> void:
 		weather_system.humidity_density_gm3 = val
 	if humidity_val:
 		humidity_val.text = "%.1f g/m³" % val
+
+func _on_cloud_cover_slider_changed(val: float) -> void:
+	if weather_system:
+		weather_system.cloud_coverage = val
+	if cloud_cover_val:
+		cloud_cover_val.text = "%d%%" % int(round(val * 100.0))
+
+func _on_cloud_thickness_slider_changed(val: float) -> void:
+	if weather_system:
+		weather_system.cloud_thickness_m = val
+	if cloud_thickness_val:
+		cloud_thickness_val.text = "%.0f m" % val
+
+func _on_precipitation_slider_changed(val: float) -> void:
+	if weather_system:
+		weather_system.precipitation_rate_mmh = val
+	if precipitation_val:
+		if val <= 0.05:
+			precipitation_val.text = "0.0 mm/hr [None]"
+		elif val < 8.0:
+			precipitation_val.text = "%.1f mm/hr [Mist]" % val
+		elif val < 25.0:
+			precipitation_val.text = "%.1f mm/hr [Rain]" % val
+		else:
+			precipitation_val.text = "%.1f mm/hr [Heavy]" % val
+
+func _on_dust_slider_changed(val: float) -> void:
+	if weather_system:
+		weather_system.dust_density = val
+	if dust_val:
+		dust_val.text = "%d%%" % int(round(val * 100.0))
 
 func _on_hvac_air_slider_changed(val: float) -> void:
 	if weather_system:

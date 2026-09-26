@@ -5,12 +5,14 @@ render_mode cull_disabled, blend_mix, depth_draw_opaque, diffuse_burley, specula
 uniform float cylinder_radius = 4000.0;
 uniform float cylinder_length = 18000.0;
 uniform float cloud_altitude = 1250.0;    // Meters above ground (1.0 to 1.5 km)
+uniform float cloud_thickness = 250.0;   // Vertical deck thickness in meters (50m - 800m)
 
 // Weather & Humidity parameters
 uniform float humidity_density = 14.5;    // g/m³
 uniform float cloud_coverage : hint_range(0.0, 1.0) = 0.55;
 uniform float cloud_density : hint_range(0.0, 3.0) = 1.0;
 uniform float cloud_softness : hint_range(0.01, 1.0) = 0.25;
+uniform float dust_density : hint_range(0.0, 1.0) = 0.20;
 
 // Coriolis & Wind flow vectors (updated by WeatherSystem)
 uniform vec2 wind_velocity = vec2(0.003, 0.001); // (theta_speed, z_speed)
@@ -22,6 +24,7 @@ uniform vec4 cloud_color_day : source_color = vec4(0.98, 0.98, 1.0, 1.0);
 uniform vec4 cloud_color_sunset : source_color = vec4(1.0, 0.65, 0.40, 1.0);
 uniform vec4 cloud_color_night : source_color = vec4(0.18, 0.16, 0.32, 1.0);
 uniform vec4 cloud_shadow_color : source_color = vec4(0.55, 0.60, 0.70, 1.0);
+uniform vec4 dust_tint : source_color = vec4(0.92, 0.85, 0.72, 1.0);
 
 uniform sampler2D axial_light_lut : hint_default_white, filter_linear, repeat_disable;
 uniform float axial_light_enabled = 1.0;
@@ -29,6 +32,7 @@ uniform float global_light_intensity = 3.5;
 
 varying vec3 world_pos;
 varying vec3 local_normal;
+varying float layer_depth_ratio;
 
 // Fractional Brownian Motion noise for fluffy cumulus clouds
 float hash(vec2 p) {
@@ -66,6 +70,11 @@ float fbm(vec2 p) {
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	local_normal = normalize(NORMAL);
+
+	// Calculate radial distance from rotational axis to determine shell depth
+	float r_pos = length(world_pos.xy);
+	float r_base = cylinder_radius - cloud_altitude;
+	layer_depth_ratio = clamp((r_base - r_pos) / max(cloud_thickness, 10.0), 0.0, 1.0);
 }
 
 void fragment() {
@@ -77,34 +86,35 @@ void fragment() {
 	// 1. Helical coordinate flow driven by Coriolis circulation from end caps
 	float z_norm = world_pos.z / (cylinder_length * 0.5); // -1.0 at South Cap to +1.0 at North Cap
 	float z_dist = world_pos.z;
-	float arc_dist = angle * (cylinder_radius - cloud_altitude);
 
 	// Coriolis spiral distortion: rising humid air turns prograde (+theta) or retrograde (-theta)
 	float coriolis_shear = -z_norm * 0.45 * coriolis_spin_direction;
 	float flow_theta = angle + coriolis_shear + (wind_velocity.x * coriolis_spin_direction) * (TIME * time_scale);
 	float flow_z = (z_dist * 0.0006) + wind_velocity.y * (TIME * time_scale);
 
-	vec2 uv_cloud1 = vec2(flow_theta * 4.0, flow_z * 3.0);
-	vec2 uv_cloud2 = vec2(flow_theta * 8.0 - flow_z * 2.0, flow_z * 7.0 + flow_theta * 1.5);
+	// Scale UV with cloud thickness: thicker clouds have more billowing internal structures
+	float thickness_freq_mult = mix(0.85, 1.4, clamp(cloud_thickness / 400.0, 0.0, 2.0));
+	vec2 uv_cloud1 = vec2(flow_theta * 4.0 * thickness_freq_mult, flow_z * 3.0 * thickness_freq_mult);
+	vec2 uv_cloud2 = vec2(flow_theta * 8.0 - flow_z * 2.0, flow_z * 7.0 + flow_theta * 1.5) * thickness_freq_mult;
 
-	// 2. Multi-scale cloud density computation
-	float n1 = fbm(uv_cloud1);
-	float n2 = fbm(uv_cloud2 + vec2(TIME * 0.005 * coriolis_spin_direction, 0.0));
+	// 2. Multi-scale cloud density computation with 3D layer depth modulation
+	float n1 = fbm(uv_cloud1 + vec2(layer_depth_ratio * 0.35, 0.0));
+	float n2 = fbm(uv_cloud2 + vec2(TIME * 0.005 * coriolis_spin_direction, layer_depth_ratio * 0.2));
 	float cloud_shape = mix(n1, n2, 0.35);
 
-	// Humidity density threshold: higher humidity density lowers condensation threshold
-	// (e.g. 8 g/m³ = light clouds, 14 g/m³ = cumulus overcast, 20 g/m³ = storm clouds)
-	float humidity_factor = clamp((humidity_density - 5.0) / 15.0, 0.0, 2.0);
-	float threshold = (1.0 - (cloud_coverage * humidity_factor * 0.75)) * 0.85;
+	// Cloud cover and thickness influence on condensation threshold
+	// Higher cloud coverage and thickness lowers the threshold to produce larger, denser cumulus
+	float thickness_boost = clamp(cloud_thickness / 300.0, 0.2, 2.0);
+	float threshold = (1.0 - (cloud_coverage * 0.95)) * 0.82;
 
 	float raw_alpha = smoothstep(threshold, threshold + cloud_softness, cloud_shape);
-	float density = raw_alpha * cloud_density;
+	float density = raw_alpha * cloud_density * thickness_boost;
 
 	// End cap boundary fading (clearer air near ventilation injection collars)
 	float endcap_fade = 1.0 - smoothstep(cylinder_length * 0.45, cylinder_length * 0.50, abs(world_pos.z));
 	density *= endcap_fade;
 
-	if (density < 0.01) {
+	if (density < 0.008) {
 		discard;
 	}
 
@@ -124,12 +134,17 @@ void fragment() {
 	vec3 night_tint = cloud_color_night.rgb;
 	vec3 illuminated_cloud = mix(night_tint, day_tint, clamp(axial_lum, 0.0, 1.0));
 
+	// Incorporate atmospheric dust scattering into cloud illumination
+	if (dust_density > 0.02) {
+		illuminated_cloud = mix(illuminated_cloud, illuminated_cloud * dust_tint.rgb, dust_density * 0.45);
+	}
+
 	// Light scattering through cloud tops vs underbellies
-	float cloud_top_light = smoothstep(threshold + 0.1, threshold + 0.4, cloud_shape);
+	float cloud_top_light = smoothstep(threshold + 0.08, threshold + 0.38, cloud_shape);
 	vec3 final_cloud_rgb = mix(illuminated_cloud * cloud_shadow_color.rgb, illuminated_cloud * 1.15, cloud_top_light);
 
 	ALBEDO = final_cloud_rgb;
-	ALPHA = clamp(density * 0.85, 0.0, 0.95);
+	ALPHA = clamp(density * 0.88, 0.0, 0.96);
 	ROUGHNESS = 1.0;
 	METALLIC = 0.0;
 }
