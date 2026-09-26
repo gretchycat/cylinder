@@ -529,7 +529,7 @@ func _setup_lighting_tab(vbox: VBoxContainer) -> void:
 func _setup_time_tab(vbox: VBoxContainer) -> void:
 	# Solar / Habitat In-Game Clock Time of Day
 	var cur_time = light_bar.time_of_day_hours if light_bar else 12.0
-	var r_time = _create_slider_row(vbox, "In-Game Time of Day:", 0.0, 24.0, 0.02, cur_time, _on_solar_time_slider_changed)
+	var r_time = _create_slider_row(vbox, "In-Game Time of Day:", 0.0, 24.0, 0.0005, cur_time, _on_solar_time_slider_changed)
 	solar_time_slider = r_time[0]
 	solar_time_val = r_time[1]
 	solar_time_val.text = "12:00:00 [Real-Time]"
@@ -855,6 +855,7 @@ func _on_solar_time_slider_changed(value: float) -> void:
 func _on_time_scale_slider_changed(value: float) -> void:
 	if light_bar:
 		light_bar.time_scale = value
+		light_bar.use_real_time = false
 	_update_time_scale_display(value)
 	_update_solar_ui()
 
@@ -879,6 +880,9 @@ func _on_sync_real_time_pressed() -> void:
 		sync_real_time_btn.release_focus()
 	if light_bar:
 		light_bar.sync_to_system_clock()
+	if time_scale_slider:
+		time_scale_slider.set_value_no_signal(1.0)
+	_update_time_scale_display(1.0)
 	_update_solar_ui()
 
 func _on_latitude_slider_changed(value: float) -> void:
@@ -921,7 +925,7 @@ func _update_solar_ui() -> void:
 	if solar_time_val:
 		solar_time_val.text = "%02d:%02d:%02d [%s]" % [hours, mins, secs, mode_tag]
 
-	if solar_time_slider and (is_rt or t_scale > 0.0):
+	if solar_time_slider:
 		solar_time_slider.set_value_no_signal(t_hours)
 
 	if latitude_val:

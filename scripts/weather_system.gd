@@ -244,6 +244,8 @@ func _process(delta: float) -> void:
 	_update_dynamic_wind(delta)
 	_update_cloud_deck_coriolis_motion(delta, current_clock_hours)
 	_update_shader_parameters()
+	_update_precipitation_emitter()
+	_update_dust_emitter()
 	_update_particle_positions()
 	_emit_weather_telemetry()
 
