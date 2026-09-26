@@ -655,28 +655,27 @@ func _build_rain_sheets() -> void:
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	# Concentric layers with varied radii, heights, and UV scales: [radius, num_planes, height, width, uv_sx, uv_sy]
+	# Concentric layers with varied radii, heights, and UV scales: [radius, num_planes, height, width, uv_sx]
 	var layers = [
-		[0.9, 4, 10.0, 2.8, 0.8, 0.6],  # Close foreground right in front of view
-		[1.8, 5, 12.0, 4.2, 1.2, 0.8],  # Immediate near field
-		[3.2, 6, 16.0, 7.0, 1.8, 1.0],  # Close radius
-		[6.5, 6, 22.0, 12.0, 2.5, 1.4], # Mid-inner
-		[12.5, 8, 28.0, 18.0, 3.2, 1.8],# Mid-outer
-		[21.0, 8, 36.0, 24.0, 4.0, 2.2],# Far
-		[34.0, 10, 48.0, 32.0, 5.0, 2.6]# Horizon perimeter
+		[1.6, 5, 14.0, 3.2, 1.0],   # Close foreground (outside player capsule)
+		[3.0, 6, 16.0, 5.0, 1.5],   # Near field
+		[5.5, 7, 20.0, 8.0, 2.2],   # Mid-inner
+		[10.0, 8, 26.0, 13.0, 3.2],  # Mid
+		[18.0, 8, 34.0, 20.0, 4.5],  # Mid-outer
+		[28.0, 10, 42.0, 28.0, 6.0], # Far
+		[42.0, 12, 52.0, 38.0, 8.0]  # Horizon perimeter
 	]
 
 	var rng = RandomNumberGenerator.new()
 	rng.seed = 4242
 
-	# 1. Concentric ring sheets
+	# Concentric ring sheets spanning overhead from ground level
 	for layer in layers:
 		var rad: float = layer[0]
 		var count: int = layer[1]
 		var h: float = layer[2]
 		var w: float = layer[3]
 		var uv_sx: float = layer[4]
-		var uv_sy: float = layer[5]
 
 		var d_ang = TAU / float(count)
 		var angle_offset = rng.randf_range(0.0, TAU)
@@ -691,20 +690,21 @@ func _build_rain_sheets() -> void:
 			var up_dir = Vector3.UP
 
 			var half_w = w * 0.5
-			var half_h = h * 0.5
+			var y_bottom = -0.5
+			var y_top = y_bottom + h
 
-			var p0 = center - (right_dir * half_w) - (up_dir * half_h)
-			var p1 = center + (right_dir * half_w) - (up_dir * half_h)
-			var p2 = center + (right_dir * half_w) + (up_dir * half_h)
-			var p3 = center - (right_dir * half_w) + (up_dir * half_h)
+			var p0 = center - (right_dir * half_w) + (up_dir * y_bottom)
+			var p1 = center + (right_dir * half_w) + (up_dir * y_bottom)
+			var p2 = center + (right_dir * half_w) + (up_dir * y_top)
+			var p3 = center - (right_dir * half_w) + (up_dir * y_top)
 
 			var u_off = rng.randf()
-			var v_off = rng.randf()
 
-			var uv0 = Vector2(u_off, v_off + uv_sy)
-			var uv1 = Vector2(u_off + uv_sx, v_off + uv_sy)
-			var uv2 = Vector2(u_off + uv_sx, v_off)
-			var uv3 = Vector2(u_off, v_off)
+			# UV.y is 0.0 at bottom (y_bottom) and 1.0 at top (y_top) for vertical edge feathering
+			var uv0 = Vector2(u_off, 0.0)
+			var uv1 = Vector2(u_off + uv_sx, 0.0)
+			var uv2 = Vector2(u_off + uv_sx, 1.0)
+			var uv3 = Vector2(u_off, 1.0)
 
 			var norm = Vector3(cos_a, 0.0, sin_a)
 
@@ -733,64 +733,6 @@ func _build_rain_sheets() -> void:
 			st.set_normal(norm)
 			st.set_uv(uv3)
 			st.add_vertex(p3)
-
-	# 2. Intersecting cross planes passing directly through the center (0, 0, 0)
-	var cross_planes = [
-		[Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), 10.0, 5.0, 1.4, 0.9],
-		[Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), 10.0, 5.0, 1.4, 0.9],
-		[Vector3(0.0, 0.0, 0.0), Vector3(0.707, 0.0, 0.707), 10.0, 5.0, 1.4, 0.9],
-		[Vector3(0.0, 0.0, 0.0), Vector3(-0.707, 0.0, 0.707), 10.0, 5.0, 1.4, 0.9]
-	]
-	for cp in cross_planes:
-		var center: Vector3 = cp[0]
-		var right_dir: Vector3 = cp[1]
-		var h: float = cp[2]
-		var w: float = cp[3]
-		var uv_sx: float = cp[4]
-		var uv_sy: float = cp[5]
-		var up_dir = Vector3.UP
-
-		var half_w = w * 0.5
-		var half_h = h * 0.5
-
-		var p0 = center - (right_dir * half_w) - (up_dir * half_h)
-		var p1 = center + (right_dir * half_w) - (up_dir * half_h)
-		var p2 = center + (right_dir * half_w) + (up_dir * half_h)
-		var p3 = center - (right_dir * half_w) + (up_dir * half_h)
-
-		var u_off = rng.randf()
-		var v_off = rng.randf()
-
-		var uv0 = Vector2(u_off, v_off + uv_sy)
-		var uv1 = Vector2(u_off + uv_sx, v_off + uv_sy)
-		var uv2 = Vector2(u_off + uv_sx, v_off)
-		var uv3 = Vector2(u_off, v_off)
-
-		var norm = right_dir.cross(up_dir).normalized()
-
-		st.set_normal(norm)
-		st.set_uv(uv0)
-		st.add_vertex(p0)
-
-		st.set_normal(norm)
-		st.set_uv(uv1)
-		st.add_vertex(p1)
-
-		st.set_normal(norm)
-		st.set_uv(uv2)
-		st.add_vertex(p2)
-
-		st.set_normal(norm)
-		st.set_uv(uv0)
-		st.add_vertex(p0)
-
-		st.set_normal(norm)
-		st.set_uv(uv2)
-		st.add_vertex(p2)
-
-		st.set_normal(norm)
-		st.set_uv(uv3)
-		st.add_vertex(p3)
 
 	var mesh = st.commit()
 	rain_sheets_mesh_instance.mesh = mesh

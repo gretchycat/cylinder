@@ -16,9 +16,11 @@ uniform float far_fade_min = 38.0;
 uniform float far_fade_max = 58.0;
 
 varying vec3 v_world_pos;
+varying float v_vert_y;
 
 void vertex() {
 	v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	v_vert_y = UV.y;
 }
 
 void fragment() {
@@ -28,8 +30,12 @@ void fragment() {
 	float dist = length(v_world_pos - CAMERA_POSITION_WORLD);
 	float near_fade = smoothstep(near_fade_min, near_fade_max, dist);
 	float far_fade = 1.0 - smoothstep(far_fade_min, far_fade_max, dist);
-	float total_alpha = tex.a * rain_tint.a * near_fade * far_fade * rain_alpha_multiplier;
+	
+	// Vertical edge feathering: fade alpha to 0 at bottom and top of sheet
+	float vertical_fade = smoothstep(0.0, 0.14, v_vert_y) * (1.0 - smoothstep(0.86, 1.0, v_vert_y));
+	float total_alpha = tex.a * rain_tint.a * near_fade * far_fade * rain_alpha_multiplier * vertical_fade;
 
 	ALBEDO = tex.rgb * rain_tint.rgb;
 	ALPHA = total_alpha;
 }
+
