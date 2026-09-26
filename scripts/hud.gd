@@ -5,6 +5,7 @@ const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
 
 @export var player: PlayerController
 @export var light_bar: AxisLightBar
+@export var weather_system: WeatherSystem
 
 # Root Container for Adaptive Scaling
 @onready var ui_root: Control = $UIRoot
@@ -16,19 +17,19 @@ const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
 @onready var artificial_horizon: Control = get_node_or_null("UIRoot/HorizonContainer/VBoxContainer/ArtificialHorizon")
 @onready var horizon_angle_label: Label = get_node_or_null("UIRoot/HorizonContainer/VBoxContainer/HorizonAngleLabel")
 
-@onready var light_preset_option: OptionButton = $UIRoot/ControlPanel/VBoxContainer/HBoxPreset/OptionButton
-@onready var light_intensity_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxIntensity/HSlider
-@onready var light_intensity_val: Label = $UIRoot/ControlPanel/VBoxContainer/HBoxIntensity/HBox/ValLabel
-@onready var fog_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxFog/HSlider
-@onready var fog_val: Label = $UIRoot/ControlPanel/VBoxContainer/HBoxFog/HBox/ValLabel
-@onready var gravity_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxGravity/HSlider
-@onready var gravity_val: Label = $UIRoot/ControlPanel/VBoxContainer/HBoxGravity/HBox/ValLabel
+@onready var light_preset_option: OptionButton = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxPreset/OptionButton
+@onready var light_intensity_slider: HSlider = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity/HSlider
+@onready var light_intensity_val: Label = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity/HBox/ValLabel
+@onready var fog_slider: HSlider = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog/HSlider
+@onready var fog_val: Label = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog/HBox/ValLabel
+@onready var gravity_slider: HSlider = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity/HSlider
+@onready var gravity_val: Label = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity/HBox/ValLabel
 @onready var toggle_controls_btn: Button = $UIRoot/ToggleControlsButton
 @onready var control_panel: PanelContainer = $UIRoot/ControlPanel
 @onready var touch_controls: MobileTouchControls = $UIRoot/TouchControls
 
-@onready var wobble_test_btn: Button = $UIRoot/ControlPanel/VBoxContainer/WobbleTestButton
-@onready var reset_spawn_btn: Button = $UIRoot/ControlPanel/VBoxContainer/ResetSpawnButton
+@onready var wobble_test_btn: Button = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/WobbleTestButton
+@onready var reset_spawn_btn: Button = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/ResetSpawnButton
 var south_cap_btn: Button = null
 var north_cap_btn: Button = null
 var deploy_campfire_btn: Button = null
@@ -43,10 +44,21 @@ var latitude_slider: HSlider = null
 var latitude_val: Label = null
 var solar_status_label: Label = null
 
+# Atmospheric Weather & HVAC UI Controls
+var weather_badge_label: Label = null
+var spin_direction_btn: Button = null
+var humidity_slider: HSlider = null
+var humidity_val: Label = null
+var hvac_air_slider: HSlider = null
+var hvac_air_val: Label = null
+var water_pipe_slider: HSlider = null
+var water_pipe_val: Label = null
+var cloud_status_label: Label = null
+
 # UI Scaling Controls
-@onready var scale_slider: HSlider = $UIRoot/ControlPanel/VBoxContainer/HBoxScale/HSlider
-@onready var scale_val: Label = $UIRoot/ControlPanel/VBoxContainer/HBoxScale/HBox/ValLabel
-@onready var reset_scale_btn: Button = $UIRoot/ControlPanel/VBoxContainer/HBoxScale/ResetScaleButton
+@onready var scale_slider: HSlider = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale/HSlider
+@onready var scale_val: Label = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale/HBox/ValLabel
+@onready var reset_scale_btn: Button = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale/ResetScaleButton
 
 var current_ui_scale: float = 1.0
 var is_scale_auto: bool = true
@@ -59,11 +71,15 @@ func _ready() -> void:
 		player = get_tree().get_first_node_in_group("player")
 	if not light_bar:
 		light_bar = get_tree().get_first_node_in_group("light_bar")
+	if not weather_system:
+		weather_system = get_tree().get_first_node_in_group("weather_system")
 
 	_setup_underwater_overlay()
 
 	if player:
 		player.telemetry_updated.connect(_on_telemetry_updated)
+	if weather_system:
+		weather_system.weather_updated.connect(_on_weather_updated)
 
 	_setup_ui_scaling()
 	_setup_control_panel()
@@ -76,6 +92,13 @@ func _ready() -> void:
 		solar_badge_label.text = "SOLAR: --:--:-- [--]"
 		telem_vbox.add_child(solar_badge_label)
 		telem_vbox.move_child(solar_badge_label, 3)
+
+		weather_badge_label = Label.new()
+		weather_badge_label.name = "WeatherBadgeLabel"
+		weather_badge_label.add_theme_font_size_override("font_size", 11)
+		weather_badge_label.text = "WEATHER: Initializing atmospheric thermodynamics..."
+		telem_vbox.add_child(weather_badge_label)
+		telem_vbox.move_child(weather_badge_label, 4)
 
 	if toggle_controls_btn:
 		toggle_controls_btn.focus_mode = Control.FOCUS_NONE
@@ -235,7 +258,7 @@ func _setup_control_panel() -> void:
 		if gravity_val:
 			gravity_val.text = "-%.1f m/s²" % gravity_slider.value
 
-	var btn_vbox = $UIRoot/ControlPanel/VBoxContainer
+	var btn_vbox = $UIRoot/ControlPanel/ScrollContainer/VBoxContainer
 	if btn_vbox:
 		# 1. Solar Time of Day Controls
 		var time_box = VBoxContainer.new()
@@ -311,6 +334,127 @@ func _setup_control_panel() -> void:
 
 		btn_vbox.add_child(lat_box)
 		btn_vbox.move_child(lat_box, 5)
+
+		# 3. Atmospheric Weather & HVAC Thermal Controls
+		var weather_sep = HSeparator.new()
+		btn_vbox.add_child(weather_sep)
+		btn_vbox.move_child(weather_sep, 6)
+
+		var weather_header = Label.new()
+		weather_header.name = "WeatherHeader"
+		weather_header.text = "ATMOSPHERIC WEATHER & HVAC"
+		weather_header.add_theme_font_size_override("font_size", 12)
+		weather_header.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0))
+		btn_vbox.add_child(weather_header)
+		btn_vbox.move_child(weather_header, 7)
+
+		spin_direction_btn = Button.new()
+		spin_direction_btn.name = "SpinDirectionButton"
+		var is_ccw_init = (weather_system.spin_direction == WeatherSystem.SpinDirection.COUNTER_CLOCKWISE) if weather_system else true
+		spin_direction_btn.text = "Cylinder Spin: %s" % ("Counter-Clockwise (CCW)" if is_ccw_init else "Clockwise (CW)")
+		spin_direction_btn.focus_mode = Control.FOCUS_NONE
+		spin_direction_btn.add_theme_font_size_override("font_size", 11)
+		spin_direction_btn.pressed.connect(_on_spin_direction_toggle_pressed)
+		btn_vbox.add_child(spin_direction_btn)
+		btn_vbox.move_child(spin_direction_btn, 8)
+
+		# Humidity Density Slider (g/m³)
+		var hum_box = VBoxContainer.new()
+		hum_box.name = "HBoxHumidity"
+		var hum_header = HBoxContainer.new()
+		var hum_label = Label.new()
+		hum_label.text = "Humidity Density:"
+		hum_label.add_theme_font_size_override("font_size", 11)
+		hum_header.add_child(hum_label)
+
+		humidity_val = Label.new()
+		humidity_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		humidity_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		humidity_val.add_theme_font_size_override("font_size", 11)
+		var cur_hum = weather_system.humidity_density_gm3 if weather_system else 14.5
+		humidity_val.text = "%.1f g/m³" % cur_hum
+		hum_header.add_child(humidity_val)
+		hum_box.add_child(hum_header)
+
+		humidity_slider = HSlider.new()
+		humidity_slider.name = "HumiditySlider"
+		humidity_slider.focus_mode = Control.FOCUS_NONE
+		humidity_slider.min_value = 2.0
+		humidity_slider.max_value = 30.0
+		humidity_slider.step = 0.5
+		humidity_slider.value = cur_hum
+		humidity_slider.value_changed.connect(_on_humidity_slider_changed)
+		hum_box.add_child(humidity_slider)
+		btn_vbox.add_child(hum_box)
+		btn_vbox.move_child(hum_box, 9)
+
+		# HVAC End-Cap Air Temp Slider
+		var hvac_box = VBoxContainer.new()
+		hvac_box.name = "HBoxHVACAir"
+		var hvac_header = HBoxContainer.new()
+		var hvac_label = Label.new()
+		hvac_label.text = "HVAC End-Cap Air Temp:"
+		hvac_label.add_theme_font_size_override("font_size", 11)
+		hvac_header.add_child(hvac_label)
+
+		hvac_air_val = Label.new()
+		hvac_air_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hvac_air_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		hvac_air_val.add_theme_font_size_override("font_size", 11)
+		var cur_hvac = weather_system.endcap_air_temperature_c if weather_system else 22.5
+		hvac_air_val.text = "%.1f °C" % cur_hvac
+		hvac_header.add_child(hvac_air_val)
+		hvac_box.add_child(hvac_header)
+
+		hvac_air_slider = HSlider.new()
+		hvac_air_slider.name = "HVACAirSlider"
+		hvac_air_slider.focus_mode = Control.FOCUS_NONE
+		hvac_air_slider.min_value = 10.0
+		hvac_air_slider.max_value = 40.0
+		hvac_air_slider.step = 0.5
+		hvac_air_slider.value = cur_hvac
+		hvac_air_slider.value_changed.connect(_on_hvac_air_slider_changed)
+		hvac_box.add_child(hvac_air_slider)
+		btn_vbox.add_child(hvac_box)
+		btn_vbox.move_child(hvac_box, 10)
+
+		# Water Heating Pipe Temp Slider
+		var water_box = VBoxContainer.new()
+		water_box.name = "HBoxWaterPipe"
+		var water_header = HBoxContainer.new()
+		var water_label = Label.new()
+		water_label.text = "Water Heating Pipe Temp:"
+		water_label.add_theme_font_size_override("font_size", 11)
+		water_header.add_child(water_label)
+
+		water_pipe_val = Label.new()
+		water_pipe_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		water_pipe_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		water_pipe_val.add_theme_font_size_override("font_size", 11)
+		var cur_water = weather_system.water_pipe_temperature_c if weather_system else 24.0
+		water_pipe_val.text = "%.1f °C" % cur_water
+		water_header.add_child(water_pipe_val)
+		water_box.add_child(water_header)
+
+		water_pipe_slider = HSlider.new()
+		water_pipe_slider.name = "WaterPipeSlider"
+		water_pipe_slider.focus_mode = Control.FOCUS_NONE
+		water_pipe_slider.min_value = 10.0
+		water_pipe_slider.max_value = 40.0
+		water_pipe_slider.step = 0.5
+		water_pipe_slider.value = cur_water
+		water_pipe_slider.value_changed.connect(_on_water_pipe_slider_changed)
+		water_box.add_child(water_pipe_slider)
+		btn_vbox.add_child(water_box)
+		btn_vbox.move_child(water_box, 11)
+
+		cloud_status_label = Label.new()
+		cloud_status_label.name = "CloudStatusLabel"
+		cloud_status_label.add_theme_font_size_override("font_size", 10)
+		cloud_status_label.text = "Cloud Base: 1.25 km | RH: 68%"
+		cloud_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		btn_vbox.add_child(cloud_status_label)
+		btn_vbox.move_child(cloud_status_label, 12)
 
 		south_cap_btn = Button.new()
 		south_cap_btn.name = "ViewSouthCapButton"
@@ -535,8 +679,68 @@ func _on_fog_changed(value: float) -> void:
 func _on_gravity_changed(value: float) -> void:
 	if player:
 		player.base_gravity = value
+	if weather_system:
+		weather_system.base_gravity = value
 	if gravity_val:
 		gravity_val.text = "-%.1f m/s²" % value
+
+func _on_weather_updated(data: Dictionary) -> void:
+	if weather_badge_label:
+		var w_state = data.get("weather_state", "Fair Cumulus")
+		var rh = data.get("relative_humidity_pct", 68.0)
+		var cloud_km = data.get("cloud_altitude_km", 1.25)
+		var density_gm3 = data.get("humidity_density_gm3", 14.5)
+		weather_badge_label.text = "WEATHER: [%s] | Hum: %.1f g/m³ (RH: %d%%)\nCLOUDS: Deck @ %.2f km AGL (r = %.0f m)" % [
+			w_state.to_upper(), density_gm3, int(round(rh)), cloud_km, data.get("cloud_radius_m", 2750.0)
+		]
+		match w_state:
+			"Clear Sky":
+				weather_badge_label.modulate = Color(0.4, 0.9, 1.0)
+			"Fair Cumulus":
+				weather_badge_label.modulate = Color(0.5, 1.0, 0.7)
+			"Scattered Clouds":
+				weather_badge_label.modulate = Color(0.9, 0.9, 0.5)
+			"Overcast":
+				weather_badge_label.modulate = Color(0.8, 0.8, 0.9)
+			"Atmospheric Rain & Mist":
+				weather_badge_label.modulate = Color(0.6, 0.7, 1.0)
+
+	if cloud_status_label:
+		var dew = data.get("dew_point_c", 15.2)
+		var hvac_t = data.get("endcap_air_temp_c", 22.5)
+		var water_t = data.get("water_pipe_temp_c", 24.0)
+		cloud_status_label.text = "Cloud Deck: %.2f km | Dew Point: %.1f°C\nHVAC Air: %.1f°C | Water Pipes: %.1f°C" % [
+			data.get("cloud_altitude_km", 1.25), dew, hvac_t, water_t
+		]
+
+func _on_spin_direction_toggle_pressed() -> void:
+	if spin_direction_btn:
+		spin_direction_btn.release_focus()
+	if not weather_system:
+		return
+	var is_currently_ccw = (weather_system.spin_direction == WeatherSystem.SpinDirection.COUNTER_CLOCKWISE)
+	weather_system.set_spin_direction(not is_currently_ccw)
+	var new_is_ccw = (weather_system.spin_direction == WeatherSystem.SpinDirection.COUNTER_CLOCKWISE)
+	if spin_direction_btn:
+		spin_direction_btn.text = "Cylinder Spin: %s" % ("Counter-Clockwise (CCW)" if new_is_ccw else "Clockwise (CW)")
+
+func _on_humidity_slider_changed(val: float) -> void:
+	if weather_system:
+		weather_system.humidity_density_gm3 = val
+	if humidity_val:
+		humidity_val.text = "%.1f g/m³" % val
+
+func _on_hvac_air_slider_changed(val: float) -> void:
+	if weather_system:
+		weather_system.endcap_air_temperature_c = val
+	if hvac_air_val:
+		hvac_air_val.text = "%.1f °C" % val
+
+func _on_water_pipe_slider_changed(val: float) -> void:
+	if weather_system:
+		weather_system.water_pipe_temperature_c = val
+	if water_pipe_val:
+		water_pipe_val.text = "%.1f °C" % val
 
 func _on_toggle_controls_pressed() -> void:
 	if toggle_controls_btn:

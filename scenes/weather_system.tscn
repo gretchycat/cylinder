@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cy8w2k9q4d7px"]
+
+[ext_resource type="Script" path="res://scripts/weather_system.gd" id="1_weather"]
+
+[node name="WeatherSystem" type="Node3D" groups=["weather_system"]]
+script = ExtResource("1_weather")

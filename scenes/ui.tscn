@@ -182,148 +182,155 @@ text = "Tuning Settings ⚙"
 [node name="ControlPanel" type="PanelContainer" parent="UIRoot"]
 visible = false
 layout_mode = 1
-anchors_preset = 1
+anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -340.0
-offset_top = 190.0
-offset_right = -20.0
-offset_bottom = 690.0
+anchor_bottom = 1.0
+offset_left = -350.0
+offset_top = 185.0
+offset_right = -15.0
+offset_bottom = -15.0
 grow_horizontal = 0
+grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="UIRoot/ControlPanel"]
+[node name="ScrollContainer" type="ScrollContainer" parent="UIRoot/ControlPanel"]
 layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 7
 
-[node name="PanelTitle" type="Label" parent="UIRoot/ControlPanel/VBoxContainer"]
+[node name="PanelTitle" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
 theme_override_font_sizes/font_size = 13
 text = "LIVE SYSTEM TUNING"
 
-[node name="HBoxScale" type="VBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer"]
+[node name="HBoxScale" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer/HBoxScale"]
+[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="UIRoot/ControlPanel/VBoxContainer/HBoxScale/HBox"]
+[node name="Label" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale/HBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "UI Scaling Factor:"
 
-[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/VBoxContainer/HBoxScale/HBox"]
+[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "1.85x [Auto]"
 horizontal_alignment = 2
 
-[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/VBoxContainer/HBoxScale"]
+[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale"]
 layout_mode = 2
 min_value = 0.75
 max_value = 2.75
 step = 0.05
 value = 1.85
 
-[node name="ResetScaleButton" type="Button" parent="UIRoot/ControlPanel/VBoxContainer/HBoxScale"]
+[node name="ResetScaleButton" type="Button" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxScale"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "Reset to Auto-Calculated Scale"
 
-[node name="HSeparator2" type="HSeparator" parent="UIRoot/ControlPanel/VBoxContainer"]
+[node name="HSeparator2" type="HSeparator" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="HBoxPreset" type="VBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer"]
+[node name="HBoxPreset" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="UIRoot/ControlPanel/VBoxContainer/HBoxPreset"]
+[node name="Label" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxPreset"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Lighting Preset:"
 
-[node name="OptionButton" type="OptionButton" parent="UIRoot/ControlPanel/VBoxContainer/HBoxPreset"]
+[node name="OptionButton" type="OptionButton" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxPreset"]
 layout_mode = 2
 
-[node name="HBoxIntensity" type="VBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer"]
+[node name="HBoxIntensity" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer/HBoxIntensity"]
+[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="UIRoot/ControlPanel/VBoxContainer/HBoxIntensity/HBox"]
+[node name="Label" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity/HBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Light Bar Intensity:"
 
-[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/VBoxContainer/HBoxIntensity/HBox"]
+[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "1.8x"
 horizontal_alignment = 2
 
-[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/VBoxContainer/HBoxIntensity"]
+[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxIntensity"]
 layout_mode = 2
 
-[node name="HBoxFog" type="VBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer"]
+[node name="HBoxFog" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer/HBoxFog"]
+[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="UIRoot/ControlPanel/VBoxContainer/HBoxFog/HBox"]
+[node name="Label" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog/HBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Fog Opacity / Density:"
 
-[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/VBoxContainer/HBoxFog/HBox"]
+[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "125%"
 horizontal_alignment = 2
 
-[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/VBoxContainer/HBoxFog"]
+[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxFog"]
 layout_mode = 2
 max_value = 2.0
 step = 0.01
 value = 1.25
 
-[node name="HBoxGravity" type="VBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer"]
+[node name="HBoxGravity" type="VBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/VBoxContainer/HBoxGravity"]
+[node name="HBox" type="HBoxContainer" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="UIRoot/ControlPanel/VBoxContainer/HBoxGravity/HBox"]
+[node name="Label" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity/HBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Base Surface Gravity:"
 
-[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/VBoxContainer/HBoxGravity/HBox"]
+[node name="ValLabel" type="Label" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "-9.5 m/s²"
 horizontal_alignment = 2
 
-[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/VBoxContainer/HBoxGravity"]
+[node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer/HBoxGravity"]
 layout_mode = 2
 max_value = 25.0
 step = 0.5
 value = 9.5
 
-[node name="HSeparator" type="HSeparator" parent="UIRoot/ControlPanel/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="WobbleTestButton" type="Button" parent="UIRoot/ControlPanel/VBoxContainer"]
+[node name="WobbleTestButton" type="Button" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Perturb Horizon Roll (+25°)"
 
-[node name="ResetSpawnButton" type="Button" parent="UIRoot/ControlPanel/VBoxContainer"]
+[node name="ResetSpawnButton" type="Button" parent="UIRoot/ControlPanel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Reset to Spawn"

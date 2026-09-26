@@ -1,10 +1,11 @@
-[gd_scene load_steps=8 format=3 uid="uid://bv51k8r2y1m4e"]
+[gd_scene load_steps=9 format=3 uid="uid://bv51k8r2y1m4e"]
 
 [ext_resource type="PackedScene" path="res://scenes/cylinder_world.tscn" id="1_cylinder"]
 [ext_resource type="PackedScene" path="res://scenes/light_bar.tscn" id="2_light_bar"]
 [ext_resource type="Script" path="res://scripts/reference_objects.gd" id="3_markers"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="4_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui.tscn" id="5_ui"]
+[ext_resource type="PackedScene" path="res://scenes/weather_system.tscn" id="6_weather"]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
@@ -32,6 +33,8 @@ environment = SubResource("Environment_1")
 [node name="CylinderWorld" parent="." instance=ExtResource("1_cylinder")]
 
 [node name="AxisLightBar" parent="." instance=ExtResource("2_light_bar")]
+
+[node name="WeatherSystem" parent="." instance=ExtResource("6_weather")]
 
 [node name="ReferenceObjects" type="Node3D" parent="."]
 script = ExtResource("3_markers")
