@@ -41,8 +41,9 @@ enum LightingPreset {
 @export_category("Solar Day/Night Cycle (Earth Latitude)")
 @export var use_real_time: bool = true:
 	set(val):
+		var changed = (use_real_time != val)
 		use_real_time = val
-		if use_real_time and is_inside_tree():
+		if changed and use_real_time and is_inside_tree():
 			sync_to_system_clock()
 
 @export var earth_latitude_deg: float = 40.0:
@@ -53,12 +54,17 @@ enum LightingPreset {
 
 @export var time_of_day_hours: float = 12.0:
 	set(val):
-		time_of_day_hours = fposmod(val, 24.0)
+		var new_val = fposmod(val, 24.0)
+		if is_equal_approx(time_of_day_hours, new_val):
+			return
+		time_of_day_hours = new_val
 		if is_inside_tree():
 			_apply_current_preset()
 
 @export var day_of_year: int = 0: # 0 = auto from system date
 	set(val):
+		if day_of_year == val:
+			return
 		day_of_year = clampi(val, 0, 366)
 		if is_inside_tree():
 			_apply_current_preset()

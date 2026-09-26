@@ -209,9 +209,28 @@ func _ready() -> void:
 	_init_weather_trajectory()
 
 func _process(delta: float) -> void:
-	_update_weather_trajectory(delta)
+	var effective_dt = delta * trajectory_speed_scale
+
+	if tie_to_in_game_clock:
+		var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
+		if light_bar:
+			var cur_hours = light_bar.time_of_day_hours
+			if last_in_game_time_hours >= 0.0:
+				var dh = cur_hours - last_in_game_time_hours
+				if dh < -12.0:
+					dh += 24.0
+				elif dh > 12.0:
+					dh -= 24.0
+				
+				# Convert in-game hours to progression seconds (1 hr in-game = 3600 sec)
+				var clock_dt = dh * 3600.0 * trajectory_speed_scale
+				if absf(clock_dt) > 0.0001:
+					effective_dt = clock_dt
+			last_in_game_time_hours = cur_hours
+
+	_update_weather_trajectory(effective_dt)
 	_update_dynamic_wind(delta)
-	_update_cloud_deck_coriolis_motion(delta)
+	_update_cloud_deck_coriolis_motion(effective_dt)
 	_update_shader_parameters()
 	_update_particle_positions()
 	_emit_weather_telemetry()
@@ -334,26 +353,7 @@ func get_queue_items_summary() -> Array[String]:
 		summaries.append("%d. %s (%ds)" % [i + 1, item_name, dur])
 	return summaries
 
-func _update_weather_trajectory(delta: float) -> void:
-	var effective_dt = delta * trajectory_speed_scale
-
-	if tie_to_in_game_clock:
-		var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
-		if light_bar:
-			var cur_hours = light_bar.time_of_day_hours
-			if last_in_game_time_hours >= 0.0:
-				var dh = cur_hours - last_in_game_time_hours
-				if dh < -12.0:
-					dh += 24.0
-				elif dh > 12.0:
-					dh -= 24.0
-				
-				# Convert in-game hours to progression seconds (1 hr = 3600 sec)
-				var clock_dt = dh * 3600.0 * trajectory_speed_scale
-				if absf(clock_dt) > 0.0001:
-					effective_dt = clock_dt
-			last_in_game_time_hours = cur_hours
-
+func _update_weather_trajectory(effective_dt: float) -> void:
 	if not is_transitioning or trajectory_start_state.is_empty() or trajectory_target_state.is_empty():
 		if auto_weather_cycle_enabled and not weather_trajectories.is_empty():
 			if not trajectory_queue.is_empty():
@@ -364,9 +364,10 @@ func _update_weather_trajectory(delta: float) -> void:
 		return
 
 	# If clock advanced past duration, loop through subsequent queue items or cycle
-	while is_transitioning and effective_dt > 0.0 and (trajectory_timer + effective_dt) >= trajectory_duration:
+	var remaining_dt = effective_dt
+	while is_transitioning and remaining_dt > 0.0 and (trajectory_timer + remaining_dt) >= trajectory_duration:
 		var step_left = trajectory_duration - trajectory_timer
-		effective_dt -= step_left
+		remaining_dt -= step_left
 		trajectory_timer = trajectory_duration
 
 		# Snap to target state values on completion
@@ -389,7 +390,7 @@ func _update_weather_trajectory(delta: float) -> void:
 			break
 
 	if is_transitioning:
-		trajectory_timer += maxf(0.0, effective_dt)
+		trajectory_timer += maxf(0.0, remaining_dt)
 		var t = clampf(trajectory_timer / maxf(trajectory_duration, 0.1), 0.0, 1.0)
 		# Smooth S-curve (cosine interpolation for organic meteorological progression)
 		var s = 0.5 - 0.5 * cos(t * PI)
