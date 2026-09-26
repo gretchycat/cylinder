@@ -363,7 +363,7 @@ func _update_animated_wave() -> void:
 			var col_night = Color(0.322, 0.306, 0.613)
 			var col_day = Color(1.0, 0.96, 0.90)
 			var col = col_night.lerp(col_day, wave_factor)
-			var intensity = lerpf(0.1163, 4.0, wave_factor)
+			var intensity = lerpf(0.01163, 4.0, wave_factor)
 			segment_colors[i] = col
 			segment_intensities[i] = intensity
 		elif preset == LightingPreset.NEON_AURORA:

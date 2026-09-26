@@ -128,7 +128,7 @@ static func get_solar_lighting_at_elevation(elevation_deg: float, is_morning: bo
 		var night_528am = Color(0.322, 0.306, 0.613)
 		var twilight_deep = Color(0.40, 0.35, 0.68) if is_morning else Color(0.65, 0.30, 0.65)
 		sun_col = night_528am.lerp(twilight_deep, t)
-		intensity = lerpf(0.1163, 0.15, t)
+		intensity = lerpf(0.01163, 0.15, t)
 
 		var fog_528am = Color(0.228, 0.194, 0.443, 1.0)
 		var fog_twilight = Color(0.28, 0.22, 0.50, 1.0)
@@ -136,9 +136,9 @@ static func get_solar_lighting_at_elevation(elevation_deg: float, is_morning: bo
 		phase = "Nautical Twilight (Dawn)" if is_morning else "Nautical Twilight (Dusk)"
 
 	else:
-		# Darkest Night floor: locked to 5:28 AM at 0° latitude
+		# Darkest Night floor: locked to 5:28 AM at 0° latitude (1/10th level)
 		sun_col = Color(0.322, 0.306, 0.613)
-		intensity = 0.1163
+		intensity = 0.01163
 		fog_col = Color(0.228, 0.194, 0.443, 1.0)
 		phase = "Night (5:28 AM Level)"
 
