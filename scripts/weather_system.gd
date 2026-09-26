@@ -201,7 +201,6 @@ var near_cloud_material: ShaderMaterial = null
 
 # Localized Emitters tracking player position
 var rain_particles: CPUParticles3D = null
-var splash_particles: CPUParticles3D = null
 var dust_particles: CPUParticles3D = null
 var target_player: Node3D = null
 
@@ -652,21 +651,25 @@ func _build_rain_sheets() -> void:
 		rain_sheet_material.render_priority = 8
 		rain_sheets_mesh_instance.material_override = rain_sheet_material
 
-	# Generate multi-layered curtain cage mesh around player for volumetric depth
+	# Generate multi-layered curtain cage mesh around player for seamless volumetric depth
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	# 4 concentric layers with varied radii, heights, and UV scales: [radius, num_planes, height, width, uv_sx, uv_sy]
+	# Concentric layers with varied radii, heights, and UV scales: [radius, num_planes, height, width, uv_sx, uv_sy]
 	var layers = [
-		[5.0, 4, 16.0, 9.0, 2.0, 1.0],
-		[11.0, 6, 24.0, 14.0, 3.0, 1.5],
-		[20.0, 8, 34.0, 20.0, 4.0, 2.0],
-		[34.0, 8, 46.0, 30.0, 5.0, 2.5]
+		[0.9, 4, 10.0, 2.8, 0.8, 0.6],  # Close foreground right in front of view
+		[1.8, 5, 12.0, 4.2, 1.2, 0.8],  # Immediate near field
+		[3.2, 6, 16.0, 7.0, 1.8, 1.0],  # Close radius
+		[6.5, 6, 22.0, 12.0, 2.5, 1.4], # Mid-inner
+		[12.5, 8, 28.0, 18.0, 3.2, 1.8],# Mid-outer
+		[21.0, 8, 36.0, 24.0, 4.0, 2.2],# Far
+		[34.0, 10, 48.0, 32.0, 5.0, 2.6]# Horizon perimeter
 	]
 
 	var rng = RandomNumberGenerator.new()
 	rng.seed = 4242
 
+	# 1. Concentric ring sheets
 	for layer in layers:
 		var rad: float = layer[0]
 		var count: int = layer[1]
@@ -730,6 +733,64 @@ func _build_rain_sheets() -> void:
 			st.set_normal(norm)
 			st.set_uv(uv3)
 			st.add_vertex(p3)
+
+	# 2. Intersecting cross planes passing directly through the center (0, 0, 0)
+	var cross_planes = [
+		[Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), 10.0, 5.0, 1.4, 0.9],
+		[Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), 10.0, 5.0, 1.4, 0.9],
+		[Vector3(0.0, 0.0, 0.0), Vector3(0.707, 0.0, 0.707), 10.0, 5.0, 1.4, 0.9],
+		[Vector3(0.0, 0.0, 0.0), Vector3(-0.707, 0.0, 0.707), 10.0, 5.0, 1.4, 0.9]
+	]
+	for cp in cross_planes:
+		var center: Vector3 = cp[0]
+		var right_dir: Vector3 = cp[1]
+		var h: float = cp[2]
+		var w: float = cp[3]
+		var uv_sx: float = cp[4]
+		var uv_sy: float = cp[5]
+		var up_dir = Vector3.UP
+
+		var half_w = w * 0.5
+		var half_h = h * 0.5
+
+		var p0 = center - (right_dir * half_w) - (up_dir * half_h)
+		var p1 = center + (right_dir * half_w) - (up_dir * half_h)
+		var p2 = center + (right_dir * half_w) + (up_dir * half_h)
+		var p3 = center - (right_dir * half_w) + (up_dir * half_h)
+
+		var u_off = rng.randf()
+		var v_off = rng.randf()
+
+		var uv0 = Vector2(u_off, v_off + uv_sy)
+		var uv1 = Vector2(u_off + uv_sx, v_off + uv_sy)
+		var uv2 = Vector2(u_off + uv_sx, v_off)
+		var uv3 = Vector2(u_off, v_off)
+
+		var norm = right_dir.cross(up_dir).normalized()
+
+		st.set_normal(norm)
+		st.set_uv(uv0)
+		st.add_vertex(p0)
+
+		st.set_normal(norm)
+		st.set_uv(uv1)
+		st.add_vertex(p1)
+
+		st.set_normal(norm)
+		st.set_uv(uv2)
+		st.add_vertex(p2)
+
+		st.set_normal(norm)
+		st.set_uv(uv0)
+		st.add_vertex(p0)
+
+		st.set_normal(norm)
+		st.set_uv(uv2)
+		st.add_vertex(p2)
+
+		st.set_normal(norm)
+		st.set_uv(uv3)
+		st.add_vertex(p3)
 
 	var mesh = st.commit()
 	rain_sheets_mesh_instance.mesh = mesh
@@ -809,35 +870,6 @@ func _generate_rain_streak_texture(density_tier: int) -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 func _setup_weather_emitters() -> void:
-	if not splash_particles:
-		splash_particles = CPUParticles3D.new()
-		splash_particles.name = "RainGroundSplashParticles"
-		splash_particles.amount = 120
-		splash_particles.lifetime = 0.25
-		splash_particles.preprocess = 0.1
-		splash_particles.local_coords = false
-		splash_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-		splash_particles.emission_box_extents = Vector3(20.0, 0.5, 20.0)
-		splash_particles.spread = 45.0
-		splash_particles.initial_velocity_min = 1.2
-		splash_particles.initial_velocity_max = 3.5
-
-		var splash_mat = StandardMaterial3D.new()
-		splash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		splash_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		splash_mat.albedo_color = Color(0.65, 0.82, 1.0, 0.45)
-		splash_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-		splash_mat.billboard_keep_scale = true
-		splash_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-		splash_mat.render_priority = 10
-		splash_particles.material_override = splash_mat
-
-		var splash_mesh = SphereMesh.new()
-		splash_mesh.radius = 0.03
-		splash_mesh.height = 0.06
-		splash_particles.mesh = splash_mesh
-		add_child(splash_particles)
-
 	if not dust_particles:
 		dust_particles = CPUParticles3D.new()
 		dust_particles.name = "AtmosphericDustParticles"
@@ -881,8 +913,6 @@ func _update_precipitation_emitter() -> void:
 
 	if precipitation_rate_mmh <= 0.05:
 		rain_sheets_root.visible = false
-		if splash_particles:
-			splash_particles.emitting = false
 		return
 
 	rain_sheets_root.visible = true
@@ -903,10 +933,6 @@ func _update_precipitation_emitter() -> void:
 	var uv_scroll_x = coriolis_drift * 0.10
 	rain_sheet_material.set_shader_parameter("uv_scroll_speed", Vector2(uv_scroll_x, uv_scroll_y))
 	rain_sheet_material.set_shader_parameter("rain_alpha_multiplier", lerpf(0.75, 1.25, intensity_norm))
-
-	if splash_particles:
-		splash_particles.emitting = true
-		splash_particles.amount = int(lerpf(30.0, 150.0, intensity_norm))
 
 func _update_dust_emitter() -> void:
 	if not dust_particles:
@@ -950,11 +976,6 @@ func _update_particle_positions() -> void:
 		var basis_rain = Basis(local_right, local_up, local_forward)
 		basis_rain = basis_rain.rotated(local_forward, tilt_rad)
 		rain_sheets_root.global_basis = basis_rain
-
-	if splash_particles and splash_particles.is_inside_tree() and splash_particles.emitting:
-		splash_particles.global_position = p_pos
-		splash_particles.direction = up_sky_3d
-		splash_particles.gravity = down_3d * (base_gravity * 3.5)
 
 	if dust_particles and dust_particles.is_inside_tree() and dust_particles.emitting:
 		dust_particles.global_position = p_pos

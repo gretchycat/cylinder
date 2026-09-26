@@ -10,10 +10,10 @@ uniform vec4 rain_tint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform float rain_alpha_multiplier : hint_range(0.0, 2.0) = 1.0;
 
 // Distance fading to avoid camera near-clip popping and blend with horizon depth
-uniform float near_fade_min = 1.2;
-uniform float near_fade_max = 3.5;
-uniform float far_fade_min = 35.0;
-uniform float far_fade_max = 55.0;
+uniform float near_fade_min = 0.05;
+uniform float near_fade_max = 0.35;
+uniform float far_fade_min = 38.0;
+uniform float far_fade_max = 58.0;
 
 varying vec3 v_world_pos;
 
