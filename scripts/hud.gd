@@ -28,6 +28,7 @@ var weather_badge_label: Label = null
 
 # Tab 1: Weather & Atmosphere UI Controls
 var auto_cycle_btn: Button = null
+var clock_sync_btn: Button = null
 var skip_trajectory_btn: Button = null
 var clear_queue_btn: Button = null
 var add_preset_to_queue_btn: Button = null
@@ -376,12 +377,21 @@ func _setup_weather_tab(vbox: VBoxContainer) -> void:
 
 	auto_cycle_btn = Button.new()
 	var is_auto = weather_system.auto_weather_cycle_enabled if weather_system else true
-	auto_cycle_btn.text = "Auto-Loop: %s" % ("ON" if is_auto else "OFF")
+	auto_cycle_btn.text = "Auto: %s" % ("ON" if is_auto else "OFF")
 	auto_cycle_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	auto_cycle_btn.focus_mode = Control.FOCUS_NONE
 	auto_cycle_btn.add_theme_font_size_override("font_size", 10)
 	auto_cycle_btn.pressed.connect(_on_auto_cycle_toggle_pressed)
 	hbox_q_mgmt.add_child(auto_cycle_btn)
+
+	clock_sync_btn = Button.new()
+	var is_clock = weather_system.tie_to_in_game_clock if weather_system else true
+	clock_sync_btn.text = "Clock: %s" % ("ON" if is_clock else "OFF")
+	clock_sync_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	clock_sync_btn.focus_mode = Control.FOCUS_NONE
+	clock_sync_btn.add_theme_font_size_override("font_size", 10)
+	clock_sync_btn.pressed.connect(_on_clock_sync_toggle_pressed)
+	hbox_q_mgmt.add_child(clock_sync_btn)
 
 	vbox.add_child(queue_box)
 
@@ -903,9 +913,19 @@ func _on_clear_queue_pressed() -> void:
 	if weather_system:
 		weather_system.clear_weather_queue()
 
+func _on_clock_sync_toggle_pressed() -> void:
+	if clock_sync_btn:
+		clock_sync_btn.release_focus()
+	if not weather_system:
+		return
+	weather_system.set_tie_to_in_game_clock(not weather_system.tie_to_in_game_clock)
+	if clock_sync_btn:
+		clock_sync_btn.text = "Clock: %s" % ("ON" if weather_system.tie_to_in_game_clock else "OFF")
+
 func _on_weather_updated(data: Dictionary) -> void:
 	var is_trans = data.get("is_transitioning", false)
 	var is_auto = data.get("auto_cycle_enabled", true)
+	var is_clock = data.get("tie_to_in_game_clock", true)
 	var traj_name = data.get("trajectory_name", "Fair Cumulus Morning")
 	var traj_rem = data.get("trajectory_time_remaining", 0.0)
 	var traj_prog = data.get("trajectory_progress", 0.0)
@@ -915,12 +935,15 @@ func _on_weather_updated(data: Dictionary) -> void:
 	var cloud_z_drift = data.get("cloud_deck_drift_z", 0.0)
 
 	if auto_cycle_btn:
-		auto_cycle_btn.text = "Auto-Loop: %s" % ("ON" if is_auto else "OFF")
+		auto_cycle_btn.text = "Auto: %s" % ("ON" if is_auto else "OFF")
+	if clock_sync_btn:
+		clock_sync_btn.text = "Clock: %s" % ("ON" if is_clock else "OFF")
 
 	if trajectory_status_label:
 		if is_trans:
-			trajectory_status_label.text = "Active Target: %s [%d%% | %ds left]\nCloud Deck: Rot %.1f° | Drift Z: %+.0fm" % [
-				traj_name, int(round(traj_prog * 100.0)), int(round(traj_rem)), cloud_rot_deg, cloud_z_drift
+			var clock_tag = "⏱️ Clock Tied" if is_clock else "⏱️ Real-Time"
+			trajectory_status_label.text = "Active Target: %s [%d%% | %ds left] (%s)\nCloud Deck: Rot %.1f° | Drift Z: %+.0fm" % [
+				traj_name, int(round(traj_prog * 100.0)), int(round(traj_rem)), clock_tag, cloud_rot_deg, cloud_z_drift
 			]
 		else:
 			trajectory_status_label.text = "Active Weather: %s (Stationary)\nCloud Deck: Rot %.1f° | Drift Z: %+.0fm" % [

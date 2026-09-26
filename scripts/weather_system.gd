@@ -24,6 +24,7 @@ enum WeatherType {
 
 @export_category("Weather Trajectory & Autonomous Cycling")
 @export var auto_weather_cycle_enabled: bool = true
+@export var tie_to_in_game_clock: bool = true
 @export var trajectory_speed_scale: float = 1.0
 
 @export_category("Atmospheric Thermodynamics & Heating")
@@ -106,6 +107,7 @@ var trajectory_start_state: Dictionary = {}
 var trajectory_target_state: Dictionary = {}
 var trajectory_queue: Array[Dictionary] = []
 var custom_target_counter: int = 1
+var last_in_game_time_hours: float = -1.0
 
 var weather_trajectories: Array[Dictionary] = [
 	{
@@ -333,6 +335,25 @@ func get_queue_items_summary() -> Array[String]:
 	return summaries
 
 func _update_weather_trajectory(delta: float) -> void:
+	var effective_dt = delta * trajectory_speed_scale
+
+	if tie_to_in_game_clock:
+		var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
+		if light_bar:
+			var cur_hours = light_bar.time_of_day_hours
+			if last_in_game_time_hours >= 0.0:
+				var dh = cur_hours - last_in_game_time_hours
+				if dh < -12.0:
+					dh += 24.0
+				elif dh > 12.0:
+					dh -= 24.0
+				
+				# Convert in-game hours to progression seconds (1 hr = 3600 sec)
+				var clock_dt = dh * 3600.0 * trajectory_speed_scale
+				if absf(clock_dt) > 0.0001:
+					effective_dt = clock_dt
+			last_in_game_time_hours = cur_hours
+
 	if not is_transitioning or trajectory_start_state.is_empty() or trajectory_target_state.is_empty():
 		if auto_weather_cycle_enabled and not weather_trajectories.is_empty():
 			if not trajectory_queue.is_empty():
@@ -342,21 +363,22 @@ func _update_weather_trajectory(delta: float) -> void:
 				advance_to_next_trajectory()
 		return
 
-	trajectory_timer += delta * trajectory_speed_scale
-	var t = clampf(trajectory_timer / maxf(trajectory_duration, 0.1), 0.0, 1.0)
-	# Smooth S-curve (cosine interpolation for organic meteorological progression)
-	var s = 0.5 - 0.5 * cos(t * PI)
+	# If clock advanced past duration, loop through subsequent queue items or cycle
+	while is_transitioning and effective_dt > 0.0 and (trajectory_timer + effective_dt) >= trajectory_duration:
+		var step_left = trajectory_duration - trajectory_timer
+		effective_dt -= step_left
+		trajectory_timer = trajectory_duration
 
-	cloud_coverage = lerpf(float(trajectory_start_state.get("cloud_coverage", cloud_coverage)), float(trajectory_target_state.get("cloud_coverage", cloud_coverage)), s)
-	cloud_thickness_m = lerpf(float(trajectory_start_state.get("cloud_thickness_m", cloud_thickness_m)), float(trajectory_target_state.get("cloud_thickness_m", cloud_thickness_m)), s)
-	precipitation_rate_mmh = lerpf(float(trajectory_start_state.get("precipitation_rate_mmh", precipitation_rate_mmh)), float(trajectory_target_state.get("precipitation_rate_mmh", precipitation_rate_mmh)), s)
-	humidity_density_gm3 = lerpf(float(trajectory_start_state.get("humidity_density_gm3", humidity_density_gm3)), float(trajectory_target_state.get("humidity_density_gm3", humidity_density_gm3)), s)
-	dust_density = lerpf(float(trajectory_start_state.get("dust_density", dust_density)), float(trajectory_target_state.get("dust_density", dust_density)), s)
-	endcap_air_temperature_c = lerpf(float(trajectory_start_state.get("endcap_air_temperature_c", endcap_air_temperature_c)), float(trajectory_target_state.get("endcap_air_temperature_c", endcap_air_temperature_c)), s)
-	water_pipe_temperature_c = lerpf(float(trajectory_start_state.get("water_pipe_temperature_c", water_pipe_temperature_c)), float(trajectory_target_state.get("water_pipe_temperature_c", water_pipe_temperature_c)), s)
+		# Snap to target state values on completion
+		if not trajectory_target_state.is_empty():
+			cloud_coverage = float(trajectory_target_state.get("cloud_coverage", cloud_coverage))
+			cloud_thickness_m = float(trajectory_target_state.get("cloud_thickness_m", cloud_thickness_m))
+			precipitation_rate_mmh = float(trajectory_target_state.get("precipitation_rate_mmh", precipitation_rate_mmh))
+			humidity_density_gm3 = float(trajectory_target_state.get("humidity_density_gm3", humidity_density_gm3))
+			dust_density = float(trajectory_target_state.get("dust_density", dust_density))
+			endcap_air_temperature_c = float(trajectory_target_state.get("endcap_air_temperature_c", endcap_air_temperature_c))
+			water_pipe_temperature_c = float(trajectory_target_state.get("water_pipe_temperature_c", water_pipe_temperature_c))
 
-	if trajectory_timer >= trajectory_duration:
-		# Target reached!
 		if not trajectory_queue.is_empty():
 			var next = trajectory_queue.pop_front()
 			_begin_transition_to(next)
@@ -364,6 +386,21 @@ func _update_weather_trajectory(delta: float) -> void:
 			advance_to_next_trajectory()
 		else:
 			is_transitioning = false
+			break
+
+	if is_transitioning:
+		trajectory_timer += maxf(0.0, effective_dt)
+		var t = clampf(trajectory_timer / maxf(trajectory_duration, 0.1), 0.0, 1.0)
+		# Smooth S-curve (cosine interpolation for organic meteorological progression)
+		var s = 0.5 - 0.5 * cos(t * PI)
+
+		cloud_coverage = lerpf(float(trajectory_start_state.get("cloud_coverage", cloud_coverage)), float(trajectory_target_state.get("cloud_coverage", cloud_coverage)), s)
+		cloud_thickness_m = lerpf(float(trajectory_start_state.get("cloud_thickness_m", cloud_thickness_m)), float(trajectory_target_state.get("cloud_thickness_m", cloud_thickness_m)), s)
+		precipitation_rate_mmh = lerpf(float(trajectory_start_state.get("precipitation_rate_mmh", precipitation_rate_mmh)), float(trajectory_target_state.get("precipitation_rate_mmh", precipitation_rate_mmh)), s)
+		humidity_density_gm3 = lerpf(float(trajectory_start_state.get("humidity_density_gm3", humidity_density_gm3)), float(trajectory_target_state.get("humidity_density_gm3", humidity_density_gm3)), s)
+		dust_density = lerpf(float(trajectory_start_state.get("dust_density", dust_density)), float(trajectory_target_state.get("dust_density", dust_density)), s)
+		endcap_air_temperature_c = lerpf(float(trajectory_start_state.get("endcap_air_temperature_c", endcap_air_temperature_c)), float(trajectory_target_state.get("endcap_air_temperature_c", endcap_air_temperature_c)), s)
+		water_pipe_temperature_c = lerpf(float(trajectory_start_state.get("water_pipe_temperature_c", water_pipe_temperature_c)), float(trajectory_target_state.get("water_pipe_temperature_c", water_pipe_temperature_c)), s)
 
 func _update_cloud_deck_coriolis_motion(delta: float) -> void:
 	var spin_sign = float(spin_direction)
@@ -722,12 +759,17 @@ func get_weather_state_name() -> String:
 		WeatherType.RAIN_MIST: return "Atmospheric Rain & Mist"
 	return "Fair Cumulus"
 
+func set_tie_to_in_game_clock(enabled: bool) -> void:
+	tie_to_in_game_clock = enabled
+	last_in_game_time_hours = -1.0
+
 func get_telemetry() -> Dictionary:
 	var spin_name = "Counter-Clockwise (CCW)" if spin_direction == SpinDirection.COUNTER_CLOCKWISE else "Clockwise (CW)"
 	return {
 		"weather_state": get_weather_state_name(),
 		"is_transitioning": is_transitioning,
 		"auto_cycle_enabled": auto_weather_cycle_enabled,
+		"tie_to_in_game_clock": tie_to_in_game_clock,
 		"trajectory_index": current_trajectory_index,
 		"trajectory_name": get_current_trajectory_name(),
 		"trajectory_progress": get_current_trajectory_progress(),
