@@ -2,6 +2,7 @@ class_name WeatherSystem
 extends Node3D
 
 const CylinderParticleEmitter = preload("res://scripts/cylinder_particle_emitter.gd")
+const ClimateSystem = preload("res://scripts/climate_system.gd")
 
 signal weather_updated(data: Dictionary)
 
@@ -15,14 +16,30 @@ enum WeatherType {
 	FAIR_CUMULUS = 1,
 	SCATTERED_CLOUDS = 2,
 	OVERCAST = 3,
-	RAIN_MIST = 4
+	RAIN_MIST = 4,
+	SNOW_FLURRIES = 5
 }
 
 @export_category("Cylinder Dimensions (8 km dia x 18 km length)")
 @export var cylinder_radius: float = 4000.0
 @export var cylinder_length: float = 18000.0
 
-@export_category("Weather Trajectory & Autonomous Cycling")
+@export_category("Climate & Yearly Cycles")
+@export var latitude_deg: float = 40.0: # Earth latitude (-90° South to +90° North)
+	set(val):
+		latitude_deg = clampf(val, -90.0, 90.0)
+		_recalculate_climate_profile()
+
+@export var yearly_precipitation_mm: float = 950.0: # 50mm (Hyper-Arid) to 4000mm (Tropical Rainforest)
+	set(val):
+		yearly_precipitation_mm = clampf(val, 50.0, 4000.0)
+		_recalculate_climate_profile()
+
+@export var day_of_year: int = 172: # Day 1 to 365 (Yearly seasonal progression)
+	set(val):
+		day_of_year = clampi(val, 1, 366)
+		_recalculate_climate_profile()
+
 @export var auto_weather_cycle_enabled: bool = true
 @export var tie_to_in_game_clock: bool = true
 @export var trajectory_speed_scale: float = 1.0
@@ -84,6 +101,7 @@ enum WeatherType {
 		base_gravity = maxf(val, 0.1)
 		_recalculate_coriolis_vectors()
 
+# Active Thermodynamic & Climate State
 var current_weather: WeatherType = WeatherType.FAIR_CUMULUS
 var relative_humidity_pct: float = 68.0
 var dew_point_c: float = 15.2
@@ -91,6 +109,13 @@ var coriolis_omega_rad_s: float = 0.0487 # sqrt(g/R)
 var coriolis_deflection_rate: float = 0.0
 var coriolis_rain_tilt_deg: float = 0.0
 var wind_velocity: Vector2 = Vector2.ZERO # (theta_rad_s, z_m_s)
+
+# Climate System State
+var current_temperature_c: float = 22.0
+var is_snow_mode: bool = false
+var current_climate_name: String = "Temperate Mixed Forest"
+var current_season_name: String = "Summer"
+var climate_profile: Dictionary = {}
 
 # Cloud Deck Coriolis Rotation & Axial Translation Accumulators
 var cloud_deck_rotation_theta: float = 0.0 # Radians
@@ -100,130 +125,89 @@ var cloud_deck_accumulated_drift: float = 0.0
 var cloud_deck_angular_velocity: float = 0.0 # rad/s
 var cloud_deck_axial_velocity: float = 0.0 # m/s
 
-# Weather Trajectory & Transition Queue State
-var is_transitioning: bool = false
-var current_trajectory_index: int = 0
-var trajectory_timer: float = 0.0
-var trajectory_duration: float = 45.0
-var trajectory_start_state: Dictionary = {}
-var trajectory_target_state: Dictionary = {}
-var trajectory_queue: Array[Dictionary] = []
-var custom_target_counter: int = 1
+# 1-Deep Weather State Queue Architecture
+var previous_weather_state: Dictionary = {}
+var current_weather_state: Dictionary = {}
+var next_queued_weather_state: Dictionary = {} # 1-deep pre-calculated queue
+var manual_queue: Array[Dictionary] = [] # Runtime game queue
+var transition_timer: float = 0.0
+var transition_duration: float = 35.0
 var last_in_game_time_hours: float = -1.0
+var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
-# 24-Hour Diurnal Weather Anchors (Synchronized with Earth Day/Night Time of Day)
-var diurnal_weather_anchors: Array[Dictionary] = [
-	{
-		"hour": 6.0,
-		"name": "Fair Cumulus Morning",
-		"cloud_coverage": 0.35,
-		"cloud_thickness_m": 200.0,
-		"precipitation_rate_mmh": 0.0,
-		"humidity_density_gm3": 12.0,
-		"dust_density": 0.12,
-		"endcap_air_temperature_c": 21.5,
-		"water_pipe_temperature_c": 23.0
-	},
-	{
-		"hour": 10.0,
-		"name": "Building Cumulus Deck",
-		"cloud_coverage": 0.62,
-		"cloud_thickness_m": 360.0,
-		"precipitation_rate_mmh": 0.0,
-		"humidity_density_gm3": 16.5,
-		"dust_density": 0.18,
-		"endcap_air_temperature_c": 23.0,
-		"water_pipe_temperature_c": 24.5
-	},
-	{
-		"hour": 13.0,
-		"name": "Overcast Coriolis Squall",
-		"cloud_coverage": 0.88,
-		"cloud_thickness_m": 520.0,
-		"precipitation_rate_mmh": 10.5,
-		"humidity_density_gm3": 21.5,
-		"dust_density": 0.14,
-		"endcap_air_temperature_c": 19.5,
-		"water_pipe_temperature_c": 22.5
-	},
-	{
-		"hour": 15.5,
-		"name": "Atmospheric Downpour",
-		"cloud_coverage": 0.98,
-		"cloud_thickness_m": 680.0,
-		"precipitation_rate_mmh": 28.0,
-		"humidity_density_gm3": 26.0,
-		"dust_density": 0.06,
-		"endcap_air_temperature_c": 18.0,
-		"water_pipe_temperature_c": 21.0
-	},
-	{
-		"hour": 17.5,
-		"name": "Post-Storm Clearing",
-		"cloud_coverage": 0.38,
-		"cloud_thickness_m": 210.0,
-		"precipitation_rate_mmh": 0.0,
-		"humidity_density_gm3": 12.5,
-		"dust_density": 0.08,
-		"endcap_air_temperature_c": 20.5,
-		"water_pipe_temperature_c": 22.5
-	},
-	{
-		"hour": 19.5,
-		"name": "Hazy Golden Afternoon",
-		"cloud_coverage": 0.18,
-		"cloud_thickness_m": 130.0,
-		"precipitation_rate_mmh": 0.0,
-		"humidity_density_gm3": 8.5,
-		"dust_density": 0.35,
-		"endcap_air_temperature_c": 25.0,
-		"water_pipe_temperature_c": 26.0
-	},
-	{
-		"hour": 22.0,
-		"name": "Clear Sky & Axis View",
-		"cloud_coverage": 0.05,
-		"cloud_thickness_m": 80.0,
-		"precipitation_rate_mmh": 0.0,
-		"humidity_density_gm3": 5.0,
-		"dust_density": 0.15,
-		"endcap_air_temperature_c": 22.0,
-		"water_pipe_temperature_c": 23.5
-	}
-]
-
-var weather_trajectories: Array[Dictionary] = diurnal_weather_anchors
-
+# Cloud Rendering Meshes & Materials
 var far_cloud_mesh_instance: MeshInstance3D = null
 var near_cloud_mesh_instance: MeshInstance3D = null
 var far_cloud_material: ShaderMaterial = null
 var near_cloud_material: ShaderMaterial = null
 
 # Localized Emitters tracking player position
-var rain_particles: CPUParticles3D = null
 var dust_particles: CPUParticles3D = null
 var target_player: Node3D = null
 
-# Pre-rendered Textured Rain Sheets
+# Pre-rendered Textured Rain / Snow Sheets
 var rain_sheets_root: Node3D = null
 var rain_sheets_mesh_instance: MeshInstance3D = null
 var rain_sheet_material: ShaderMaterial = null
 var rain_texture_cache: Dictionary = {}
+var snow_texture_cache: Dictionary = {}
 var current_rendered_density_tier: int = -1
+var current_rendered_snow_state: bool = false
 
 func _ready() -> void:
 	add_to_group("weather_system")
+	rng.randomize()
+	_sync_with_light_bar_time()
 	_recalculate_coriolis_vectors()
-	_recalculate_thermodynamics()
+	_recalculate_climate_profile()
 	_build_cloud_mesh()
 	_build_rain_sheets()
 	_setup_weather_emitters()
 	_sync_with_scene_lighting()
-	_init_weather_trajectory()
+	_init_weather_state_queue()
+
+func _sync_with_light_bar_time() -> void:
+	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
+	if light_bar:
+		latitude_deg = light_bar.earth_latitude_deg
+		if light_bar.day_of_year > 0:
+			day_of_year = light_bar.day_of_year
+		else:
+			var now = Time.get_date_dict_from_system()
+			day_of_year = ClimateSystem.SolarCycleSimulator.get_day_of_year(now.year, now.month, now.day)
+
+func _recalculate_climate_profile() -> void:
+	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
+	var time_h = light_bar.time_of_day_hours if light_bar else 12.0
+
+	climate_profile = ClimateSystem.get_climate_weather_profile(latitude_deg, yearly_precipitation_mm, day_of_year, time_h)
+	current_climate_name = String(climate_profile.get("climate_name", "Temperate Mixed Forest"))
+	current_season_name = String(climate_profile.get("season_name", "Summer"))
+	current_temperature_c = float(climate_profile.get("temperature_c", 22.0))
+	is_snow_mode = bool(climate_profile.get("is_snow_mode", false))
+
+	# If queue is empty, generate next queued state
+	if next_queued_weather_state.is_empty():
+		next_queued_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
+
+func _init_weather_state_queue() -> void:
+	current_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
+	previous_weather_state = current_weather_state.duplicate()
+	next_queued_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
+	transition_timer = 0.0
+	transition_duration = float(current_weather_state.get("duration", 35.0))
+	_apply_state_values(current_weather_state)
 
 func _process(delta: float) -> void:
 	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
 	var current_clock_hours = light_bar.time_of_day_hours if light_bar else 12.0
+
+	# Keep latitude and day of year synchronized with light bar if modified
+	if light_bar:
+		if not is_equal_approx(latitude_deg, light_bar.earth_latitude_deg):
+			latitude_deg = light_bar.earth_latitude_deg
+		if light_bar.day_of_year > 0 and light_bar.day_of_year != day_of_year:
+			day_of_year = light_bar.day_of_year
 
 	var effective_dt = delta * trajectory_speed_scale
 
@@ -240,7 +224,7 @@ func _process(delta: float) -> void:
 				effective_dt = clock_dt
 		last_in_game_time_hours = current_clock_hours
 
-	_update_weather_trajectory(effective_dt, current_clock_hours)
+	_update_weather_queue_progression(effective_dt, current_clock_hours)
 	_update_dynamic_wind(delta)
 	_update_cloud_deck_coriolis_motion(delta, current_clock_hours)
 	_update_shader_parameters()
@@ -249,116 +233,101 @@ func _process(delta: float) -> void:
 	_update_particle_positions()
 	_emit_weather_telemetry()
 
-func _init_weather_trajectory() -> void:
-	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
-	var h = light_bar.time_of_day_hours if light_bar else 12.0
-	_apply_diurnal_weather_at_hour(h)
+func _update_weather_queue_progression(effective_dt: float, current_clock_hours: float) -> void:
+	if not auto_weather_cycle_enabled and manual_queue.is_empty():
+		return
 
-func _get_diurnal_weather_at_hour(h: float) -> Dictionary:
-	var hour_norm = fposmod(h, 24.0)
-	var n = diurnal_weather_anchors.size()
-	if n == 0:
-		return {}
+	transition_timer += maxf(0.0, effective_dt)
 
-	# Find segment on the 24-hour ring
-	var prev_anchor = diurnal_weather_anchors[n - 1]
-	var next_anchor = diurnal_weather_anchors[0]
-	var total_span = 0.0
-	var elapsed = 0.0
+	# When current transition finishes, advance states
+	while transition_timer >= transition_duration:
+		transition_timer -= transition_duration
+		previous_weather_state = current_weather_state.duplicate()
 
-	if hour_norm >= diurnal_weather_anchors[n - 1]["hour"] or hour_norm < diurnal_weather_anchors[0]["hour"]:
-		prev_anchor = diurnal_weather_anchors[n - 1]
-		next_anchor = diurnal_weather_anchors[0]
-		total_span = (next_anchor["hour"] + 24.0) - prev_anchor["hour"]
-		elapsed = (hour_norm - prev_anchor["hour"]) if hour_norm >= prev_anchor["hour"] else (hour_norm + 24.0 - prev_anchor["hour"])
-	else:
-		for i in range(n - 1):
-			var a = diurnal_weather_anchors[i]
-			var b = diurnal_weather_anchors[i + 1]
-			if hour_norm >= a["hour"] and hour_norm < b["hour"]:
-				prev_anchor = a
-				next_anchor = b
-				total_span = b["hour"] - a["hour"]
-				elapsed = hour_norm - a["hour"]
-				break
+		# 1. Pop from manual queue if available
+		if not manual_queue.is_empty():
+			current_weather_state = manual_queue.pop_front()
+		# 2. Advance to the 1-deep pre-calculated climate queue state
+		elif not next_queued_weather_state.is_empty():
+			current_weather_state = next_queued_weather_state
+			# Pre-calculate the new next queued state from the climate descriptor
+			_recalculate_climate_profile()
+			next_queued_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
+		else:
+			_recalculate_climate_profile()
+			current_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
+			next_queued_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
 
-	var t = clampf(elapsed / maxf(total_span, 0.01), 0.0, 1.0)
+		transition_duration = maxf(float(current_weather_state.get("duration", 35.0)), 5.0)
+
+	# Smooth Hermite S-Curve Interpolation between previous state and current state
+	var t = clampf(transition_timer / maxf(transition_duration, 0.1), 0.0, 1.0)
 	var s = 0.5 - 0.5 * cos(t * PI)
 
-	return {
-		"name": next_anchor["name"] if s > 0.6 else prev_anchor["name"],
-		"cloud_coverage": lerpf(float(prev_anchor["cloud_coverage"]), float(next_anchor["cloud_coverage"]), s),
-		"cloud_thickness_m": lerpf(float(prev_anchor["cloud_thickness_m"]), float(next_anchor["cloud_thickness_m"]), s),
-		"precipitation_rate_mmh": lerpf(float(prev_anchor["precipitation_rate_mmh"]), float(next_anchor["precipitation_rate_mmh"]), s),
-		"humidity_density_gm3": lerpf(float(prev_anchor["humidity_density_gm3"]), float(next_anchor["humidity_density_gm3"]), s),
-		"dust_density": lerpf(float(prev_anchor["dust_density"]), float(next_anchor["dust_density"]), s),
-		"endcap_air_temperature_c": lerpf(float(prev_anchor["endcap_air_temperature_c"]), float(next_anchor["endcap_air_temperature_c"]), s),
-		"water_pipe_temperature_c": lerpf(float(prev_anchor["water_pipe_temperature_c"]), float(next_anchor["water_pipe_temperature_c"]), s)
-	}
+	var p_cov = float(previous_weather_state.get("cloud_coverage", cloud_coverage))
+	var c_cov = float(current_weather_state.get("cloud_coverage", cloud_coverage))
+	cloud_coverage = lerpf(p_cov, c_cov, s)
 
-func _apply_diurnal_weather_at_hour(h: float) -> void:
-	var state = _get_diurnal_weather_at_hour(h)
-	if state.is_empty():
-		return
-	cloud_coverage = float(state["cloud_coverage"])
-	cloud_thickness_m = float(state["cloud_thickness_m"])
-	precipitation_rate_mmh = float(state["precipitation_rate_mmh"])
-	humidity_density_gm3 = float(state["humidity_density_gm3"])
-	dust_density = float(state["dust_density"])
-	endcap_air_temperature_c = float(state["endcap_air_temperature_c"])
-	water_pipe_temperature_c = float(state["water_pipe_temperature_c"])
+	var p_thick = float(previous_weather_state.get("cloud_thickness_m", cloud_thickness_m))
+	var c_thick = float(current_weather_state.get("cloud_thickness_m", cloud_thickness_m))
+	cloud_thickness_m = lerpf(p_thick, c_thick, s)
 
-func apply_time_of_day_weather(hours: float) -> void:
-	last_in_game_time_hours = hours
-	if tie_to_in_game_clock:
-		_apply_diurnal_weather_at_hour(hours)
-		_update_shader_parameters()
+	var p_precip = float(previous_weather_state.get("precipitation_rate_mmh", precipitation_rate_mmh))
+	var c_precip = float(current_weather_state.get("precipitation_rate_mmh", precipitation_rate_mmh))
+	precipitation_rate_mmh = lerpf(p_precip, c_precip, s)
+
+	var p_hum = float(previous_weather_state.get("humidity_density_gm3", humidity_density_gm3))
+	var c_hum = float(current_weather_state.get("humidity_density_gm3", humidity_density_gm3))
+	humidity_density_gm3 = lerpf(p_hum, c_hum, s)
+
+	var p_dust = float(previous_weather_state.get("dust_density", dust_density))
+	var c_dust = float(current_weather_state.get("dust_density", dust_density))
+	dust_density = lerpf(p_dust, c_dust, s)
+
+	var p_ec = float(previous_weather_state.get("endcap_air_temperature_c", endcap_air_temperature_c))
+	var c_ec = float(current_weather_state.get("endcap_air_temperature_c", endcap_air_temperature_c))
+	endcap_air_temperature_c = lerpf(p_ec, c_ec, s)
+
+	var p_wp = float(previous_weather_state.get("water_pipe_temperature_c", water_pipe_temperature_c))
+	var c_wp = float(current_weather_state.get("water_pipe_temperature_c", water_pipe_temperature_c))
+	water_pipe_temperature_c = lerpf(p_wp, c_wp, s)
+
+	# Update snow mode determination: below 4°C
+	_recalculate_thermodynamics()
+	is_snow_mode = (current_temperature_c <= 4.0)
+
+func _apply_state_values(state: Dictionary) -> void:
+	cloud_coverage = float(state.get("cloud_coverage", cloud_coverage))
+	cloud_thickness_m = float(state.get("cloud_thickness_m", cloud_thickness_m))
+	precipitation_rate_mmh = float(state.get("precipitation_rate_mmh", precipitation_rate_mmh))
+	humidity_density_gm3 = float(state.get("humidity_density_gm3", humidity_density_gm3))
+	dust_density = float(state.get("dust_density", dust_density))
+	endcap_air_temperature_c = float(state.get("endcap_air_temperature_c", endcap_air_temperature_c))
+	water_pipe_temperature_c = float(state.get("water_pipe_temperature_c", water_pipe_temperature_c))
+	_recalculate_thermodynamics()
+
+# Push custom weather state onto the queue during gameplay or debugging
+func push_weather_state(state: Dictionary, immediate: bool = false) -> void:
+	var formatted_state = state.duplicate()
+	if not formatted_state.has("name"):
+		formatted_state["name"] = "Pushed Weather Event"
+	if not formatted_state.has("duration"):
+		formatted_state["duration"] = 35.0
+
+	if immediate:
+		previous_weather_state = formatted_state.duplicate()
+		current_weather_state = formatted_state
+		transition_timer = 0.0
+		transition_duration = float(formatted_state.get("duration", 35.0))
+		_apply_state_values(formatted_state)
 		_update_precipitation_emitter()
 		_update_dust_emitter()
-		_emit_weather_telemetry()
-
-func _begin_transition_to(target: Dictionary) -> void:
-	trajectory_target_state = target.duplicate()
-	trajectory_duration = maxf(float(target.get("duration", 45.0)), 1.0)
-	trajectory_timer = 0.0
-	trajectory_start_state = {
-		"cloud_coverage": cloud_coverage,
-		"cloud_thickness_m": cloud_thickness_m,
-		"precipitation_rate_mmh": precipitation_rate_mmh,
-		"humidity_density_gm3": humidity_density_gm3,
-		"dust_density": dust_density,
-		"endcap_air_temperature_c": endcap_air_temperature_c,
-		"water_pipe_temperature_c": water_pipe_temperature_c
-	}
-	is_transitioning = true
-
-func start_trajectory(index: int) -> void:
-	if weather_trajectories.is_empty():
-		return
-	current_trajectory_index = index % weather_trajectories.size()
-	_begin_transition_to(weather_trajectories[current_trajectory_index])
-
-func enqueue_weather_target(target: Dictionary) -> void:
-	trajectory_queue.append(target.duplicate())
-	if not is_transitioning:
-		var next = trajectory_queue.pop_front()
-		_begin_transition_to(next)
-
-func enqueue_preset_by_index(index: int, custom_duration: float = -1.0) -> void:
-	if weather_trajectories.is_empty():
-		return
-	var idx = index % weather_trajectories.size()
-	var preset = weather_trajectories[idx].duplicate()
-	if custom_duration > 0.0:
-		preset["duration"] = custom_duration
-	enqueue_weather_target(preset)
+		_update_particle_positions()
+	else:
+		manual_queue.append(formatted_state)
 
 func enqueue_custom_target(target_params: Dictionary, duration: float = 30.0, custom_name: String = "") -> void:
-	var item_name = custom_name
-	if item_name.is_empty():
-		item_name = "Custom Transition #%d" % custom_target_counter
-		custom_target_counter += 1
-
+	var item_name = custom_name if not custom_name.is_empty() else "Custom Weather Target"
 	var target = {
 		"name": item_name,
 		"duration": maxf(duration, 1.0),
@@ -367,149 +336,45 @@ func enqueue_custom_target(target_params: Dictionary, duration: float = 30.0, cu
 		"precipitation_rate_mmh": clampf(target_params.get("precipitation_rate_mmh", precipitation_rate_mmh), 0.0, 50.0),
 		"humidity_density_gm3": clampf(target_params.get("humidity_density_gm3", humidity_density_gm3), 2.0, 30.0),
 		"dust_density": clampf(target_params.get("dust_density", dust_density), 0.0, 1.0),
-		"endcap_air_temperature_c": clampf(target_params.get("endcap_air_temperature_c", endcap_air_temperature_c), 10.0, 40.0),
-		"water_pipe_temperature_c": clampf(target_params.get("water_pipe_temperature_c", water_pipe_temperature_c), 10.0, 40.0)
+		"endcap_air_temperature_c": clampf(target_params.get("endcap_air_temperature_c", endcap_air_temperature_c), -30.0, 45.0),
+		"water_pipe_temperature_c": clampf(target_params.get("water_pipe_temperature_c", water_pipe_temperature_c), -20.0, 45.0)
 	}
-	enqueue_weather_target(target)
+	push_weather_state(target, false)
 
 func skip_current_trajectory() -> void:
-	if not trajectory_queue.is_empty():
-		var next = trajectory_queue.pop_front()
-		_begin_transition_to(next)
-	elif auto_weather_cycle_enabled:
-		advance_to_next_trajectory()
+	previous_weather_state = current_weather_state.duplicate()
+	if not manual_queue.is_empty():
+		current_weather_state = manual_queue.pop_front()
+	elif not next_queued_weather_state.is_empty():
+		current_weather_state = next_queued_weather_state
+		_recalculate_climate_profile()
+		next_queued_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
 	else:
-		if not trajectory_target_state.is_empty():
-			cloud_coverage = float(trajectory_target_state.get("cloud_coverage", cloud_coverage))
-			cloud_thickness_m = float(trajectory_target_state.get("cloud_thickness_m", cloud_thickness_m))
-			precipitation_rate_mmh = float(trajectory_target_state.get("precipitation_rate_mmh", precipitation_rate_mmh))
-			humidity_density_gm3 = float(trajectory_target_state.get("humidity_density_gm3", humidity_density_gm3))
-			dust_density = float(trajectory_target_state.get("dust_density", dust_density))
-			endcap_air_temperature_c = float(trajectory_target_state.get("endcap_air_temperature_c", endcap_air_temperature_c))
-			water_pipe_temperature_c = float(trajectory_target_state.get("water_pipe_temperature_c", water_pipe_temperature_c))
-		is_transitioning = false
+		_recalculate_climate_profile()
+		current_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
+		next_queued_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
+
+	transition_timer = 0.0
+	transition_duration = float(current_weather_state.get("duration", 35.0))
+	_apply_state_values(current_weather_state)
 
 func clear_weather_queue() -> void:
-	trajectory_queue.clear()
+	manual_queue.clear()
 
-func advance_to_next_trajectory() -> void:
-	if weather_trajectories.is_empty():
-		return
-	var next_idx = (current_trajectory_index + 1) % weather_trajectories.size()
-	start_trajectory(next_idx)
+func apply_time_of_day_weather(hours: float) -> void:
+	last_in_game_time_hours = hours
+	_recalculate_climate_profile()
+	_update_shader_parameters()
+	_update_precipitation_emitter()
+	_update_dust_emitter()
+	_emit_weather_telemetry()
 
 func set_auto_weather_cycle(enabled: bool) -> void:
 	auto_weather_cycle_enabled = enabled
-	if auto_weather_cycle_enabled and not is_transitioning:
-		if not trajectory_queue.is_empty():
-			var next = trajectory_queue.pop_front()
-			_begin_transition_to(next)
-		else:
-			start_trajectory(current_trajectory_index)
 
 func set_tie_to_in_game_clock(enabled: bool) -> void:
 	tie_to_in_game_clock = enabled
 	last_in_game_time_hours = -1.0
-
-func get_current_trajectory_name() -> String:
-	if not trajectory_queue.is_empty() or is_transitioning:
-		if not trajectory_target_state.is_empty():
-			return String(trajectory_target_state.get("name", "Custom Target"))
-	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
-	var h = light_bar.time_of_day_hours if light_bar else 12.0
-	var state = _get_diurnal_weather_at_hour(h)
-	return String(state.get("name", "Diurnal Cycle"))
-
-func get_current_trajectory_progress() -> float:
-	if is_transitioning:
-		return clampf(trajectory_timer / maxf(trajectory_duration, 0.1), 0.0, 1.0)
-	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
-	var h = light_bar.time_of_day_hours if light_bar else 12.0
-	return fposmod(h / 24.0, 1.0)
-
-func get_current_trajectory_time_remaining() -> float:
-	if is_transitioning:
-		return maxf(0.0, trajectory_duration - trajectory_timer)
-	return 0.0
-
-func get_queue_items_summary() -> Array[String]:
-	var summaries: Array[String] = []
-	for i in range(trajectory_queue.size()):
-		var item = trajectory_queue[i]
-		var item_name = item.get("name", "Target")
-		var dur = int(round(float(item.get("duration", 30.0))))
-		summaries.append("%d. %s (%ds)" % [i + 1, item_name, dur])
-	return summaries
-
-func _update_weather_trajectory(effective_dt: float, current_clock_hours: float) -> void:
-	# 1. If user has items in the queue or is executing an active transition, process transition
-	if is_transitioning and not trajectory_start_state.is_empty() and not trajectory_target_state.is_empty():
-		var remaining_dt = effective_dt
-		while is_transitioning and remaining_dt > 0.0 and (trajectory_timer + remaining_dt) >= trajectory_duration:
-			var step_left = trajectory_duration - trajectory_timer
-			remaining_dt -= step_left
-			trajectory_timer = trajectory_duration
-
-			# Snap to target values
-			cloud_coverage = float(trajectory_target_state.get("cloud_coverage", cloud_coverage))
-			cloud_thickness_m = float(trajectory_target_state.get("cloud_thickness_m", cloud_thickness_m))
-			precipitation_rate_mmh = float(trajectory_target_state.get("precipitation_rate_mmh", precipitation_rate_mmh))
-			humidity_density_gm3 = float(trajectory_target_state.get("humidity_density_gm3", humidity_density_gm3))
-			dust_density = float(trajectory_target_state.get("dust_density", dust_density))
-			endcap_air_temperature_c = float(trajectory_target_state.get("endcap_air_temperature_c", endcap_air_temperature_c))
-			water_pipe_temperature_c = float(trajectory_target_state.get("water_pipe_temperature_c", water_pipe_temperature_c))
-
-			if not trajectory_queue.is_empty():
-				var next = trajectory_queue.pop_front()
-				_begin_transition_to(next)
-			else:
-				is_transitioning = false
-				break
-
-		if is_transitioning:
-			trajectory_timer += maxf(0.0, remaining_dt)
-			var t = clampf(trajectory_timer / maxf(trajectory_duration, 0.1), 0.0, 1.0)
-			var s = 0.5 - 0.5 * cos(t * PI)
-
-			cloud_coverage = lerpf(float(trajectory_start_state.get("cloud_coverage", cloud_coverage)), float(trajectory_target_state.get("cloud_coverage", cloud_coverage)), s)
-			cloud_thickness_m = lerpf(float(trajectory_start_state.get("cloud_thickness_m", cloud_thickness_m)), float(trajectory_target_state.get("cloud_thickness_m", cloud_thickness_m)), s)
-			precipitation_rate_mmh = lerpf(float(trajectory_start_state.get("precipitation_rate_mmh", precipitation_rate_mmh)), float(trajectory_target_state.get("precipitation_rate_mmh", precipitation_rate_mmh)), s)
-			humidity_density_gm3 = lerpf(float(trajectory_start_state.get("humidity_density_gm3", humidity_density_gm3)), float(trajectory_target_state.get("humidity_density_gm3", humidity_density_gm3)), s)
-			dust_density = lerpf(float(trajectory_start_state.get("dust_density", dust_density)), float(trajectory_target_state.get("dust_density", dust_density)), s)
-			endcap_air_temperature_c = lerpf(float(trajectory_start_state.get("endcap_air_temperature_c", endcap_air_temperature_c)), float(trajectory_target_state.get("endcap_air_temperature_c", endcap_air_temperature_c)), s)
-			water_pipe_temperature_c = lerpf(float(trajectory_start_state.get("water_pipe_temperature_c", water_pipe_temperature_c)), float(trajectory_target_state.get("water_pipe_temperature_c", water_pipe_temperature_c)), s)
-
-	# 2. If queue is empty and auto cycle is enabled: follow diurnal in-game clock directly
-	elif auto_weather_cycle_enabled:
-		if not trajectory_queue.is_empty():
-			var next = trajectory_queue.pop_front()
-			_begin_transition_to(next)
-		elif tie_to_in_game_clock:
-			_apply_diurnal_weather_at_hour(current_clock_hours)
-
-func _update_cloud_deck_coriolis_motion(delta: float, current_clock_hours: float) -> void:
-	var spin_sign = float(spin_direction)
-	var thickness_factor = clampf(cloud_thickness_m / 350.0, 0.7, 1.5)
-	cloud_deck_angular_velocity = (0.012 + 0.004 * thickness_factor) * spin_sign * (coriolis_omega_rad_s / 0.0487)
-	cloud_deck_axial_velocity = 2.2 + sin(Time.get_ticks_msec() * 0.00015) * 0.8
-
-	# Accumulate micro turbulence
-	cloud_deck_accumulated_spin += cloud_deck_angular_velocity * delta
-	cloud_deck_accumulated_drift += cloud_deck_axial_velocity * delta
-
-	# Directly tie cloud deck azimuth to in-game clock time of day
-	if tie_to_in_game_clock:
-		# 24 hours = 2 full rotations of cloud deck across habitat sky
-		var diurnal_theta = (current_clock_hours / 24.0) * TAU * spin_sign * 2.0
-		var diurnal_z = sin((current_clock_hours / 24.0) * TAU) * 1400.0 + (current_clock_hours / 24.0) * 3200.0
-
-		cloud_deck_rotation_theta = fposmod(diurnal_theta + cloud_deck_accumulated_spin, TAU)
-		var half_len = cylinder_length * 0.5
-		cloud_deck_translation_z = fposmod(diurnal_z + cloud_deck_accumulated_drift + half_len, cylinder_length) - half_len
-	else:
-		cloud_deck_rotation_theta = fposmod(cloud_deck_rotation_theta + cloud_deck_angular_velocity * delta, TAU)
-		var half_len = cylinder_length * 0.5
-		cloud_deck_translation_z = fposmod(cloud_deck_translation_z + cloud_deck_axial_velocity * delta + half_len, cylinder_length) - half_len
 
 func _recalculate_coriolis_vectors() -> void:
 	coriolis_omega_rad_s = sqrt(base_gravity / maxf(cylinder_radius, 1.0))
@@ -521,14 +386,17 @@ func _recalculate_coriolis_vectors() -> void:
 	coriolis_deflection_rate = coriolis_accel_theta
 	wind_velocity = Vector2(0.008 * spin_sign, 0.002)
 
-	var rain_fall_speed = 14.0 # m/s terminal velocity
-	var coriolis_rain_v_tangent = -2.0 * coriolis_omega_rad_s * rain_fall_speed * spin_sign
-	coriolis_rain_tilt_deg = rad_to_deg(atan2(coriolis_rain_v_tangent, rain_fall_speed))
+	var fall_speed = 6.0 if is_snow_mode else 14.0 # m/s terminal velocity
+	var coriolis_rain_v_tangent = -2.0 * coriolis_omega_rad_s * fall_speed * spin_sign
+	coriolis_rain_tilt_deg = rad_to_deg(atan2(coriolis_rain_v_tangent, fall_speed))
 
 	_update_precipitation_emitter()
 
 func _recalculate_thermodynamics() -> void:
 	var avg_ground_temp = (endcap_air_temperature_c * 0.45) + (water_pipe_temperature_c * 0.55)
+	current_temperature_c = avg_ground_temp
+	is_snow_mode = (current_temperature_c <= 4.0)
+
 	var es_hpa = 6.1078 * exp((17.27 * avg_ground_temp) / (avg_ground_temp + 237.3))
 	var sat_vapor_density_gm3 = (216.7 * es_hpa) / (avg_ground_temp + 273.15)
 
@@ -551,7 +419,7 @@ func _recalculate_thermodynamics() -> void:
 	elif relative_humidity_pct < 95.0:
 		current_weather = WeatherType.OVERCAST
 	else:
-		current_weather = WeatherType.RAIN_MIST
+		current_weather = WeatherType.SNOW_FLURRIES if is_snow_mode else WeatherType.RAIN_MIST
 
 func _build_cloud_mesh() -> void:
 	if far_cloud_mesh_instance and is_instance_valid(far_cloud_mesh_instance):
@@ -571,14 +439,14 @@ func _build_cloud_mesh() -> void:
 	if far_shader:
 		far_cloud_material = ShaderMaterial.new()
 		far_cloud_material.shader = far_shader
-		far_cloud_material.render_priority = 4 # Far clouds render over far water/terrain (P0), behind near clouds (P5)
+		far_cloud_material.render_priority = 4
 		far_cloud_mesh_instance.material_override = far_cloud_material
 
 	var near_shader = load("res://assets/shaders/cylinder_clouds.gdshader") as Shader
 	if near_shader:
 		near_cloud_material = ShaderMaterial.new()
 		near_cloud_material.shader = near_shader
-		near_cloud_material.render_priority = 5 # Near clouds render over far clouds (P4) and central axis light bar
+		near_cloud_material.render_priority = 5
 		near_cloud_mesh_instance.material_override = near_cloud_material
 
 	_generate_cloud_geometry()
@@ -662,19 +530,18 @@ func _build_rain_sheets() -> void:
 		rain_sheet_material.render_priority = 8
 		rain_sheets_mesh_instance.material_override = rain_sheet_material
 
-	# Generate multi-layered hexagonal cylinder cage with circumference and opposite-vertex interior sheets
+	# Multi-layered hexagonal cylinder cage with circumference and opposite-vertex interior sheets
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	var rng = RandomNumberGenerator.new()
-	rng.seed = 4242
+	var rng_geom = RandomNumberGenerator.new()
+	rng_geom.seed = 4242
 
-	# Hexagonal cylinder tiers: [radius, height, angle_offset_deg]
 	var hex_tiers = [
-		[4.0, 16.0, 0.0],    # Close & immediate interior
-		[12.0, 24.0, 20.0],  # Mid-range
-		[26.0, 36.0, 40.0],  # Far-range
-		[46.0, 52.0, 10.0]   # Horizon perimeter
+		[4.0, 16.0, 0.0],
+		[12.0, 24.0, 20.0],
+		[26.0, 36.0, 40.0],
+		[46.0, 52.0, 10.0]
 	]
 
 	for tier in hex_tiers:
@@ -683,29 +550,26 @@ func _build_rain_sheets() -> void:
 		var angle_offset: float = deg_to_rad(tier[2])
 		var y_bottom = -0.5
 
-		# Compute the 6 outer vertices of the regular hexagon
 		var verts: Array[Vector3] = []
 		for k in range(6):
 			var ang = angle_offset + float(k) * (TAU / 6.0)
 			verts.append(Vector3(cos(ang) * rad, 0.0, sin(ang) * rad))
 
-		# 1. Six circumference sheets (outer hexagon edges)
 		for k in range(6):
 			var v_start = verts[k]
 			var v_end = verts[(k + 1) % 6]
-			_add_rain_quad(st, v_start, v_end, y_bottom, h, rng)
+			_add_rain_quad(st, v_start, v_end, y_bottom, h, rng_geom)
 
-		# 2. Three interior sheets going between opposite vertices (0-3, 1-4, 2-5)
 		for k in range(3):
 			var v_start = verts[k]
 			var v_end = verts[k + 3]
-			_add_rain_quad(st, v_start, v_end, y_bottom, h, rng)
+			_add_rain_quad(st, v_start, v_end, y_bottom, h, rng_geom)
 
 	var mesh = st.commit()
 	rain_sheets_mesh_instance.mesh = mesh
 	rain_sheets_root.visible = false
 
-func _add_rain_quad(st: SurfaceTool, A: Vector3, B: Vector3, y_bottom: float, h: float, rng: RandomNumberGenerator) -> void:
+func _add_rain_quad(st: SurfaceTool, A: Vector3, B: Vector3, y_bottom: float, h: float, rng_geom: RandomNumberGenerator) -> void:
 	var edge = B - A
 	var w = edge.length()
 	var edge_dir = edge.normalized() if w > 0.001 else Vector3.RIGHT
@@ -718,7 +582,7 @@ func _add_rain_quad(st: SurfaceTool, A: Vector3, B: Vector3, y_bottom: float, h:
 	var p2 = B + Vector3(0.0, y_top, 0.0)
 	var p3 = A + Vector3(0.0, y_top, 0.0)
 
-	var u_off = rng.randf()
+	var u_off = rng_geom.randf()
 	var u_span = maxf(w * 0.35, 0.8)
 
 	var uv0 = Vector2(u_off, 0.0)
@@ -726,28 +590,22 @@ func _add_rain_quad(st: SurfaceTool, A: Vector3, B: Vector3, y_bottom: float, h:
 	var uv2 = Vector2(u_off + u_span, 1.0)
 	var uv3 = Vector2(u_off, 1.0)
 
-	# Triangle 1
 	st.set_normal(norm)
 	st.set_uv(uv0)
 	st.add_vertex(p0)
-
 	st.set_normal(norm)
 	st.set_uv(uv1)
 	st.add_vertex(p1)
-
 	st.set_normal(norm)
 	st.set_uv(uv2)
 	st.add_vertex(p2)
 
-	# Triangle 2
 	st.set_normal(norm)
 	st.set_uv(uv0)
 	st.add_vertex(p0)
-
 	st.set_normal(norm)
 	st.set_uv(uv2)
 	st.add_vertex(p2)
-
 	st.set_normal(norm)
 	st.set_uv(uv3)
 	st.add_vertex(p3)
@@ -756,23 +614,29 @@ func _get_density_tier(precip_rate: float) -> int:
 	if precip_rate <= 0.05:
 		return 0
 	elif precip_rate < 6.0:
-		return 1 # Mist / Drizzle
+		return 1
 	elif precip_rate < 15.0:
-		return 2 # Light Rain
+		return 2
 	elif precip_rate < 28.0:
-		return 3 # Moderate Rain
+		return 3
 	elif precip_rate < 42.0:
-		return 4 # Heavy Rain
+		return 4
 	else:
-		return 5 # Torrential Downpour
+		return 5
 
-func _get_or_render_rain_texture(density_tier: int) -> ImageTexture:
-	if rain_texture_cache.has(density_tier):
-		return rain_texture_cache[density_tier]
-
-	var img_tex = _generate_rain_streak_texture(density_tier)
-	rain_texture_cache[density_tier] = img_tex
-	return img_tex
+func _get_or_render_rain_texture(density_tier: int, snow: bool) -> ImageTexture:
+	if snow:
+		if snow_texture_cache.has(density_tier):
+			return snow_texture_cache[density_tier]
+		var tex = _generate_snow_streak_texture(density_tier)
+		snow_texture_cache[density_tier] = tex
+		return tex
+	else:
+		if rain_texture_cache.has(density_tier):
+			return rain_texture_cache[density_tier]
+		var tex = _generate_rain_streak_texture(density_tier)
+		rain_texture_cache[density_tier] = tex
+		return tex
 
 func _generate_rain_streak_texture(density_tier: int) -> ImageTexture:
 	var width = 256
@@ -780,37 +644,26 @@ func _generate_rain_streak_texture(density_tier: int) -> ImageTexture:
 	var img = Image.create(width, height, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 
-	# Density tiers: 0=None, 1=Mist, 2=Light, 3=Moderate, 4=Heavy, 5=Torrential
 	var streak_counts = [0, 220, 550, 1100, 2100, 3600]
 	var count = streak_counts[clamp(density_tier, 0, streak_counts.size() - 1)]
 
-	var rng = RandomNumberGenerator.new()
-	rng.seed = 9871 + density_tier * 4099
-
-	# Dark blue 50% Alpha streaks with 1:3 aspect ratio (width 2px, height 6px)
+	var rng_tex = RandomNumberGenerator.new()
+	rng_tex.seed = 9871 + density_tier * 4099
 	var streak_w = 2
 	var streak_h = 6
 
 	for i in range(count):
-		var rx = rng.randi_range(0, width - 1)
-		var ry = rng.randi_range(0, height - 1)
-		var a_mod = rng.randf_range(0.85, 1.15)
+		var rx = rng_tex.randi_range(0, width - 1)
+		var ry = rng_tex.randi_range(0, height - 1)
+		var a_mod = rng_tex.randf_range(0.85, 1.15)
 
 		for dy in range(streak_h):
 			var py = (ry + dy) % height
-			# Vertical gradient profile with 1:3 aspect ratio
-			var v_factor: float
-			if dy == 0 or dy == streak_h - 1:
-				v_factor = 0.35
-			elif dy == 1 or dy == streak_h - 2:
-				v_factor = 0.75
-			else:
-				v_factor = 1.0
+			var v_factor = 0.35 if (dy == 0 or dy == streak_h - 1) else (0.75 if (dy == 1 or dy == streak_h - 2) else 1.0)
 
 			for dx in range(streak_w):
 				var px = (rx + dx) % width
 				var final_alpha = clampf(0.50 * v_factor * a_mod, 0.0, 1.0)
-				# Dark blue streaks (50% alpha)
 				var streak_color = Color(0.12, 0.28, 0.58, final_alpha)
 
 				var existing = img.get_pixel(px, py)
@@ -821,6 +674,44 @@ func _generate_rain_streak_texture(density_tier: int) -> ImageTexture:
 					img.set_pixel(px, py, blended_rgb)
 				else:
 					img.set_pixel(px, py, streak_color)
+
+	img.generate_mipmaps()
+	return ImageTexture.create_from_image(img)
+
+func _generate_snow_streak_texture(density_tier: int) -> ImageTexture:
+	var width = 256
+	var height = 512
+	var img = Image.create(width, height, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var flake_counts = [0, 350, 850, 1600, 2900, 4800]
+	var count = flake_counts[clamp(density_tier, 0, flake_counts.size() - 1)]
+
+	var rng_tex = RandomNumberGenerator.new()
+	rng_tex.seed = 13579 + density_tier * 3137
+
+	for i in range(count):
+		var rx = rng_tex.randi_range(0, width - 1)
+		var ry = rng_tex.randi_range(0, height - 1)
+		var size = rng_tex.randi_range(2, 4)
+		var a_mod = rng_tex.randf_range(0.65, 0.95)
+
+		for dy in range(size):
+			var py = (ry + dy) % height
+			for dx in range(size):
+				var px = (rx + dx) % width
+				var dist = Vector2(dx - size * 0.5, dy - size * 0.5).length()
+				var falloff = clampf(1.0 - dist / (size * 0.6), 0.0, 1.0)
+				var flake_color = Color(0.95, 0.97, 1.0, falloff * a_mod)
+
+				var existing = img.get_pixel(px, py)
+				if existing.a > 0.0:
+					var blended_a = clampf(existing.a + flake_color.a * (1.0 - existing.a), 0.0, 1.0)
+					var blended_rgb = existing.blend(flake_color)
+					blended_rgb.a = blended_a
+					img.set_pixel(px, py, blended_rgb)
+				else:
+					img.set_pixel(px, py, flake_color)
 
 	img.generate_mipmaps()
 	return ImageTexture.create_from_image(img)
@@ -859,7 +750,6 @@ func _setup_weather_emitters() -> void:
 	_update_dust_emitter()
 
 func _update_precipitation_emitter() -> void:
-	# Ensure particle emitter doesn't spawn macro blobs
 	var emitter = get_tree().get_first_node_in_group("particle_emitter") as CylinderParticleEmitter if is_inside_tree() else null
 	if emitter:
 		emitter.rain_stream_enabled = false
@@ -872,20 +762,21 @@ func _update_precipitation_emitter() -> void:
 		return
 
 	var tier = _get_density_tier(precipitation_rate_mmh)
-	if tier != current_rendered_density_tier:
+	if tier != current_rendered_density_tier or is_snow_mode != current_rendered_snow_state:
 		current_rendered_density_tier = tier
-		var tex = _get_or_render_rain_texture(tier)
+		current_rendered_snow_state = is_snow_mode
+		var tex = _get_or_render_rain_texture(tier, is_snow_mode)
 		rain_sheet_material.set_shader_parameter("rain_texture", tex)
 
 	var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
-	var fall_speed = lerpf(16.0, 32.0, intensity_norm)
+	var fall_speed = lerpf(3.5, 7.0, intensity_norm) if is_snow_mode else lerpf(16.0, 32.0, intensity_norm)
 	var spin_sign = float(spin_direction)
 	var coriolis_drift = -2.0 * coriolis_omega_rad_s * fall_speed * spin_sign
 
-	# Scroll UVs in fall direction and Coriolis tilt
-	var uv_scroll_y = fall_speed * 0.16
-	var uv_scroll_x = coriolis_drift * 0.10
+	var uv_scroll_y = fall_speed * (0.04 if is_snow_mode else 0.16)
+	var uv_scroll_x = coriolis_drift * (0.04 if is_snow_mode else 0.10)
 	rain_sheet_material.set_shader_parameter("uv_scroll_speed", Vector2(uv_scroll_x, uv_scroll_y))
+	rain_sheet_material.set_shader_parameter("rain_tint", Color(1.0, 1.0, 1.0, 1.0))
 
 func _update_dust_emitter() -> void:
 	if not dust_particles:
@@ -899,7 +790,8 @@ func _update_dust_emitter() -> void:
 	dust_particles.amount = int(lerpf(40.0, 350.0, dust_density))
 	var dust_mat = dust_particles.material_override as StandardMaterial3D
 	if dust_mat:
-		dust_mat.albedo_color = Color(0.95, 0.90, 0.78, clampf(dust_density * 0.45, 0.1, 0.6))
+		var dust_col = Color(0.95, 0.98, 1.0) if is_snow_mode else Color(0.95, 0.90, 0.78)
+		dust_mat.albedo_color = Color(dust_col.r, dust_col.g, dust_col.b, clampf(dust_density * 0.45, 0.1, 0.6))
 
 func _update_particle_positions() -> void:
 	if not is_inside_tree():
@@ -917,15 +809,11 @@ func _update_particle_positions() -> void:
 	var player_altitude = maxf(cylinder_radius - player_radius, 0.0)
 
 	var r_dir = r_vec.normalized() if r_vec.length_squared() > 1.0 else Vector2(0, -1)
-	var down_3d = Vector3(r_dir.x, r_dir.y, 0.0) # Radially outward toward floor
-	var up_sky_3d = -down_3d                     # Radially inward toward axis / cloud base
+	var down_3d = Vector3(r_dir.x, r_dir.y, 0.0)
+	var up_sky_3d = -down_3d
 	var tangent_3d = Vector3(-r_dir.y, r_dir.x, 0.0)
 	var spin_sign = float(spin_direction)
 
-	# Calculate cloud altitude factor:
-	# Below cloud base (altitude < cloud_altitude_m - 80m): full rain (1.0)
-	# Transition zone (cloud_altitude_m - 80m to cloud_altitude_m + 40m): smooth fade out
-	# Above cloud deck (altitude >= cloud_altitude_m + 40m): no rain (0.0)
 	var fade_start = cloud_altitude_m - 80.0
 	var fade_end = cloud_altitude_m + 40.0
 	var altitude_rain_factor = clampf(1.0 - (player_altitude - fade_start) / maxf(fade_end - fade_start, 1.0), 0.0, 1.0)
@@ -959,6 +847,27 @@ func _update_dynamic_wind(delta: float) -> void:
 	var wind_fluct = sin(time_val * 0.2) * 0.001
 	wind_velocity.x = (0.006 + wind_fluct) * spin_sign
 
+func _update_cloud_deck_coriolis_motion(delta: float, current_clock_hours: float) -> void:
+	var spin_sign = float(spin_direction)
+	var thickness_factor = clampf(cloud_thickness_m / 350.0, 0.7, 1.5)
+	cloud_deck_angular_velocity = (0.012 + 0.004 * thickness_factor) * spin_sign * (coriolis_omega_rad_s / 0.0487)
+	cloud_deck_axial_velocity = 2.2 + sin(Time.get_ticks_msec() * 0.00015) * 0.8
+
+	cloud_deck_accumulated_spin += cloud_deck_angular_velocity * delta
+	cloud_deck_accumulated_drift += cloud_deck_axial_velocity * delta
+
+	if tie_to_in_game_clock:
+		var diurnal_theta = (current_clock_hours / 24.0) * TAU * spin_sign * 2.0
+		var diurnal_z = sin((current_clock_hours / 24.0) * TAU) * 1400.0 + (current_clock_hours / 24.0) * 3200.0
+
+		cloud_deck_rotation_theta = fposmod(diurnal_theta + cloud_deck_accumulated_spin, TAU)
+		var half_len = cylinder_length * 0.5
+		cloud_deck_translation_z = fposmod(diurnal_z + cloud_deck_accumulated_drift + half_len, cylinder_length) - half_len
+	else:
+		cloud_deck_rotation_theta = fposmod(cloud_deck_rotation_theta + cloud_deck_angular_velocity * delta, TAU)
+		var half_len = cylinder_length * 0.5
+		cloud_deck_translation_z = fposmod(cloud_deck_translation_z + cloud_deck_axial_velocity * delta + half_len, cylinder_length) - half_len
+
 func _update_shader_parameters() -> void:
 	var materials: Array[ShaderMaterial] = []
 	if far_cloud_material:
@@ -990,7 +899,6 @@ func _update_shader_parameters() -> void:
 			mat.set_shader_parameter("axial_light_enabled", 1.0)
 			mat.set_shader_parameter("global_light_intensity", light_int)
 
-	# Synchronize overcast cloud coverage to terrain, end caps, and water materials
 	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
 	if cylinder_world:
 		if cylinder_world.surface_material is ShaderMaterial:
@@ -1007,35 +915,58 @@ func set_spin_direction(is_ccw: bool) -> void:
 	_update_shader_parameters()
 
 func get_weather_state_name() -> String:
+	if not current_weather_state.is_empty():
+		return String(current_weather_state.get("name", "Active Weather"))
 	if precipitation_rate_mmh > 0.5:
-		if precipitation_rate_mmh < 8.0:
-			return "Light Rain & Mist"
-		elif precipitation_rate_mmh < 25.0:
-			return "Moderate Rain"
-		else:
-			return "Heavy Atmospheric Downpour"
-	match current_weather:
-		WeatherType.CLEAR: return "Clear Sky"
-		WeatherType.FAIR_CUMULUS: return "Fair Cumulus"
-		WeatherType.SCATTERED_CLOUDS: return "Scattered Clouds"
-		WeatherType.OVERCAST: return "Overcast Deck"
-		WeatherType.RAIN_MIST: return "Atmospheric Rain & Mist"
-	return "Fair Cumulus"
+		if is_snow_mode:
+			return "Active Snowfall & Drifts"
+		return "Moderate Rain & Mist"
+	return "Fair Cumulus Skies"
+
+func get_current_trajectory_name() -> String:
+	return get_weather_state_name()
+
+func get_current_trajectory_progress() -> float:
+	return clampf(transition_timer / maxf(transition_duration, 0.1), 0.0, 1.0)
+
+func get_current_trajectory_time_remaining() -> float:
+	return maxf(0.0, transition_duration - transition_timer)
+
+func get_queue_items_summary() -> Array[String]:
+	var summaries: Array[String] = []
+	if not manual_queue.is_empty():
+		for i in range(manual_queue.size()):
+			var item = manual_queue[i]
+			var iname = item.get("name", "Queued State")
+			var dur = int(round(float(item.get("duration", 30.0))))
+			summaries.append("Manual #%d: %s (%ds)" % [i + 1, iname, dur])
+	elif not next_queued_weather_state.is_empty():
+		var n_name = next_queued_weather_state.get("name", "Next Climate State")
+		var dur = int(round(float(next_queued_weather_state.get("duration", 35.0))))
+		summaries.append("Next: %s (%ds)" % [n_name, dur])
+	return summaries
 
 func get_telemetry() -> Dictionary:
 	var spin_name = "Counter-Clockwise (CCW)" if spin_direction == SpinDirection.COUNTER_CLOCKWISE else "Clockwise (CW)"
+	var is_transitioning_now = transition_timer < transition_duration
 	return {
 		"weather_state": get_weather_state_name(),
-		"is_transitioning": is_transitioning,
+		"is_transitioning": is_transitioning_now,
 		"auto_cycle_enabled": auto_weather_cycle_enabled,
 		"tie_to_in_game_clock": tie_to_in_game_clock,
-		"trajectory_index": current_trajectory_index,
-		"trajectory_name": get_current_trajectory_name(),
+		"trajectory_name": get_weather_state_name(),
 		"trajectory_progress": get_current_trajectory_progress(),
 		"trajectory_time_remaining": get_current_trajectory_time_remaining(),
-		"trajectory_duration": trajectory_duration,
-		"queue_size": trajectory_queue.size(),
+		"trajectory_duration": transition_duration,
+		"queue_size": manual_queue.size() + (1 if not next_queued_weather_state.is_empty() else 0),
 		"queue_items": get_queue_items_summary(),
+		"climate_name": current_climate_name,
+		"season_name": current_season_name,
+		"surface_temperature_c": current_temperature_c,
+		"is_snow_mode": is_snow_mode,
+		"latitude_deg": latitude_deg,
+		"yearly_precipitation_mm": yearly_precipitation_mm,
+		"day_of_year": day_of_year,
 		"humidity_density_gm3": humidity_density_gm3,
 		"relative_humidity_pct": relative_humidity_pct,
 		"dew_point_c": dew_point_c,

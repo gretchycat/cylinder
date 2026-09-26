@@ -199,7 +199,17 @@ theme_override_font_sizes/font_size = 12
 tab_alignment = 1
 current_tab = 0
 
+[node name="Climate" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="VBoxClimate" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/Climate"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
 [node name="Weather" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
+visible = false
 layout_mode = 2
 horizontal_scroll_mode = 0
 

@@ -1,6 +1,7 @@
 extends SceneTree
 
 const CylinderParticleEmitter = preload("res://scripts/cylinder_particle_emitter.gd")
+const ClimateSystem = preload("res://scripts/climate_system.gd")
 
 func _watchdog(timeout_sec: float = 20.0) -> void:
 	await create_timer(timeout_sec).timeout
@@ -598,7 +599,71 @@ func _init() -> void:
 
 	print("[PASS] Test 11: Rotating frame centrifugal/Coriolis physics, particle launches, and trajectory trails verified.")
 
+	# --- TEST 12: Climate Regions, Yearly Cycles, Snow Mode & 1-Deep Weather State Queue ---
+	print("\n--- TEST 12: Climate Regions, Yearly Cycles, Snow Mode & 1-Deep Weather Queue ---")
+	var weather = root_node.get_node_or_null("WeatherSystem") as WeatherSystem
+	test_check(weather != null, "WeatherSystem node must exist in main scene")
+
+	# 1. Test Climate Biome Classification from Tundra desert to Tropical rainforest
+	var tropical_rainforest = ClimateSystem.get_climate_name(0.0, 3200.0)
+	test_check(tropical_rainforest == ClimateSystem.CLIMATE_TROPICAL_RAINFOREST, "Lat 0°, 3200mm precip must classify as Tropical Rainforest")
+
+	var tropical_desert = ClimateSystem.get_climate_name(15.0, 100.0)
+	test_check(tropical_desert == ClimateSystem.CLIMATE_TROPICAL_DESERT, "Lat 15°, 100mm precip must classify as Hyper-Arid Tropical Desert")
+
+	var polar_ice_sheet = ClimateSystem.get_climate_name(85.0, 100.0)
+	test_check(polar_ice_sheet == ClimateSystem.CLIMATE_TUNDRA_DESERT, "Lat 85°, 100mm precip must classify as Polar Desert (Ice Sheet)")
+
+	var arctic_tundra = ClimateSystem.get_climate_name(68.0, 180.0)
+	test_check(arctic_tundra == ClimateSystem.CLIMATE_ARCTIC_TUNDRA, "Lat 68°, 180mm precip must classify as Arctic Tundra Desert")
+
+	var boreal_taiga = ClimateSystem.get_climate_name(62.0, 750.0)
+	test_check(boreal_taiga == ClimateSystem.CLIMATE_BOREAL_TAIGA, "Lat 62°, 750mm precip must classify as Boreal Taiga")
+
+	var temperate_deciduous = ClimateSystem.get_climate_name(38.0, 1200.0)
+	test_check(temperate_deciduous == ClimateSystem.CLIMATE_DECIDUOUS_FOREST, "Lat 38°, 1200mm precip must classify as Temperate Deciduous Forest")
+
+	# 2. Test Seasonal Cycle and Temperatures across Latitude and Day of Year
+	var summer_equator_temp = ClimateSystem.calculate_surface_temperature(0.0, 172, 14.0, 2000.0)
+	var winter_polar_temp = ClimateSystem.calculate_surface_temperature(80.0, 355, 14.0, 150.0)
+	test_check(summer_equator_temp > 24.0, "Equatorial temperature must be warm (> 24°C)")
+	test_check(winter_polar_temp < -10.0, "Winter polar temperature must be sub-zero (< -10°C)")
+
+	# 3. Test Snow Mode determination (<= 4°C)
+	var cold_profile = ClimateSystem.get_climate_weather_profile(70.0, 300.0, 355, 12.0)
+	test_check(cold_profile["is_snow_mode"] == true, "Cold climate profile with sub-4°C temp must trigger snow mode")
+
+	var warm_profile = ClimateSystem.get_climate_weather_profile(5.0, 2500.0, 172, 12.0)
+	test_check(warm_profile["is_snow_mode"] == false, "Warm climate profile with >4°C temp must be in rain mode")
+
+	# 4. Test Weather System Climate Profile Sync & 1-Deep Queue
+	weather.latitude_deg = 42.0
+	weather.yearly_precipitation_mm = 1100.0
+	weather.day_of_year = 172
+	test_check(weather.current_climate_name.contains("Forest") or weather.current_climate_name.contains("Temperate"), "Weather system must reflect active climate descriptor")
+	test_check(not weather.current_weather_state.is_empty(), "Weather system must hold active current weather state")
+	test_check(not weather.next_queued_weather_state.is_empty(), "Weather system must maintain 1-deep pre-calculated upcoming state")
+
+	# 5. Test Manual Queue Pushing during game
+	var custom_snow_event = {
+		"name": "Custom Test Blizzard (❄️)",
+		"cloud_coverage": 0.95,
+		"cloud_thickness_m": 600.0,
+		"precipitation_rate_mmh": 20.0,
+		"humidity_density_gm3": 6.0,
+		"dust_density": 0.05,
+		"endcap_air_temperature_c": -10.0,
+		"water_pipe_temperature_c": -5.0,
+		"duration": 15.0
+	}
+	weather.push_weather_state(custom_snow_event, true)
+	test_check(weather.is_snow_mode, "Weather system must switch to snow mode when temperature <= 4°C")
+	test_check(weather.precipitation_rate_mmh > 15.0, "Precipitation rate must reflect custom pushed weather event")
+	test_check(weather.rain_sheets_root.visible == true, "Rain sheets mesh must be visible during precipitation")
+
+	print("[PASS] Test 12: Climate regions (Tundra desert to Tropical rainforest), seasonal cycles, snow mode (<= 4°C), and 1-deep weather queue verified.")
+
 	print("\n=======================================================")
-	print(" ALL O'NEILL CYLINDER SIMULATION TESTS PASSED (11/11)! ")
+	print(" ALL O'NEILL CYLINDER SIMULATION TESTS PASSED (12/12)! ")
 	print("=======================================================\n")
 	quit(0)

@@ -29,6 +29,22 @@ var fps_label: Label = null
 var system_fps_label: Label = null
 var fps_update_timer: float = 0.0
 
+# Tab 0: Climate & Biomes UI Controls
+var climate_name_label: Label = null
+var climate_details_label: Label = null
+var climate_mode_label: Label = null
+var climate_lat_slider: HSlider = null
+var climate_lat_val: Label = null
+var climate_precip_slider: HSlider = null
+var climate_precip_val: Label = null
+var climate_doy_slider: HSlider = null
+var climate_doy_val: Label = null
+var climate_preset_option: OptionButton = null
+var apply_climate_preset_btn: Button = null
+var gen_weather_state_btn: Button = null
+var force_snow_btn: Button = null
+var force_downpour_btn: Button = null
+
 # Tab 1: Weather & Atmosphere UI Controls
 var auto_cycle_btn: Button = null
 var clock_sync_btn: Button = null
@@ -290,11 +306,16 @@ func _create_slider_row(parent: VBoxContainer, label_text: String, min_val: floa
 
 func _setup_control_panel() -> void:
 	if tab_container:
-		tab_container.set_tab_title(0, "☁️ Weather")
-		tab_container.set_tab_title(1, "☀️ Lighting")
-		tab_container.set_tab_title(2, "⏳ Time")
-		tab_container.set_tab_title(3, "🌐 Physics")
-		tab_container.set_tab_title(4, "⚙️ System")
+		tab_container.set_tab_title(0, "🌍 Climate")
+		tab_container.set_tab_title(1, "☁️ Weather")
+		tab_container.set_tab_title(2, "☀️ Lighting")
+		tab_container.set_tab_title(3, "⏳ Time")
+		tab_container.set_tab_title(4, "🌐 Physics")
+		tab_container.set_tab_title(5, "⚙️ System")
+
+	var vbox_climate = get_node_or_null("UIRoot/ControlPanel/TabContainer/Climate/VBoxClimate") as VBoxContainer
+	if vbox_climate:
+		_setup_climate_tab(vbox_climate)
 
 	var vbox_weather = get_node_or_null("UIRoot/ControlPanel/TabContainer/Weather/VBoxWeather") as VBoxContainer
 	if vbox_weather:
@@ -317,6 +338,112 @@ func _setup_control_panel() -> void:
 		_setup_system_tab(vbox_system)
 
 	_update_solar_ui()
+
+func _setup_climate_tab(vbox: VBoxContainer) -> void:
+	climate_name_label = Label.new()
+	climate_name_label.name = "ClimateNameLabel"
+	climate_name_label.add_theme_font_size_override("font_size", 12)
+	climate_name_label.text = "🌍 Biome: Initializing..."
+	climate_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	climate_name_label.modulate = Color(0.4, 1.0, 0.7)
+	vbox.add_child(climate_name_label)
+
+	climate_details_label = Label.new()
+	climate_details_label.name = "ClimateDetailsLabel"
+	climate_details_label.add_theme_font_size_override("font_size", 10)
+	climate_details_label.text = "Season: Summer | Surface Temp: 22.0 °C\nAnnual Rain: 950 mm | Latitude: 40.0° N"
+	climate_details_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	climate_details_label.modulate = Color(0.8, 0.95, 1.0)
+	vbox.add_child(climate_details_label)
+
+	climate_mode_label = Label.new()
+	climate_mode_label.name = "ClimateModeLabel"
+	climate_mode_label.add_theme_font_size_override("font_size", 10)
+	climate_mode_label.text = "Precipitation Mode: 🌧️ Rain (> 4°C)"
+	climate_mode_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	climate_mode_label.modulate = Color(0.6, 0.85, 1.0)
+	vbox.add_child(climate_mode_label)
+
+	var sep1 = HSeparator.new()
+	vbox.add_child(sep1)
+
+	var init_lat = weather_system.latitude_deg if weather_system else (light_bar.earth_latitude_deg if light_bar else 40.0)
+	var r_lat = _create_slider_row(vbox, "Habitat Latitude (-90°S to +90°N):", -90.0, 90.0, 0.5, init_lat, _on_climate_lat_changed)
+	climate_lat_slider = r_lat[0]
+	climate_lat_val = r_lat[1]
+	_update_lat_label(init_lat)
+
+	var init_precip = weather_system.yearly_precipitation_mm if weather_system else 950.0
+	var r_precip = _create_slider_row(vbox, "Annual Precipitation (Yearly mm):", 50.0, 4000.0, 25.0, init_precip, _on_climate_precip_changed)
+	climate_precip_slider = r_precip[0]
+	climate_precip_val = r_precip[1]
+	_update_precip_label(init_precip)
+
+	var init_doy = weather_system.day_of_year if weather_system else 172
+	var r_doy = _create_slider_row(vbox, "Day of Year (Seasonal Cycle):", 1.0, 365.0, 1.0, float(init_doy), _on_climate_doy_changed)
+	climate_doy_slider = r_doy[0]
+	climate_doy_val = r_doy[1]
+	_update_doy_label(init_doy)
+
+	var sep2 = HSeparator.new()
+	vbox.add_child(sep2)
+
+	var preset_label = Label.new()
+	preset_label.text = "Quick Biome / Climate Presets:"
+	preset_label.add_theme_font_size_override("font_size", 10)
+	vbox.add_child(preset_label)
+
+	var hbox_presets = HBoxContainer.new()
+	climate_preset_option = OptionButton.new()
+	climate_preset_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	climate_preset_option.focus_mode = Control.FOCUS_NONE
+	climate_preset_option.add_item("Tropical Rainforest (Lat 0°, 3000mm)", 0)
+	climate_preset_option.add_item("Tropical Savanna (Lat 12°, 480mm)", 1)
+	climate_preset_option.add_item("Hot Subtropical Desert (Lat 28°, 100mm)", 2)
+	climate_preset_option.add_item("Mediterranean Chaparral (Lat 35°, 450mm)", 3)
+	climate_preset_option.add_item("Temperate Deciduous Forest (Lat 42°, 1100mm)", 4)
+	climate_preset_option.add_item("Temperate Rainforest (Lat 48°, 2400mm)", 5)
+	climate_preset_option.add_item("Cold Steppe / Grassland (Lat 50°, 350mm)", 6)
+	climate_preset_option.add_item("Boreal Taiga Forest (Lat 62°, 700mm)", 7)
+	climate_preset_option.add_item("Arctic Tundra Desert (Lat 68°, 200mm)", 8)
+	climate_preset_option.add_item("Polar Ice Sheet (Lat 82°, 120mm)", 9)
+	climate_preset_option.select(4)
+	hbox_presets.add_child(climate_preset_option)
+
+	apply_climate_preset_btn = Button.new()
+	apply_climate_preset_btn.text = "Apply Biome"
+	apply_climate_preset_btn.focus_mode = Control.FOCUS_NONE
+	apply_climate_preset_btn.add_theme_font_size_override("font_size", 10)
+	apply_climate_preset_btn.pressed.connect(_on_apply_climate_preset_pressed)
+	hbox_presets.add_child(apply_climate_preset_btn)
+	vbox.add_child(hbox_presets)
+
+	var hbox_triggers = HBoxContainer.new()
+	vbox.add_child(hbox_triggers)
+
+	gen_weather_state_btn = Button.new()
+	gen_weather_state_btn.text = "⚡ Next Weather"
+	gen_weather_state_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gen_weather_state_btn.focus_mode = Control.FOCUS_NONE
+	gen_weather_state_btn.add_theme_font_size_override("font_size", 10)
+	gen_weather_state_btn.pressed.connect(_on_gen_weather_state_pressed)
+	hbox_triggers.add_child(gen_weather_state_btn)
+
+	force_snow_btn = Button.new()
+	force_snow_btn.text = "❄️ Trigger Snow (<4°C)"
+	force_snow_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	force_snow_btn.focus_mode = Control.FOCUS_NONE
+	force_snow_btn.add_theme_font_size_override("font_size", 10)
+	force_snow_btn.pressed.connect(_on_force_snow_pressed)
+	hbox_triggers.add_child(force_snow_btn)
+
+	force_downpour_btn = Button.new()
+	force_downpour_btn.text = "🌧️ Trigger Downpour"
+	force_downpour_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	force_downpour_btn.focus_mode = Control.FOCUS_NONE
+	force_downpour_btn.add_theme_font_size_override("font_size", 10)
+	force_downpour_btn.pressed.connect(_on_force_downpour_pressed)
+	hbox_triggers.add_child(force_downpour_btn)
 
 func _setup_weather_tab(vbox: VBoxContainer) -> void:
 	# 1. Active Trajectory & Queue Readout
@@ -344,13 +471,14 @@ func _setup_weather_tab(vbox: VBoxContainer) -> void:
 	preset_queue_option = OptionButton.new()
 	preset_queue_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	preset_queue_option.focus_mode = Control.FOCUS_NONE
-	preset_queue_option.add_item("Fair Cumulus Morning", 0)
-	preset_queue_option.add_item("Building Cumulus Deck", 1)
-	preset_queue_option.add_item("Overcast Coriolis Squall", 2)
-	preset_queue_option.add_item("Atmospheric Downpour", 3)
-	preset_queue_option.add_item("Post-Storm Clearing", 4)
-	preset_queue_option.add_item("Hazy Golden Afternoon", 5)
-	preset_queue_option.add_item("Clear Sky & Axis View", 6)
+	preset_queue_option.add_item("Clear Solar Sky", 0)
+	preset_queue_option.add_item("Fair Cumulus Skies", 1)
+	preset_queue_option.add_item("Overcast Cloud Deck", 2)
+	preset_queue_option.add_item("Light Rain & Mist", 3)
+	preset_queue_option.add_item("Heavy Atmospheric Downpour", 4)
+	preset_queue_option.add_item("Gentle Snowfall & Flurries (❄️)", 5)
+	preset_queue_option.add_item("Frigid Arctic Blizzard (❄️)", 6)
+	preset_queue_option.add_item("Atmospheric Dust & Haze", 7)
 	hbox_preset_row.add_child(preset_queue_option)
 
 	duration_queue_option = OptionButton.new()
@@ -967,6 +1095,135 @@ func _on_auto_cycle_toggle_pressed() -> void:
 	if auto_cycle_btn:
 		auto_cycle_btn.text = "Auto-Loop: %s" % ("ON" if weather_system.auto_weather_cycle_enabled else "OFF")
 
+func _update_lat_label(lat: float) -> void:
+	if not climate_lat_val:
+		return
+	var hemi = "N" if lat >= 0.0 else "S"
+	var abs_lat = absf(lat)
+	var zone = "Polar" if abs_lat >= 75.0 else ("Arctic/Boreal" if abs_lat >= 60.0 else ("Temperate" if abs_lat >= 45.0 else ("Subtropical" if abs_lat >= 25.0 else "Tropical")))
+	climate_lat_val.text = "%+.1f°%s (%s)" % [abs_lat, hemi, zone]
+
+func _update_precip_label(precip: float) -> void:
+	if not climate_precip_val:
+		return
+	var cat = "Hyper-Arid" if precip < 200.0 else ("Semi-Arid" if precip < 500.0 else ("Moderate" if precip < 1000.0 else ("Humid" if precip < 2000.0 else "Rainforest")))
+	climate_precip_val.text = "%.0f mm/yr (%s)" % [precip, cat]
+
+func _update_doy_label(doy: int) -> void:
+	if not climate_doy_val:
+		return
+	var month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+	var days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+	var d = doy
+	var m_idx = 0
+	for m in range(12):
+		if d <= days_in_month[m]:
+			m_idx = m
+			break
+		d -= days_in_month[m]
+	climate_doy_val.text = "Day %d (~%s %d)" % [doy, month_names[m_idx], max(d, 1)]
+
+func _on_climate_lat_changed(value: float) -> void:
+	_update_lat_label(value)
+	if weather_system:
+		weather_system.latitude_deg = value
+	if light_bar:
+		light_bar.earth_latitude_deg = value
+	if latitude_slider and not is_equal_approx(latitude_slider.value, value):
+		latitude_slider.set_value_no_signal(value)
+	if latitude_val:
+		var hemi = "N" if value >= 0.0 else "S"
+		latitude_val.text = "%+.0f°%s" % [absf(value), hemi]
+
+func _on_climate_precip_changed(value: float) -> void:
+	_update_precip_label(value)
+	if weather_system:
+		weather_system.yearly_precipitation_mm = value
+
+func _on_climate_doy_changed(value: float) -> void:
+	var doy = int(round(value))
+	_update_doy_label(doy)
+	if weather_system:
+		weather_system.day_of_year = doy
+	if light_bar:
+		light_bar.day_of_year = doy
+
+func _on_apply_climate_preset_pressed() -> void:
+	if apply_climate_preset_btn:
+		apply_climate_preset_btn.release_focus()
+	if not climate_preset_option:
+		return
+	var idx = climate_preset_option.selected
+	var lat = 40.0
+	var precip = 950.0
+	var doy = 172
+	match idx:
+		0: lat = 0.0; precip = 3000.0; doy = 172 # Tropical Rainforest
+		1: lat = 12.0; precip = 480.0; doy = 172 # Tropical Savanna
+		2: lat = 28.0; precip = 100.0; doy = 172 # Subtropical Desert
+		3: lat = 35.0; precip = 450.0; doy = 172 # Mediterranean
+		4: lat = 42.0; precip = 1100.0; doy = 172 # Temperate Deciduous
+		5: lat = 48.0; precip = 2400.0; doy = 172 # Temperate Rainforest
+		6: lat = 50.0; precip = 350.0; doy = 172 # Cold Steppe
+		7: lat = 62.0; precip = 700.0; doy = 355 # Boreal Taiga (Winter)
+		8: lat = 68.0; precip = 200.0; doy = 355 # Arctic Tundra (Winter)
+		9: lat = 82.0; precip = 120.0; doy = 355 # Polar Ice Sheet (Winter)
+
+	if climate_lat_slider:
+		climate_lat_slider.set_value_no_signal(lat)
+	_on_climate_lat_changed(lat)
+
+	if climate_precip_slider:
+		climate_precip_slider.set_value_no_signal(precip)
+	_on_climate_precip_changed(precip)
+
+	if climate_doy_slider:
+		climate_doy_slider.set_value_no_signal(doy)
+	_on_climate_doy_changed(doy)
+
+	if weather_system:
+		weather_system.skip_current_trajectory()
+
+func _on_gen_weather_state_pressed() -> void:
+	if gen_weather_state_btn:
+		gen_weather_state_btn.release_focus()
+	if weather_system:
+		weather_system.skip_current_trajectory()
+
+func _on_force_snow_pressed() -> void:
+	if force_snow_btn:
+		force_snow_btn.release_focus()
+	if weather_system:
+		var snow_state = {
+			"name": "Forced Blizzard & Snowfall (❄️)",
+			"cloud_coverage": 0.95,
+			"cloud_thickness_m": 650.0,
+			"precipitation_rate_mmh": 22.0,
+			"humidity_density_gm3": 6.5,
+			"dust_density": 0.05,
+			"endcap_air_temperature_c": -8.0,
+			"water_pipe_temperature_c": -3.0,
+			"duration": 30.0
+		}
+		weather_system.push_weather_state(snow_state, true)
+
+func _on_force_downpour_pressed() -> void:
+	if force_downpour_btn:
+		force_downpour_btn.release_focus()
+	if weather_system:
+		var rain_state = {
+			"name": "Forced Tropical Downpour (🌧️)",
+			"cloud_coverage": 0.98,
+			"cloud_thickness_m": 720.0,
+			"precipitation_rate_mmh": 35.0,
+			"humidity_density_gm3": 27.0,
+			"dust_density": 0.03,
+			"endcap_air_temperature_c": 24.0,
+			"water_pipe_temperature_c": 26.0,
+			"duration": 30.0
+		}
+		weather_system.push_weather_state(rain_state, true)
+
 func _on_add_preset_to_queue_pressed() -> void:
 	if add_preset_to_queue_btn:
 		add_preset_to_queue_btn.release_focus()
@@ -974,7 +1231,99 @@ func _on_add_preset_to_queue_pressed() -> void:
 		return
 	var preset_idx = preset_queue_option.selected
 	var dur = float(duration_queue_option.get_selected_id())
-	weather_system.enqueue_preset_by_index(preset_idx, dur)
+	var state: Dictionary = {}
+	match preset_idx:
+		0:
+			state = {
+				"name": "Clear Solar Sky",
+				"cloud_coverage": 0.05,
+				"cloud_thickness_m": 80.0,
+				"precipitation_rate_mmh": 0.0,
+				"humidity_density_gm3": 6.0,
+				"dust_density": 0.15,
+				"duration": dur
+			}
+		1:
+			state = {
+				"name": "Fair Cumulus Skies",
+				"cloud_coverage": 0.35,
+				"cloud_thickness_m": 220.0,
+				"precipitation_rate_mmh": 0.0,
+				"humidity_density_gm3": 12.0,
+				"dust_density": 0.12,
+				"duration": dur
+			}
+		2:
+			state = {
+				"name": "Overcast Cloud Deck",
+				"cloud_coverage": 0.85,
+				"cloud_thickness_m": 480.0,
+				"precipitation_rate_mmh": 0.5,
+				"humidity_density_gm3": 19.0,
+				"dust_density": 0.08,
+				"duration": dur
+			}
+		3:
+			state = {
+				"name": "Light Rain & Mist",
+				"cloud_coverage": 0.88,
+				"cloud_thickness_m": 520.0,
+				"precipitation_rate_mmh": 7.5,
+				"humidity_density_gm3": 22.0,
+				"dust_density": 0.06,
+				"endcap_air_temperature_c": 19.5,
+				"water_pipe_temperature_c": 22.0,
+				"duration": dur
+			}
+		4:
+			state = {
+				"name": "Heavy Atmospheric Downpour",
+				"cloud_coverage": 0.98,
+				"cloud_thickness_m": 720.0,
+				"precipitation_rate_mmh": 32.0,
+				"humidity_density_gm3": 26.5,
+				"dust_density": 0.04,
+				"endcap_air_temperature_c": 21.0,
+				"water_pipe_temperature_c": 23.0,
+				"duration": dur
+			}
+		5:
+			state = {
+				"name": "Gentle Snowfall & Flurries (❄️)",
+				"cloud_coverage": 0.85,
+				"cloud_thickness_m": 420.0,
+				"precipitation_rate_mmh": 6.0,
+				"humidity_density_gm3": 7.0,
+				"dust_density": 0.10,
+				"endcap_air_temperature_c": -1.5,
+				"water_pipe_temperature_c": 0.5,
+				"duration": dur
+			}
+		6:
+			state = {
+				"name": "Frigid Arctic Blizzard (❄️)",
+				"cloud_coverage": 0.98,
+				"cloud_thickness_m": 750.0,
+				"precipitation_rate_mmh": 28.0,
+				"humidity_density_gm3": 8.5,
+				"dust_density": 0.05,
+				"endcap_air_temperature_c": -12.0,
+				"water_pipe_temperature_c": -6.0,
+				"duration": dur
+			}
+		7:
+			state = {
+				"name": "Atmospheric Dust & Haze",
+				"cloud_coverage": 0.15,
+				"cloud_thickness_m": 120.0,
+				"precipitation_rate_mmh": 0.0,
+				"humidity_density_gm3": 5.0,
+				"dust_density": 0.65,
+				"endcap_air_temperature_c": 27.0,
+				"water_pipe_temperature_c": 28.0,
+				"duration": dur
+			}
+	weather_system.push_weather_state(state, false)
 
 func _on_queue_current_sliders_pressed() -> void:
 	if queue_current_sliders_btn:
@@ -1108,6 +1457,29 @@ func _on_weather_updated(data: Dictionary) -> void:
 		if water_pipe_val:
 			water_pipe_val.text = "%.1f °C" % water_t
 
+	if climate_name_label:
+		var c_name = data.get("climate_name", "Temperate Mixed Forest")
+		climate_name_label.text = "🌍 Biome: %s" % c_name
+
+	if climate_details_label:
+		var season = data.get("season_name", "Summer")
+		var s_temp = float(data.get("surface_temperature_c", 22.0))
+		var yr_precip = float(data.get("yearly_precipitation_mm", 950.0))
+		var lat = float(data.get("latitude_deg", 40.0))
+		var hemi = "N" if lat >= 0.0 else "S"
+		climate_details_label.text = "Season: %s | Temp: %.1f °C (%.1f °F)\nAnnual Rain: %.0f mm | Latitude: %+.1f°%s" % [
+			season, s_temp, s_temp * 1.8 + 32.0, yr_precip, absf(lat), hemi
+		]
+
+	if climate_mode_label:
+		var is_snow = bool(data.get("is_snow_mode", false))
+		if is_snow:
+			climate_mode_label.text = "Precipitation Mode: ❄️ SNOW / BLIZZARD (Temp <= 4°C)"
+			climate_mode_label.modulate = Color(0.7, 0.9, 1.0)
+		else:
+			climate_mode_label.text = "Precipitation Mode: 🌧️ RAIN / MIST (Temp > 4°C)"
+			climate_mode_label.modulate = Color(0.5, 0.8, 1.0)
+
 	if weather_badge_label:
 		var w_state = data.get("weather_state", "Fair Cumulus")
 		var rh = data.get("relative_humidity_pct", 68.0)
@@ -1116,36 +1488,41 @@ func _on_weather_updated(data: Dictionary) -> void:
 		var density_gm3 = data.get("humidity_density_gm3", 14.5)
 		var precip = data.get("precipitation_rate_mmh", 0.0)
 		var dust_pct = data.get("dust_density_pct", 20)
+		var is_snow = bool(data.get("is_snow_mode", false))
 
 		var precip_str = ""
 		if precip > 0.05:
-			precip_str = " | Rain: %.1f mm/h (Tilt: %+.1f°)" % [precip, data.get("coriolis_rain_tilt_deg", 0.0)]
+			var p_label = "Snow" if is_snow else "Rain"
+			precip_str = " | %s: %.1f mm/h (Tilt: %+.1f°)" % [p_label, precip, data.get("coriolis_rain_tilt_deg", 0.0)]
 
-		var queue_tag = "[Queue: %d]" % q_size if q_size > 0 else ("[Auto-Loop]" if is_auto else "[Manual]")
+		var queue_tag = "[Queue: %d]" % q_size if q_size > 0 else ("[Auto-Climate]" if is_auto else "[Manual]")
 		weather_badge_label.text = "WEATHER %s: [%s] | Hum: %.1f g/m³ (RH: %d%%)%s\nCLOUDS: Deck @ %.2f km AGL (Thick: %.0fm) | Rot: %.1f° | Dust: %d%%" % [
 			queue_tag, traj_name if is_trans else w_state.to_upper(), density_gm3, int(round(rh)), precip_str, cloud_km, cloud_th, cloud_rot_deg, dust_pct
 		]
-		match w_state:
-			"Clear Sky":
-				weather_badge_label.modulate = Color(0.4, 0.9, 1.0)
-			"Fair Cumulus":
-				weather_badge_label.modulate = Color(0.5, 1.0, 0.7)
-			"Scattered Clouds":
-				weather_badge_label.modulate = Color(0.9, 0.9, 0.5)
-			"Overcast Deck":
-				weather_badge_label.modulate = Color(0.8, 0.8, 0.9)
-			"Atmospheric Rain & Mist", "Light Rain & Mist", "Moderate Rain", "Heavy Atmospheric Downpour":
-				weather_badge_label.modulate = Color(0.55, 0.75, 1.0)
-			_:
-				weather_badge_label.modulate = Color(0.7, 0.9, 0.8)
+		if is_snow:
+			weather_badge_label.modulate = Color(0.8, 0.95, 1.0)
+		else:
+			match w_state:
+				"Clear Solar Sky", "Clear Sky":
+					weather_badge_label.modulate = Color(0.4, 0.9, 1.0)
+				"Fair Cumulus Skies", "Fair Cumulus":
+					weather_badge_label.modulate = Color(0.5, 1.0, 0.7)
+				"Scattered Clouds":
+					weather_badge_label.modulate = Color(0.9, 0.9, 0.5)
+				"Overcast Cloud Deck", "Overcast Deck":
+					weather_badge_label.modulate = Color(0.8, 0.8, 0.9)
+				_:
+					weather_badge_label.modulate = Color(0.55, 0.75, 1.0)
 
 	if cloud_status_label:
 		var dew = data.get("dew_point_c", 15.2)
 		var hvac_t = data.get("endcap_air_temp_c", 22.5)
 		var water_t = data.get("water_pipe_temp_c", 24.0)
 		var precip = data.get("precipitation_rate_mmh", 0.0)
-		cloud_status_label.text = "LCL Base: %.2f km | Dew: %.1f°C | Rain: %.1f mm/h\nHVAC Air: %.1f°C | Water Pipes: %.1f°C" % [
-			data.get("cloud_altitude_km", 1.25), dew, precip, hvac_t, water_t
+		var is_snow = bool(data.get("is_snow_mode", false))
+		var p_name = "Snow" if is_snow else "Rain"
+		cloud_status_label.text = "LCL Base: %.2f km | Dew: %.1f°C | %s: %.1f mm/h\nHVAC Air: %.1f°C | Water Pipes: %.1f°C" % [
+			data.get("cloud_altitude_km", 1.25), dew, p_name, precip, hvac_t, water_t
 		]
 
 func _disable_auto_weather_for_manual_control() -> void:
