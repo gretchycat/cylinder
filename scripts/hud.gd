@@ -1380,15 +1380,18 @@ func _on_weather_updated(data: Dictionary) -> void:
 	if clock_sync_btn:
 		clock_sync_btn.text = "Clock: %s" % ("ON" if is_clock else "OFF")
 
+	var wind_ms = float(data.get("wind_speed_m_s", 6.0))
+	var wind_kmh = float(data.get("wind_speed_km_h", 21.6))
+
 	if trajectory_status_label:
 		if is_trans:
 			var clock_tag = "⏱️ Clock Tied" if is_clock else "⏱️ Real-Time"
-			trajectory_status_label.text = "Active Target: %s [%d%% | %ds left] (%s)\nCloud Deck: Rot %.1f° | Drift Z: %+.0fm" % [
-				traj_name, int(round(traj_prog * 100.0)), int(round(traj_rem)), clock_tag, cloud_rot_deg, cloud_z_drift
+			trajectory_status_label.text = "Active Target: %s [%d%% | %ds left] (%s)\nCloud Deck: Rot %.1f° | Wind: %.1f m/s (%.0f km/h)" % [
+				traj_name, int(round(traj_prog * 100.0)), int(round(traj_rem)), clock_tag, cloud_rot_deg, wind_ms, wind_kmh
 			]
 		else:
-			trajectory_status_label.text = "Active Weather: %s (Stationary)\nCloud Deck: Rot %.1f° | Drift Z: %+.0fm" % [
-				data.get("weather_state", "Fair Cumulus"), cloud_rot_deg, cloud_z_drift
+			trajectory_status_label.text = "Active Weather: %s\nCloud Deck: Rot %.1f° | Wind: %.1f m/s (%.0f km/h)" % [
+				data.get("weather_state", "Fair Cumulus"), cloud_rot_deg, wind_ms, wind_kmh
 			]
 
 	if queue_list_label:
@@ -1496,8 +1499,8 @@ func _on_weather_updated(data: Dictionary) -> void:
 			precip_str = " | %s: %.1f mm/h (Tilt: %+.1f°)" % [p_label, precip, data.get("coriolis_rain_tilt_deg", 0.0)]
 
 		var queue_tag = "[Queue: %d]" % q_size if q_size > 0 else ("[Auto-Climate]" if is_auto else "[Manual]")
-		weather_badge_label.text = "WEATHER %s: [%s] | Hum: %.1f g/m³ (RH: %d%%)%s\nCLOUDS: Deck @ %.2f km AGL (Thick: %.0fm) | Rot: %.1f° | Dust: %d%%" % [
-			queue_tag, traj_name if is_trans else w_state.to_upper(), density_gm3, int(round(rh)), precip_str, cloud_km, cloud_th, cloud_rot_deg, dust_pct
+		weather_badge_label.text = "WEATHER %s: [%s] | Wind: %.1f m/s (%.0f km/h)%s\nCLOUDS: Deck @ %.2f km AGL (Thick: %.0fm) | Rot: %.1f° | RH: %d%%" % [
+			queue_tag, traj_name if is_trans else w_state.to_upper(), wind_ms, wind_kmh, precip_str, cloud_km, cloud_th, cloud_rot_deg, int(round(rh))
 		]
 		if is_snow:
 			weather_badge_label.modulate = Color(0.8, 0.95, 1.0)

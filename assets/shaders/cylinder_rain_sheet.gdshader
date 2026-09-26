@@ -5,7 +5,7 @@ render_mode cull_disabled, blend_mix, depth_draw_never, unshaded;
 // Renders scrolling pre-rendered raindrop streaks on layered cylindrical / curtain sheets around the player
 uniform sampler2D rain_texture : filter_linear_mipmap, repeat_enable;
 uniform vec2 uv_scale = vec2(3.0, 2.0);
-uniform vec2 uv_scroll_speed = vec2(0.0, 6.0);
+uniform vec2 uv_scroll_offset = vec2(0.0, 0.0);
 uniform vec4 rain_tint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform float rain_alpha_multiplier : hint_range(0.0, 2.0) = 1.0;
 
@@ -24,7 +24,7 @@ void vertex() {
 }
 
 void fragment() {
-	vec2 scrolled_uv = UV * uv_scale + uv_scroll_speed * TIME;
+	vec2 scrolled_uv = UV * uv_scale + uv_scroll_offset;
 	vec4 tex = texture(rain_texture, scrolled_uv);
 
 	float dist = length(v_world_pos - CAMERA_POSITION_WORLD);

@@ -153,6 +153,30 @@ var rain_texture_cache: Dictionary = {}
 var snow_texture_cache: Dictionary = {}
 var current_rendered_density_tier: int = -1
 var current_rendered_snow_state: bool = false
+var current_wind_speed_m_s: float = 6.0
+var rain_scroll_offset: Vector2 = Vector2.ZERO
+
+func get_effective_time_scale() -> float:
+	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
+	if light_bar:
+		if light_bar.use_real_time:
+			return 1.0
+		return light_bar.time_scale # 0.0 when paused
+	return 1.0
+
+func _calculate_current_wind_speed_m_s() -> float:
+	var base_wind: float = 5.0
+	if precipitation_rate_mmh > 0.05:
+		if is_snow_mode:
+			# Blizzard / snowfall wind: 5.0 m/s to 22.0 m/s
+			base_wind = lerpf(5.0, 22.0, clampf(precipitation_rate_mmh / 30.0, 0.0, 1.0))
+		else:
+			# Rain storm wind: 6.0 m/s to 20.0 m/s
+			base_wind = lerpf(6.0, 20.0, clampf(precipitation_rate_mmh / 35.0, 0.0, 1.0))
+	else:
+		# Wind scales with cloud coverage and dust: 3.5 m/s (calm) to 11.0 m/s (overcast)
+		base_wind = lerpf(3.5, 11.0, cloud_coverage) + (dust_density * 3.0)
+	return base_wind
 
 func _ready() -> void:
 	add_to_group("weather_system")
@@ -209,17 +233,22 @@ func _process(delta: float) -> void:
 		if light_bar.day_of_year > 0 and light_bar.day_of_year != day_of_year:
 			day_of_year = light_bar.day_of_year
 
-	# Weather state progression timescale: smooth delta progression scaled gracefully
-	var time_mult = 1.0
-	if light_bar and not light_bar.use_real_time and light_bar.time_scale > 1.0:
-		time_mult = clampf(sqrt(light_bar.time_scale), 1.0, 3.5)
-	var effective_dt = delta * time_mult * trajectory_speed_scale
+	var sim_time_scale: float = get_effective_time_scale()
 
-	_update_weather_queue_progression(effective_dt, current_clock_hours)
-	_update_dynamic_wind(delta)
-	_update_cloud_deck_coriolis_motion(delta)
+	# Scaled simulation delta time (0.0 when paused)
+	var effective_dt = delta * sim_time_scale * trajectory_speed_scale
+
+	# Scaled time progression for weather queue transitions
+	var queue_dt = 0.0
+	if sim_time_scale > 0.0:
+		var q_mult = clampf(sqrt(sim_time_scale), 1.0, 4.0) if sim_time_scale > 1.0 else sim_time_scale
+		queue_dt = delta * q_mult * trajectory_speed_scale
+
+	_update_weather_queue_progression(queue_dt, current_clock_hours)
+	_update_dynamic_wind(effective_dt)
+	_update_cloud_deck_coriolis_motion(effective_dt)
 	_update_shader_parameters()
-	_update_precipitation_emitter()
+	_update_precipitation_emitter(effective_dt)
 	_update_dust_emitter()
 	_update_particle_positions()
 	_emit_weather_telemetry()
@@ -740,7 +769,7 @@ func _setup_weather_emitters() -> void:
 	_update_precipitation_emitter()
 	_update_dust_emitter()
 
-func _update_precipitation_emitter() -> void:
+func _update_precipitation_emitter(effective_dt: float = 0.0) -> void:
 	var emitter = get_tree().get_first_node_in_group("particle_emitter") as CylinderParticleEmitter if is_inside_tree() else null
 	if emitter:
 		emitter.rain_stream_enabled = false
@@ -764,9 +793,14 @@ func _update_precipitation_emitter() -> void:
 	var spin_sign = float(spin_direction)
 	var coriolis_drift = -2.0 * coriolis_omega_rad_s * fall_speed * spin_sign
 
-	var uv_scroll_y = fall_speed * (0.04 if is_snow_mode else 0.16)
-	var uv_scroll_x = coriolis_drift * (0.04 if is_snow_mode else 0.10)
-	rain_sheet_material.set_shader_parameter("uv_scroll_speed", Vector2(uv_scroll_x, uv_scroll_y))
+	if effective_dt > 0.0:
+		var uv_scroll_y = fall_speed * (0.08 if is_snow_mode else 0.25)
+		var uv_scroll_x = coriolis_drift * (0.05 if is_snow_mode else 0.12)
+		rain_scroll_offset += Vector2(uv_scroll_x, uv_scroll_y) * effective_dt
+		rain_scroll_offset.x = fposmod(rain_scroll_offset.x, 100.0)
+		rain_scroll_offset.y = fposmod(rain_scroll_offset.y, 100.0)
+
+	rain_sheet_material.set_shader_parameter("uv_scroll_offset", rain_scroll_offset)
 	rain_sheet_material.set_shader_parameter("rain_tint", Color(1.0, 1.0, 1.0, 1.0))
 
 func _update_dust_emitter() -> void:
@@ -832,21 +866,27 @@ func _update_particle_positions() -> void:
 	if dust_particles and dust_particles.is_inside_tree() and dust_particles.emitting:
 		dust_particles.global_position = p_pos + up_sky_3d * 20.0
 
-func _update_dynamic_wind(delta: float) -> void:
+func _update_dynamic_wind(effective_dt: float) -> void:
 	var spin_sign = float(spin_direction)
-	var time_val = Time.get_ticks_msec() * 0.001
-	var wind_fluct = sin(time_val * 0.2) * 0.001
-	wind_velocity.x = (0.006 + wind_fluct) * spin_sign
+	current_wind_speed_m_s = _calculate_current_wind_speed_m_s()
+	var cloud_r = maxf(cylinder_radius - cloud_altitude_m, 100.0)
+	var omega_wind = (current_wind_speed_m_s / cloud_r) * spin_sign
+	wind_velocity = Vector2(omega_wind, 0.5)
 
-func _update_cloud_deck_coriolis_motion(delta: float) -> void:
+func _update_cloud_deck_coriolis_motion(effective_dt: float) -> void:
 	var spin_sign = float(spin_direction)
-	var thickness_factor = clampf(cloud_thickness_m / 350.0, 0.7, 1.5)
-	cloud_deck_angular_velocity = (0.010 + 0.003 * thickness_factor) * spin_sign * (coriolis_omega_rad_s / 0.0487)
-	cloud_deck_axial_velocity = 2.0 + sin(Time.get_ticks_msec() * 0.0001) * 0.5
+	current_wind_speed_m_s = _calculate_current_wind_speed_m_s()
+	var cloud_r = maxf(cylinder_radius - cloud_altitude_m, 100.0)
 
-	# Smooth, continuous monotonic accumulation without wrapping jumps or direction flipping
-	cloud_deck_rotation_theta += cloud_deck_angular_velocity * delta
-	cloud_deck_translation_z += cloud_deck_axial_velocity * delta
+	# Atmospheric cloud angular velocity in rad/s: omega = v_wind / R_cloud
+	cloud_deck_angular_velocity = (current_wind_speed_m_s / cloud_r) * spin_sign
+	# Gentle axial drift along cylinder length (0.5 m/s)
+	cloud_deck_axial_velocity = 0.5
+
+	# Smooth monotonic integration scaled purely by effective_dt (0.0 when paused)
+	if effective_dt > 0.0:
+		cloud_deck_rotation_theta += cloud_deck_angular_velocity * effective_dt
+		cloud_deck_translation_z += cloud_deck_axial_velocity * effective_dt
 
 func _update_shader_parameters() -> void:
 	var materials: Array[ShaderMaterial] = []
@@ -862,6 +902,11 @@ func _update_shader_parameters() -> void:
 	var lut_tex = light_bar.lut_texture if light_bar else null
 	var light_int = light_bar.global_intensity_multiplier if light_bar else 3.5
 
+	# Convert continuous rotation angle (radians) to UV offset (0.0 to 1.0 per full circumference)
+	var u_offset = cloud_deck_rotation_theta / TAU
+	# Convert axial translation (meters) to UV offset (0.0 to 1.0 per cylinder length)
+	var v_offset = cloud_deck_translation_z / cylinder_length
+
 	for mat in materials:
 		mat.set_shader_parameter("cylinder_radius", cylinder_radius)
 		mat.set_shader_parameter("cylinder_length", cylinder_length)
@@ -872,7 +917,7 @@ func _update_shader_parameters() -> void:
 		mat.set_shader_parameter("dust_density", dust_density)
 		mat.set_shader_parameter("coriolis_spin_direction", float(spin_direction))
 		mat.set_shader_parameter("wind_velocity", wind_velocity)
-		mat.set_shader_parameter("cloud_deck_offset", Vector2(cloud_deck_rotation_theta, cloud_deck_translation_z))
+		mat.set_shader_parameter("cloud_deck_offset", Vector2(u_offset, v_offset))
 
 		if lut_tex:
 			mat.set_shader_parameter("axial_light_lut", lut_tex)
@@ -965,7 +1010,9 @@ func get_telemetry() -> Dictionary:
 		"cloud_deck_rotation_deg": rad_to_deg(cloud_deck_rotation_theta),
 		"cloud_deck_drift_z": cloud_deck_translation_z,
 		"cloud_deck_omega_deg_s": rad_to_deg(cloud_deck_angular_velocity),
-		"cloud_deck_vz_ms": cloud_deck_axial_velocity
+		"cloud_deck_vz_ms": cloud_deck_axial_velocity,
+		"wind_speed_m_s": current_wind_speed_m_s,
+		"wind_speed_km_h": current_wind_speed_m_s * 3.6
 	}
 
 func _emit_weather_telemetry() -> void:
