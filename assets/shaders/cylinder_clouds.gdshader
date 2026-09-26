@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode cull_disabled, blend_mix, depth_draw_never, diffuse_burley, specular_disabled;
+render_mode cull_disabled, blend_mix, depth_draw_always, diffuse_burley, specular_disabled;
 
 // Atmospheric Cloud Layer for O'Neill Cylinder (1.0 to 1.5 km altitude, r = 2500m to 3000m)
 uniform float cylinder_radius = 4000.0;
