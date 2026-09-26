@@ -243,16 +243,20 @@ func _process_continuous_rain_stream(delta: float) -> void:
 
 		# Spawn droplet from cloud base altitude (e.g. r = 4000 - 1250 = 2750m)
 		var spawn_r = cylinder_radius - rain_stream_altitude
-		var spawn_theta = player_theta + randf_range(-0.15, 0.15)
-		var spawn_z = player_z + randf_range(-150.0, 150.0)
+		var spawn_theta = player_theta + randf_range(-0.25, 0.25)
+		var spawn_z = player_z + randf_range(-250.0, 250.0)
 
-		var origin = Vector3(spawn_r * cos(spawn_theta), spawn_r * sin(spawn_theta), spawn_z)
-		# Initial relative velocity at cloud base: zero relative to rotating frame
-		var v_init = Vector3(randf_range(-0.5, 0.5), randf_range(-0.5, 0.5), randf_range(-0.5, 0.5))
+		var cos_t = cos(spawn_theta)
+		var sin_t = sin(spawn_theta)
+		var origin = Vector3(spawn_r * cos_t, spawn_r * sin_t, spawn_z)
+
+		# Initial condensation downward velocity directed radially outward (+r direction toward ground)
+		var out_dir = Vector3(cos_t, sin_t, 0.0)
+		var v_init = (out_dir * randf_range(3.0, 8.0)) + Vector3(randf_range(-0.5, 0.5), randf_range(-0.5, 0.5), randf_range(-0.5, 0.5))
 
 		launch_particle(origin, v_init, {
-			"color": Color(0.65, 0.85, 1.0, 0.85),
-			"size": 0.8,
+			"color": Color(0.70, 0.88, 1.0, 0.75),
+			"size": 0.9,
 			"bounces": 0
 		})
 

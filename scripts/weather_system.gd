@@ -1,6 +1,8 @@
 class_name WeatherSystem
 extends Node3D
 
+const CylinderParticleEmitter = preload("res://scripts/cylinder_particle_emitter.gd")
+
 signal weather_updated(data: Dictionary)
 
 enum SpinDirection {
@@ -316,6 +318,19 @@ func _setup_weather_emitters() -> void:
 	_update_dust_emitter()
 
 func _update_precipitation_emitter() -> void:
+	# Synchronize rotating reference frame rain particle emission from cloud layer
+	var emitter = get_tree().get_first_node_in_group("particle_emitter") as CylinderParticleEmitter if is_inside_tree() else null
+	if emitter:
+		if precipitation_rate_mmh > 0.05:
+			emitter.rain_stream_enabled = true
+			var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
+			emitter.rain_stream_rate = lerpf(12.0, 120.0, intensity_norm)
+			emitter.rain_stream_altitude = cloud_altitude_m
+			emitter.spin_direction = int(spin_direction)
+			emitter.base_gravity = base_gravity
+		else:
+			emitter.rain_stream_enabled = false
+
 	if not rain_particles:
 		return
 
