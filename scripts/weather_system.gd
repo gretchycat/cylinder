@@ -97,12 +97,15 @@ var cloud_deck_translation_z: float = 0.0  # Meters
 var cloud_deck_angular_velocity: float = 0.0 # rad/s
 var cloud_deck_axial_velocity: float = 0.0 # m/s
 
-# Trajectory Sequencer State
+# Weather Trajectory & Transition Queue State
+var is_transitioning: bool = false
 var current_trajectory_index: int = 0
 var trajectory_timer: float = 0.0
 var trajectory_duration: float = 45.0
 var trajectory_start_state: Dictionary = {}
 var trajectory_target_state: Dictionary = {}
+var trajectory_queue: Array[Dictionary] = []
+var custom_target_counter: int = 1
 
 var weather_trajectories: Array[Dictionary] = [
 	{
@@ -216,11 +219,8 @@ func _init_weather_trajectory() -> void:
 		return
 	start_trajectory(0)
 
-func start_trajectory(index: int) -> void:
-	if weather_trajectories.is_empty():
-		return
-	current_trajectory_index = index % weather_trajectories.size()
-	var target = weather_trajectories[current_trajectory_index]
+func _begin_transition_to(target: Dictionary) -> void:
+	trajectory_target_state = target.duplicate()
 	trajectory_duration = maxf(float(target.get("duration", 45.0)), 1.0)
 	trajectory_timer = 0.0
 	trajectory_start_state = {
@@ -232,7 +232,68 @@ func start_trajectory(index: int) -> void:
 		"endcap_air_temperature_c": endcap_air_temperature_c,
 		"water_pipe_temperature_c": water_pipe_temperature_c
 	}
-	trajectory_target_state = target.duplicate()
+	is_transitioning = true
+
+func start_trajectory(index: int) -> void:
+	if weather_trajectories.is_empty():
+		return
+	current_trajectory_index = index % weather_trajectories.size()
+	_begin_transition_to(weather_trajectories[current_trajectory_index])
+
+func enqueue_weather_target(target: Dictionary) -> void:
+	trajectory_queue.append(target.duplicate())
+	if not is_transitioning:
+		var next = trajectory_queue.pop_front()
+		_begin_transition_to(next)
+
+func enqueue_preset_by_index(index: int, custom_duration: float = -1.0) -> void:
+	if weather_trajectories.is_empty():
+		return
+	var idx = index % weather_trajectories.size()
+	var preset = weather_trajectories[idx].duplicate()
+	if custom_duration > 0.0:
+		preset["duration"] = custom_duration
+	enqueue_weather_target(preset)
+
+func enqueue_custom_target(target_params: Dictionary, duration: float = 30.0, custom_name: String = "") -> void:
+	var item_name = custom_name
+	if item_name.is_empty():
+		item_name = "Custom Transition #%d" % custom_target_counter
+		custom_target_counter += 1
+
+	var target = {
+		"name": item_name,
+		"duration": maxf(duration, 1.0),
+		"cloud_coverage": clampf(target_params.get("cloud_coverage", cloud_coverage), 0.0, 1.0),
+		"cloud_thickness_m": clampf(target_params.get("cloud_thickness_m", cloud_thickness_m), 50.0, 800.0),
+		"precipitation_rate_mmh": clampf(target_params.get("precipitation_rate_mmh", precipitation_rate_mmh), 0.0, 50.0),
+		"humidity_density_gm3": clampf(target_params.get("humidity_density_gm3", humidity_density_gm3), 2.0, 30.0),
+		"dust_density": clampf(target_params.get("dust_density", dust_density), 0.0, 1.0),
+		"endcap_air_temperature_c": clampf(target_params.get("endcap_air_temperature_c", endcap_air_temperature_c), 10.0, 40.0),
+		"water_pipe_temperature_c": clampf(target_params.get("water_pipe_temperature_c", water_pipe_temperature_c), 10.0, 40.0)
+	}
+	enqueue_weather_target(target)
+
+func skip_current_trajectory() -> void:
+	if not trajectory_queue.is_empty():
+		var next = trajectory_queue.pop_front()
+		_begin_transition_to(next)
+	elif auto_weather_cycle_enabled:
+		advance_to_next_trajectory()
+	else:
+		# Complete immediately to target values
+		if not trajectory_target_state.is_empty():
+			cloud_coverage = float(trajectory_target_state.get("cloud_coverage", cloud_coverage))
+			cloud_thickness_m = float(trajectory_target_state.get("cloud_thickness_m", cloud_thickness_m))
+			precipitation_rate_mmh = float(trajectory_target_state.get("precipitation_rate_mmh", precipitation_rate_mmh))
+			humidity_density_gm3 = float(trajectory_target_state.get("humidity_density_gm3", humidity_density_gm3))
+			dust_density = float(trajectory_target_state.get("dust_density", dust_density))
+			endcap_air_temperature_c = float(trajectory_target_state.get("endcap_air_temperature_c", endcap_air_temperature_c))
+			water_pipe_temperature_c = float(trajectory_target_state.get("water_pipe_temperature_c", water_pipe_temperature_c))
+		is_transitioning = false
+
+func clear_weather_queue() -> void:
+	trajectory_queue.clear()
 
 func advance_to_next_trajectory() -> void:
 	if weather_trajectories.is_empty():
@@ -242,12 +303,18 @@ func advance_to_next_trajectory() -> void:
 
 func set_auto_weather_cycle(enabled: bool) -> void:
 	auto_weather_cycle_enabled = enabled
-	if auto_weather_cycle_enabled and trajectory_start_state.is_empty():
-		start_trajectory(current_trajectory_index)
+	if auto_weather_cycle_enabled and not is_transitioning:
+		if not trajectory_queue.is_empty():
+			var next = trajectory_queue.pop_front()
+			_begin_transition_to(next)
+		else:
+			start_trajectory(current_trajectory_index)
 
 func get_current_trajectory_name() -> String:
+	if not trajectory_target_state.is_empty():
+		return String(trajectory_target_state.get("name", "Custom"))
 	if weather_trajectories.is_empty() or current_trajectory_index < 0 or current_trajectory_index >= weather_trajectories.size():
-		return "Custom Atmosphere"
+		return "Manual Atmosphere"
 	return String(weather_trajectories[current_trajectory_index].get("name", "Standard"))
 
 func get_current_trajectory_progress() -> float:
@@ -256,8 +323,23 @@ func get_current_trajectory_progress() -> float:
 func get_current_trajectory_time_remaining() -> float:
 	return maxf(0.0, trajectory_duration - trajectory_timer)
 
+func get_queue_items_summary() -> Array[String]:
+	var summaries: Array[String] = []
+	for i in range(trajectory_queue.size()):
+		var item = trajectory_queue[i]
+		var item_name = item.get("name", "Target")
+		var dur = int(round(float(item.get("duration", 30.0))))
+		summaries.append("%d. %s (%ds)" % [i + 1, item_name, dur])
+	return summaries
+
 func _update_weather_trajectory(delta: float) -> void:
-	if not auto_weather_cycle_enabled or weather_trajectories.is_empty() or trajectory_start_state.is_empty():
+	if not is_transitioning or trajectory_start_state.is_empty() or trajectory_target_state.is_empty():
+		if auto_weather_cycle_enabled and not weather_trajectories.is_empty():
+			if not trajectory_queue.is_empty():
+				var next = trajectory_queue.pop_front()
+				_begin_transition_to(next)
+			else:
+				advance_to_next_trajectory()
 		return
 
 	trajectory_timer += delta * trajectory_speed_scale
@@ -274,7 +356,14 @@ func _update_weather_trajectory(delta: float) -> void:
 	water_pipe_temperature_c = lerpf(float(trajectory_start_state.get("water_pipe_temperature_c", water_pipe_temperature_c)), float(trajectory_target_state.get("water_pipe_temperature_c", water_pipe_temperature_c)), s)
 
 	if trajectory_timer >= trajectory_duration:
-		advance_to_next_trajectory()
+		# Target reached!
+		if not trajectory_queue.is_empty():
+			var next = trajectory_queue.pop_front()
+			_begin_transition_to(next)
+		elif auto_weather_cycle_enabled:
+			advance_to_next_trajectory()
+		else:
+			is_transitioning = false
 
 func _update_cloud_deck_coriolis_motion(delta: float) -> void:
 	var spin_sign = float(spin_direction)
@@ -637,12 +726,15 @@ func get_telemetry() -> Dictionary:
 	var spin_name = "Counter-Clockwise (CCW)" if spin_direction == SpinDirection.COUNTER_CLOCKWISE else "Clockwise (CW)"
 	return {
 		"weather_state": get_weather_state_name(),
+		"is_transitioning": is_transitioning,
 		"auto_cycle_enabled": auto_weather_cycle_enabled,
 		"trajectory_index": current_trajectory_index,
 		"trajectory_name": get_current_trajectory_name(),
 		"trajectory_progress": get_current_trajectory_progress(),
 		"trajectory_time_remaining": get_current_trajectory_time_remaining(),
 		"trajectory_duration": trajectory_duration,
+		"queue_size": trajectory_queue.size(),
+		"queue_items": get_queue_items_summary(),
 		"humidity_density_gm3": humidity_density_gm3,
 		"relative_humidity_pct": relative_humidity_pct,
 		"dew_point_c": dew_point_c,

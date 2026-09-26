@@ -28,8 +28,14 @@ var weather_badge_label: Label = null
 
 # Tab 1: Weather & Atmosphere UI Controls
 var auto_cycle_btn: Button = null
-var next_trajectory_btn: Button = null
+var skip_trajectory_btn: Button = null
+var clear_queue_btn: Button = null
+var add_preset_to_queue_btn: Button = null
+var queue_current_sliders_btn: Button = null
+var preset_queue_option: OptionButton = null
+var duration_queue_option: OptionButton = null
 var trajectory_status_label: Label = null
+var queue_list_label: Label = null
 var spin_direction_btn: Button = null
 var cloud_cover_slider: HSlider = null
 var cloud_cover_val: Label = null
@@ -286,31 +292,98 @@ func _setup_control_panel() -> void:
 	_update_solar_ui()
 
 func _setup_weather_tab(vbox: VBoxContainer) -> void:
-	var hbox_cycle = HBoxContainer.new()
-	vbox.add_child(hbox_cycle)
+	# 1. Active Trajectory & Queue Readout
+	trajectory_status_label = Label.new()
+	trajectory_status_label.name = "TrajectoryStatusLabel"
+	trajectory_status_label.add_theme_font_size_override("font_size", 11)
+	trajectory_status_label.text = "Forecast: Initializing Trajectory..."
+	trajectory_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(trajectory_status_label)
+
+	queue_list_label = Label.new()
+	queue_list_label.name = "QueueListLabel"
+	queue_list_label.add_theme_font_size_override("font_size", 10)
+	queue_list_label.text = "Queue: [Empty - Auto-Looping Presets]"
+	queue_list_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	queue_list_label.modulate = Color(0.7, 0.9, 1.0)
+	vbox.add_child(queue_list_label)
+
+	# 2. Queue Dispatch Controls
+	var queue_box = VBoxContainer.new()
+	
+	var hbox_preset_row = HBoxContainer.new()
+	queue_box.add_child(hbox_preset_row)
+
+	preset_queue_option = OptionButton.new()
+	preset_queue_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preset_queue_option.focus_mode = Control.FOCUS_NONE
+	preset_queue_option.add_item("Fair Cumulus Morning", 0)
+	preset_queue_option.add_item("Building Cumulus Deck", 1)
+	preset_queue_option.add_item("Overcast Coriolis Squall", 2)
+	preset_queue_option.add_item("Atmospheric Downpour", 3)
+	preset_queue_option.add_item("Post-Storm Clearing", 4)
+	preset_queue_option.add_item("Hazy Golden Afternoon", 5)
+	preset_queue_option.add_item("Clear Sky & Axis View", 6)
+	hbox_preset_row.add_child(preset_queue_option)
+
+	duration_queue_option = OptionButton.new()
+	duration_queue_option.focus_mode = Control.FOCUS_NONE
+	duration_queue_option.add_item("15s (Fast)", 15)
+	duration_queue_option.add_item("30s (Smooth)", 30)
+	duration_queue_option.add_item("45s (Gradual)", 45)
+	duration_queue_option.add_item("60s (Slow)", 60)
+	duration_queue_option.add_item("90s (Cinematic)", 90)
+	duration_queue_option.select(1) # Default 30s
+	hbox_preset_row.add_child(duration_queue_option)
+
+	var hbox_actions = HBoxContainer.new()
+	queue_box.add_child(hbox_actions)
+
+	add_preset_to_queue_btn = Button.new()
+	add_preset_to_queue_btn.text = "➕ Queue Preset"
+	add_preset_to_queue_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	add_preset_to_queue_btn.focus_mode = Control.FOCUS_NONE
+	add_preset_to_queue_btn.add_theme_font_size_override("font_size", 10)
+	add_preset_to_queue_btn.pressed.connect(_on_add_preset_to_queue_pressed)
+	hbox_actions.add_child(add_preset_to_queue_btn)
+
+	queue_current_sliders_btn = Button.new()
+	queue_current_sliders_btn.text = "🎯 Queue Sliders Target"
+	queue_current_sliders_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	queue_current_sliders_btn.focus_mode = Control.FOCUS_NONE
+	queue_current_sliders_btn.add_theme_font_size_override("font_size", 10)
+	queue_current_sliders_btn.pressed.connect(_on_queue_current_sliders_pressed)
+	hbox_actions.add_child(queue_current_sliders_btn)
+
+	var hbox_q_mgmt = HBoxContainer.new()
+	queue_box.add_child(hbox_q_mgmt)
+
+	skip_trajectory_btn = Button.new()
+	skip_trajectory_btn.text = "⏭️ Skip Active"
+	skip_trajectory_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	skip_trajectory_btn.focus_mode = Control.FOCUS_NONE
+	skip_trajectory_btn.add_theme_font_size_override("font_size", 10)
+	skip_trajectory_btn.pressed.connect(_on_skip_trajectory_pressed)
+	hbox_q_mgmt.add_child(skip_trajectory_btn)
+
+	clear_queue_btn = Button.new()
+	clear_queue_btn.text = "🧹 Clear Queue"
+	clear_queue_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	clear_queue_btn.focus_mode = Control.FOCUS_NONE
+	clear_queue_btn.add_theme_font_size_override("font_size", 10)
+	clear_queue_btn.pressed.connect(_on_clear_queue_pressed)
+	hbox_q_mgmt.add_child(clear_queue_btn)
 
 	auto_cycle_btn = Button.new()
 	var is_auto = weather_system.auto_weather_cycle_enabled if weather_system else true
-	auto_cycle_btn.text = "Auto Weather Cycle: %s" % ("ON" if is_auto else "OFF")
+	auto_cycle_btn.text = "Auto-Loop: %s" % ("ON" if is_auto else "OFF")
 	auto_cycle_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	auto_cycle_btn.focus_mode = Control.FOCUS_NONE
-	auto_cycle_btn.add_theme_font_size_override("font_size", 11)
+	auto_cycle_btn.add_theme_font_size_override("font_size", 10)
 	auto_cycle_btn.pressed.connect(_on_auto_cycle_toggle_pressed)
-	hbox_cycle.add_child(auto_cycle_btn)
+	hbox_q_mgmt.add_child(auto_cycle_btn)
 
-	next_trajectory_btn = Button.new()
-	next_trajectory_btn.text = "Advance ⏭️"
-	next_trajectory_btn.focus_mode = Control.FOCUS_NONE
-	next_trajectory_btn.add_theme_font_size_override("font_size", 11)
-	next_trajectory_btn.pressed.connect(_on_next_trajectory_pressed)
-	hbox_cycle.add_child(next_trajectory_btn)
-
-	trajectory_status_label = Label.new()
-	trajectory_status_label.name = "TrajectoryStatusLabel"
-	trajectory_status_label.add_theme_font_size_override("font_size", 10)
-	trajectory_status_label.text = "Forecast: Initializing Trajectory Cycle..."
-	trajectory_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(trajectory_status_label)
+	vbox.add_child(queue_box)
 
 	var sep_cycle = HSeparator.new()
 	vbox.add_child(sep_cycle)
@@ -790,36 +863,86 @@ func _on_auto_cycle_toggle_pressed() -> void:
 		return
 	weather_system.set_auto_weather_cycle(not weather_system.auto_weather_cycle_enabled)
 	if auto_cycle_btn:
-		auto_cycle_btn.text = "Auto Weather Cycle: %s" % ("ON" if weather_system.auto_weather_cycle_enabled else "OFF")
+		auto_cycle_btn.text = "Auto-Loop: %s" % ("ON" if weather_system.auto_weather_cycle_enabled else "OFF")
 
-func _on_next_trajectory_pressed() -> void:
-	if next_trajectory_btn:
-		next_trajectory_btn.release_focus()
+func _on_add_preset_to_queue_pressed() -> void:
+	if add_preset_to_queue_btn:
+		add_preset_to_queue_btn.release_focus()
+	if not weather_system or not preset_queue_option or not duration_queue_option:
+		return
+	var preset_idx = preset_queue_option.selected
+	var dur = float(duration_queue_option.get_selected_id())
+	weather_system.enqueue_preset_by_index(preset_idx, dur)
+
+func _on_queue_current_sliders_pressed() -> void:
+	if queue_current_sliders_btn:
+		queue_current_sliders_btn.release_focus()
+	if not weather_system or not duration_queue_option:
+		return
+	var dur = float(duration_queue_option.get_selected_id())
+	var target_params = {
+		"cloud_coverage": cloud_cover_slider.value if cloud_cover_slider else weather_system.cloud_coverage,
+		"cloud_thickness_m": cloud_thickness_slider.value if cloud_thickness_slider else weather_system.cloud_thickness_m,
+		"precipitation_rate_mmh": precipitation_slider.value if precipitation_slider else weather_system.precipitation_rate_mmh,
+		"dust_density": dust_slider.value if dust_slider else weather_system.dust_density,
+		"humidity_density_gm3": humidity_slider.value if humidity_slider else weather_system.humidity_density_gm3,
+		"endcap_air_temperature_c": hvac_air_slider.value if hvac_air_slider else weather_system.endcap_air_temperature_c,
+		"water_pipe_temperature_c": water_pipe_slider.value if water_pipe_slider else weather_system.water_pipe_temperature_c
+	}
+	weather_system.enqueue_custom_target(target_params, dur)
+
+func _on_skip_trajectory_pressed() -> void:
+	if skip_trajectory_btn:
+		skip_trajectory_btn.release_focus()
 	if weather_system:
-		weather_system.advance_to_next_trajectory()
+		weather_system.skip_current_trajectory()
+
+func _on_clear_queue_pressed() -> void:
+	if clear_queue_btn:
+		clear_queue_btn.release_focus()
+	if weather_system:
+		weather_system.clear_weather_queue()
 
 func _on_weather_updated(data: Dictionary) -> void:
+	var is_trans = data.get("is_transitioning", false)
+	var is_auto = data.get("auto_cycle_enabled", true)
 	var traj_name = data.get("trajectory_name", "Fair Cumulus Morning")
 	var traj_rem = data.get("trajectory_time_remaining", 0.0)
 	var traj_prog = data.get("trajectory_progress", 0.0)
-	var is_auto = data.get("auto_cycle_enabled", true)
+	var q_size = data.get("queue_size", 0)
+	var q_items = data.get("queue_items", [])
 	var cloud_rot_deg = data.get("cloud_deck_rotation_deg", 0.0)
 	var cloud_z_drift = data.get("cloud_deck_drift_z", 0.0)
 
 	if auto_cycle_btn:
-		auto_cycle_btn.text = "Auto Weather Cycle: %s" % ("ON" if is_auto else "OFF")
+		auto_cycle_btn.text = "Auto-Loop: %s" % ("ON" if is_auto else "OFF")
 
 	if trajectory_status_label:
-		if is_auto:
-			trajectory_status_label.text = "Forecast: %s [%d%% | %ds left]\nCloud Deck: Rot %.1f° | Drift Z: %+.0fm" % [
+		if is_trans:
+			trajectory_status_label.text = "Active Target: %s [%d%% | %ds left]\nCloud Deck: Rot %.1f° | Drift Z: %+.0fm" % [
 				traj_name, int(round(traj_prog * 100.0)), int(round(traj_rem)), cloud_rot_deg, cloud_z_drift
 			]
 		else:
-			trajectory_status_label.text = "Forecast: Manual Control Mode\nCloud Deck: Rot %.1f° | Drift Z: %+.0fm" % [
-				cloud_rot_deg, cloud_z_drift
+			trajectory_status_label.text = "Active Weather: %s (Stationary)\nCloud Deck: Rot %.1f° | Drift Z: %+.0fm" % [
+				data.get("weather_state", "Fair Cumulus"), cloud_rot_deg, cloud_z_drift
 			]
 
-	if is_auto:
+	if queue_list_label:
+		if q_size > 0:
+			var q_str = " -> ".join(q_items.slice(0, 2))
+			if q_size > 2:
+				q_str += " (+%d more)" % (q_size - 2)
+			queue_list_label.text = "Queue (%d): %s" % [q_size, q_str]
+			queue_list_label.modulate = Color(0.4, 1.0, 0.7)
+		elif is_auto:
+			queue_list_label.text = "Queue: [Empty - Auto-Looping Presets]"
+			queue_list_label.modulate = Color(0.7, 0.9, 1.0)
+		else:
+			queue_list_label.text = "Queue: [Empty - Manual Mode]"
+			queue_list_label.modulate = Color(0.8, 0.8, 0.8)
+
+	if is_trans or is_auto:
+		# Gradually move all sliders in real time to the specified trajectory values
 		var cov = float(data.get("cloud_coverage_pct", 55)) / 100.0
 		var thick = float(data.get("cloud_thickness_m", 250.0))
 		var precip = float(data.get("precipitation_rate_mmh", 0.0))
@@ -883,9 +1006,9 @@ func _on_weather_updated(data: Dictionary) -> void:
 		if precip > 0.05:
 			precip_str = " | Rain: %.1f mm/h (Tilt: %+.1f°)" % [precip, data.get("coriolis_rain_tilt_deg", 0.0)]
 
-		var cycle_tag = "[%s]" % traj_name if is_auto else "[MANUAL]"
-		weather_badge_label.text = "WEATHER: %s %s | Hum: %.1f g/m³ (RH: %d%%)%s\nCLOUDS: Deck @ %.2f km AGL (Thick: %.0fm) | Rot: %.1f° | Dust: %d%%" % [
-			cycle_tag, w_state.to_upper(), density_gm3, int(round(rh)), precip_str, cloud_km, cloud_th, cloud_rot_deg, dust_pct
+		var queue_tag = "[Queue: %d]" % q_size if q_size > 0 else ("[Auto-Loop]" if is_auto else "[Manual]")
+		weather_badge_label.text = "WEATHER %s: [%s] | Hum: %.1f g/m³ (RH: %d%%)%s\nCLOUDS: Deck @ %.2f km AGL (Thick: %.0fm) | Rot: %.1f° | Dust: %d%%" % [
+			queue_tag, traj_name if is_trans else w_state.to_upper(), density_gm3, int(round(rh)), precip_str, cloud_km, cloud_th, cloud_rot_deg, dust_pct
 		]
 		match w_state:
 			"Clear Sky":
