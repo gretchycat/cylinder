@@ -67,13 +67,15 @@ func _ready() -> void:
 	if camera:
 		camera.far = 40000.0
 
-	# Seamless slope climbing across terrain hills and 26 km end cap dishes
-	floor_snap_length = 1.2
-	floor_max_angle = deg_to_rad(89.0)
+	# Ultra-forgiving collision recovery across terrain seams and 26 km end cap dishes
+	safe_margin = 0.15
+	max_slides = 8
+	floor_snap_length = 1.5
+	floor_max_angle = deg_to_rad(89.5)
 	floor_constant_speed = true
 	floor_stop_on_slope = false
 	floor_block_on_wall = false
-	wall_min_slide_angle = deg_to_rad(10.0)
+	wall_min_slide_angle = 0.0
 
 	# Spawn accurately onto inner cylinder terrain
 	reset_to_spawn()
@@ -152,6 +154,10 @@ func _physics_process(delta: float) -> void:
 		_process_ground_movement(delta)
 
 	move_and_slide()
+
+	if not is_flying and is_on_floor():
+		_perform_step_glide(delta)
+
 	_emit_telemetry()
 
 func _update_input() -> void:
@@ -300,6 +306,33 @@ func _process_ground_movement(delta: float) -> void:
 			v_up_scalar = jump_velocity
 
 	velocity = v_h + current_up * v_up_scalar
+
+func _perform_step_glide(delta: float) -> void:
+	if not is_on_floor() or is_flying or input_axis.length_squared() < 0.01:
+		return
+
+	var current_up = global_basis.y
+	var flat_dir = (global_basis.x * input_axis.x + global_basis.z * input_axis.y)
+	flat_dir = (flat_dir - current_up * flat_dir.dot(current_up))
+	if flat_dir.length_squared() < 1e-5:
+		return
+	flat_dir = flat_dir.normalized()
+
+	# Clear terrain polygon seams and elevation micro-steps up to 45 cm
+	var step_height = 0.45
+	var step_up = current_up * step_height
+	var forward_dist = (sprint_speed if is_sprinting else walk_speed) * delta * 1.5
+	var step_forward = flat_dir * forward_dist
+
+	var t_step = global_transform
+	if not test_move(t_step, step_up):
+		t_step.origin += step_up
+		if not test_move(t_step, step_forward):
+			t_step.origin += step_forward
+			var col = KinematicCollision3D.new()
+			if test_move(t_step, -step_up * 1.5, col):
+				if col.get_normal().dot(current_up) > 0.1:
+					global_position = t_step.origin + col.get_travel()
 
 func _process_flying_movement(delta: float) -> void:
 	jump_requested = false

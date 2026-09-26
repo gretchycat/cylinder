@@ -3,8 +3,9 @@
 [ext_resource type="Script" path="res://scripts/player_controller.gd" id="1_script"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
-radius = 0.4
-height = 1.8
+margin = 0.08
+radius = 0.38
+height = 1.75
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
 radius = 0.4
