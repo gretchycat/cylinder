@@ -450,16 +450,18 @@ func _refresh_all_segments() -> void:
 	current_avg_color = avg_col
 	current_avg_intensity = avg_intensity
 
+	var solar_factor = clampf(avg_intensity / 3.5, 0.0, 1.0)
+
 	# Synchronize scene directional sun lights with intensity and preset color
 	for sun in sun_lights:
 		sun.light_color = avg_col
-		sun.light_energy = 1.8 * intensity_norm
+		sun.light_energy = 1.8 * solar_factor * intensity_norm
 
 	# Synchronize scene ambient lighting with intensity and preset color
 	if world_environment and world_environment.environment:
 		var env = world_environment.environment
 		env.ambient_light_color = avg_col
-		env.ambient_light_energy = 1.0 * intensity_norm
+		env.ambient_light_energy = clampf(lerpf(0.04, 1.0, solar_factor) * intensity_norm, 0.02, 1.5)
 
 	# Synchronize depth fog and material air tint with current light level and color
 	_sync_fog_and_atmosphere()

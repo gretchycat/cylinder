@@ -848,6 +848,8 @@ func _on_light_preset_selected(index: int) -> void:
 func _on_solar_time_slider_changed(value: float) -> void:
 	if light_bar:
 		light_bar.set_time_of_day(value, true)
+	if weather_system and weather_system.tie_to_in_game_clock:
+		weather_system.apply_time_of_day_weather(value)
 	_update_solar_ui()
 
 func _on_time_scale_slider_changed(value: float) -> void:
@@ -1069,7 +1071,7 @@ func _on_weather_updated(data: Dictionary) -> void:
 			queue_list_label.text = "Queue: [Empty - Manual Mode]"
 			queue_list_label.modulate = Color(0.8, 0.8, 0.8)
 
-	if is_trans or is_auto:
+	if (is_trans or is_auto) and (weather_system and (weather_system.auto_weather_cycle_enabled or weather_system.is_transitioning)):
 		# Gradually move all sliders in real time to the specified trajectory values
 		var cov = float(data.get("cloud_coverage_pct", 55)) / 100.0
 		var thick = float(data.get("cloud_thickness_m", 250.0))
@@ -1161,6 +1163,14 @@ func _on_weather_updated(data: Dictionary) -> void:
 			data.get("cloud_altitude_km", 1.25), dew, precip, hvac_t, water_t
 		]
 
+func _disable_auto_weather_for_manual_control() -> void:
+	if weather_system:
+		weather_system.auto_weather_cycle_enabled = false
+		weather_system.is_transitioning = false
+		weather_system.clear_weather_queue()
+	if auto_cycle_btn:
+		auto_cycle_btn.text = "Auto: OFF"
+
 func _on_spin_direction_toggle_pressed() -> void:
 	if spin_direction_btn:
 		spin_direction_btn.release_focus()
@@ -1173,24 +1183,28 @@ func _on_spin_direction_toggle_pressed() -> void:
 		spin_direction_btn.text = "Cylinder Spin: %s" % ("Counter-Clockwise (CCW)" if new_is_ccw else "Clockwise (CW)")
 
 func _on_humidity_slider_changed(val: float) -> void:
+	_disable_auto_weather_for_manual_control()
 	if weather_system:
 		weather_system.humidity_density_gm3 = val
 	if humidity_val:
 		humidity_val.text = "%.1f g/m³" % val
 
 func _on_cloud_cover_slider_changed(val: float) -> void:
+	_disable_auto_weather_for_manual_control()
 	if weather_system:
 		weather_system.cloud_coverage = val
 	if cloud_cover_val:
 		cloud_cover_val.text = "%d%%" % int(round(val * 100.0))
 
 func _on_cloud_thickness_slider_changed(val: float) -> void:
+	_disable_auto_weather_for_manual_control()
 	if weather_system:
 		weather_system.cloud_thickness_m = val
 	if cloud_thickness_val:
 		cloud_thickness_val.text = "%.0f m" % val
 
 func _on_precipitation_slider_changed(val: float) -> void:
+	_disable_auto_weather_for_manual_control()
 	if weather_system:
 		weather_system.precipitation_rate_mmh = val
 	if precipitation_val:
@@ -1204,22 +1218,26 @@ func _on_precipitation_slider_changed(val: float) -> void:
 			precipitation_val.text = "%.1f mm/hr [Heavy]" % val
 
 func _on_dust_slider_changed(val: float) -> void:
+	_disable_auto_weather_for_manual_control()
 	if weather_system:
 		weather_system.dust_density = val
 	if dust_val:
 		dust_val.text = "%d%%" % int(round(val * 100.0))
 
 func _on_hvac_air_slider_changed(val: float) -> void:
+	_disable_auto_weather_for_manual_control()
 	if weather_system:
 		weather_system.endcap_air_temperature_c = val
 	if hvac_air_val:
 		hvac_air_val.text = "%.1f °C" % val
 
 func _on_water_pipe_slider_changed(val: float) -> void:
+	_disable_auto_weather_for_manual_control()
 	if weather_system:
 		weather_system.water_pipe_temperature_c = val
 	if water_pipe_val:
 		water_pipe_val.text = "%.1f °C" % val
+
 
 func _on_toggle_controls_pressed() -> void:
 	if toggle_controls_btn:

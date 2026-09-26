@@ -306,6 +306,15 @@ func _apply_diurnal_weather_at_hour(h: float) -> void:
 	endcap_air_temperature_c = float(state["endcap_air_temperature_c"])
 	water_pipe_temperature_c = float(state["water_pipe_temperature_c"])
 
+func apply_time_of_day_weather(hours: float) -> void:
+	last_in_game_time_hours = hours
+	if tie_to_in_game_clock:
+		_apply_diurnal_weather_at_hour(hours)
+		_update_shader_parameters()
+		_update_precipitation_emitter()
+		_update_dust_emitter()
+		_emit_weather_telemetry()
+
 func _begin_transition_to(target: Dictionary) -> void:
 	trajectory_target_state = target.duplicate()
 	trajectory_duration = maxf(float(target.get("duration", 45.0)), 1.0)
@@ -822,8 +831,8 @@ func _setup_weather_emitters() -> void:
 		dust_particles.lifetime = 6.0
 		dust_particles.preprocess = 1.0
 		dust_particles.local_coords = false
-		dust_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
-		dust_particles.emission_sphere_radius = 25.0
+		dust_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		dust_particles.emission_box_extents = Vector3(25.0, 10.0, 25.0)
 		dust_particles.gravity = Vector3.ZERO
 		dust_particles.initial_velocity_min = 0.1
 		dust_particles.initial_velocity_max = 0.4
@@ -833,14 +842,14 @@ func _setup_weather_emitters() -> void:
 		var dust_mat = StandardMaterial3D.new()
 		dust_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		dust_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		dust_mat.albedo_color = Color(0.95, 0.90, 0.78, 0.35)
+		dust_mat.albedo_color = Color(0.95, 0.90, 0.78, 0.25)
 		dust_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 		dust_mat.render_priority = 10
 		dust_particles.material_override = dust_mat
 
 		var sphere_mesh = SphereMesh.new()
-		sphere_mesh.radius = 0.03
-		sphere_mesh.height = 0.06
+		sphere_mesh.radius = 0.02
+		sphere_mesh.height = 0.04
 		dust_particles.mesh = sphere_mesh
 		add_child(dust_particles)
 
@@ -940,7 +949,7 @@ func _update_particle_positions() -> void:
 				rain_sheet_material.set_shader_parameter("rain_alpha_multiplier", base_alpha * altitude_rain_factor)
 
 	if dust_particles and dust_particles.is_inside_tree() and dust_particles.emitting:
-		dust_particles.global_position = p_pos
+		dust_particles.global_position = p_pos + up_sky_3d * 20.0
 
 func _update_dynamic_wind(delta: float) -> void:
 	var spin_sign = float(spin_direction)
