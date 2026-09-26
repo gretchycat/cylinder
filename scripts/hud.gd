@@ -56,18 +56,22 @@ var water_pipe_slider: HSlider = null
 var water_pipe_val: Label = null
 var cloud_status_label: Label = null
 
-# Tab 2: Lighting & Solar UI Controls
+# Tab 2: Lighting UI Controls
 var light_preset_option: OptionButton = null
 var light_intensity_slider: HSlider = null
 var light_intensity_val: Label = null
+
+# Tab 3: Time & Diurnal Clock UI Controls
 var solar_time_slider: HSlider = null
 var solar_time_val: Label = null
 var sync_real_time_btn: Button = null
+var time_scale_slider: HSlider = null
+var time_scale_val: Label = null
 var latitude_slider: HSlider = null
 var latitude_val: Label = null
 var solar_status_label: Label = null
 
-# Tab 3: Physics & Habitat UI Controls
+# Tab 4: Physics & Habitat UI Controls
 var gravity_slider: HSlider = null
 var gravity_val: Label = null
 var wobble_test_btn: Button = null
@@ -271,8 +275,9 @@ func _setup_control_panel() -> void:
 	if tab_container:
 		tab_container.set_tab_title(0, "☁️ Weather")
 		tab_container.set_tab_title(1, "☀️ Lighting")
-		tab_container.set_tab_title(2, "🌐 Physics")
-		tab_container.set_tab_title(3, "⚙️ System")
+		tab_container.set_tab_title(2, "⏳ Time")
+		tab_container.set_tab_title(3, "🌐 Physics")
+		tab_container.set_tab_title(4, "⚙️ System")
 
 	var vbox_weather = get_node_or_null("UIRoot/ControlPanel/TabContainer/Weather/VBoxWeather") as VBoxContainer
 	if vbox_weather:
@@ -281,6 +286,10 @@ func _setup_control_panel() -> void:
 	var vbox_lighting = get_node_or_null("UIRoot/ControlPanel/TabContainer/Lighting/VBoxLighting") as VBoxContainer
 	if vbox_lighting:
 		_setup_lighting_tab(vbox_lighting)
+
+	var vbox_time = get_node_or_null("UIRoot/ControlPanel/TabContainer/Time/VBoxTime") as VBoxContainer
+	if vbox_time:
+		_setup_time_tab(vbox_time)
 
 	var vbox_physics = get_node_or_null("UIRoot/ControlPanel/TabContainer/Physics/VBoxPhysics") as VBoxContainer
 	if vbox_physics:
@@ -498,31 +507,45 @@ func _setup_lighting_tab(vbox: VBoxContainer) -> void:
 	light_intensity_val = r_int[1]
 	_update_intensity_display(cur_intensity)
 
-	# Solar Time of Day
+func _setup_time_tab(vbox: VBoxContainer) -> void:
+	# Solar / Habitat In-Game Clock Time of Day
 	var cur_time = light_bar.time_of_day_hours if light_bar else 12.0
-	var r_time = _create_slider_row(vbox, "Time of Day:", 0.0, 24.0, 0.02, cur_time, _on_solar_time_slider_changed)
+	var r_time = _create_slider_row(vbox, "In-Game Time of Day:", 0.0, 24.0, 0.02, cur_time, _on_solar_time_slider_changed)
 	solar_time_slider = r_time[0]
 	solar_time_val = r_time[1]
-	solar_time_val.text = "12:00 [Real-Time]"
+	solar_time_val.text = "12:00:00 [Real-Time]"
 
 	sync_real_time_btn = Button.new()
-	sync_real_time_btn.text = "Sync to Real-Time Clock"
+	sync_real_time_btn.text = "🔄 Sync to Real-Time Clock"
 	sync_real_time_btn.focus_mode = Control.FOCUS_NONE
-	sync_real_time_btn.add_theme_font_size_override("font_size", 10)
+	sync_real_time_btn.add_theme_font_size_override("font_size", 11)
 	sync_real_time_btn.pressed.connect(_on_sync_real_time_pressed)
 	vbox.add_child(sync_real_time_btn)
 
+	var sep_speed = HSeparator.new()
+	vbox.add_child(sep_speed)
+
+	# Simulation Time Speed / Progression Multiplier
+	var cur_scale = light_bar.time_scale if light_bar else 1.0
+	var r_scale = _create_slider_row(vbox, "Simulation Time Speed:", 0.0, 360.0, 1.0, cur_scale, _on_time_scale_slider_changed)
+	time_scale_slider = r_scale[0]
+	time_scale_val = r_scale[1]
+	_update_time_scale_display(cur_scale)
+
+	var sep_lat = HSeparator.new()
+	vbox.add_child(sep_lat)
+
 	# Earth Latitude
 	var cur_lat = light_bar.earth_latitude_deg if light_bar else 40.0
-	var r_lat = _create_slider_row(vbox, "Earth Latitude:", -90.0, 90.0, 1.0, cur_lat, _on_latitude_slider_changed)
+	var r_lat = _create_slider_row(vbox, "Earth Latitude Reference:", -90.0, 90.0, 1.0, cur_lat, _on_latitude_slider_changed)
 	latitude_slider = r_lat[0]
 	latitude_val = r_lat[1]
 	latitude_val.text = "+40.0° N (Temperate)"
 
 	solar_status_label = Label.new()
 	solar_status_label.name = "SolarStatusLabel"
-	solar_status_label.add_theme_font_size_override("font_size", 10)
-	solar_status_label.text = "Solar Elev: +0.0°"
+	solar_status_label.add_theme_font_size_override("font_size", 11)
+	solar_status_label.text = "Solar Elev: +0.0° | Phase: Daylight"
 	solar_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(solar_status_label)
 
@@ -768,6 +791,28 @@ func _on_solar_time_slider_changed(value: float) -> void:
 		light_bar.set_time_of_day(value, true)
 	_update_solar_ui()
 
+func _on_time_scale_slider_changed(value: float) -> void:
+	if light_bar:
+		light_bar.time_scale = value
+	_update_time_scale_display(value)
+	_update_solar_ui()
+
+func _update_time_scale_display(value: float) -> void:
+	if not time_scale_val:
+		return
+	if is_zero_approx(value):
+		time_scale_val.text = "0x [Paused]"
+	elif is_equal_approx(value, 1.0):
+		time_scale_val.text = "1x [Real-Time 1s/s]"
+	elif value < 60.0:
+		time_scale_val.text = "%.0fx (%.1fs/s)" % [value, value]
+	elif is_equal_approx(value, 60.0):
+		time_scale_val.text = "60x [1 min/s]"
+	elif is_equal_approx(value, 360.0):
+		time_scale_val.text = "360x [6 min/s]"
+	else:
+		time_scale_val.text = "%.0fx (%.1f min/s)" % [value, value / 60.0]
+
 func _on_sync_real_time_pressed() -> void:
 	if sync_real_time_btn:
 		sync_real_time_btn.release_focus()
@@ -789,12 +834,13 @@ func _update_solar_ui() -> void:
 	var elev: float = status.get("solar_elevation", 0.0)
 	var phase: String = status.get("phase_name", "Daylight")
 	var lat: float = status.get("latitude", 40.0)
+	var t_scale: float = status.get("time_scale", 1.0)
 
 	var total_sec = int(t_hours * 3600.0)
 	var hours = (total_sec / 3600) % 24
 	var mins = (total_sec / 60) % 60
 	var secs = total_sec % 60
-	var mode_tag = "Real-Time" if is_rt else "Manual"
+	var mode_tag = "Real-Time" if is_rt else ("Paused" if is_zero_approx(t_scale) else ("%.0fx" % t_scale))
 
 	if solar_badge_label:
 		solar_badge_label.text = "SOLAR: %02d:%02d:%02d [%s] | Elev: %+.1f° (%s)" % [
@@ -814,7 +860,7 @@ func _update_solar_ui() -> void:
 	if solar_time_val:
 		solar_time_val.text = "%02d:%02d:%02d [%s]" % [hours, mins, secs, mode_tag]
 
-	if is_rt and solar_time_slider:
+	if solar_time_slider and (is_rt or t_scale > 0.0):
 		solar_time_slider.set_value_no_signal(t_hours)
 
 	if latitude_val:

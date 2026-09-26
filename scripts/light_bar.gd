@@ -41,10 +41,15 @@ enum LightingPreset {
 @export_category("Solar Day/Night Cycle (Earth Latitude)")
 @export var use_real_time: bool = true:
 	set(val):
-		var changed = (use_real_time != val)
+		if use_real_time == val:
+			return
 		use_real_time = val
-		if changed and use_real_time and is_inside_tree():
+		if use_real_time and is_inside_tree():
 			sync_to_system_clock()
+
+@export var time_scale: float = 1.0: # Progression multiplier for manual time (1.0 = real-time, 60.0 = 1 min/sec)
+	set(val):
+		time_scale = maxf(val, 0.0)
 
 @export var earth_latitude_deg: float = 40.0:
 	set(val):
@@ -248,6 +253,11 @@ func _process(delta: float) -> void:
 			time_of_day_hours = cur_h
 			if (preset == LightingPreset.GRADIENT and gradient_follows_solar_cycle) or preset == LightingPreset.SOLAR_CYCLE or (preset == LightingPreset.UNIFORM and uniform_follows_solar_cycle):
 				_apply_current_preset()
+	elif time_scale > 0.0:
+		var dh = (delta * time_scale) / 3600.0
+		time_of_day_hours = fposmod(time_of_day_hours + dh, 24.0)
+		if (preset == LightingPreset.GRADIENT and gradient_follows_solar_cycle) or preset == LightingPreset.SOLAR_CYCLE or (preset == LightingPreset.UNIFORM and uniform_follows_solar_cycle):
+			_apply_current_preset()
 
 	if preset == LightingPreset.DAY_NIGHT_WAVE or preset == LightingPreset.NEON_AURORA:
 		wave_time += delta * wave_speed
@@ -604,7 +614,8 @@ func sync_to_system_clock() -> void:
 	use_real_time = true
 	var d_dict = Time.get_date_dict_from_system()
 	day_of_year = SolarCycleSimulator.get_day_of_year(d_dict["year"], d_dict["month"], d_dict["day"])
-	set_time_of_day(_get_system_time_hours(), false)
+	time_of_day_hours = _get_system_time_hours()
+	_apply_current_preset()
 
 func set_earth_latitude(lat_deg: float) -> void:
 	earth_latitude_deg = clampf(lat_deg, -90.0, 90.0)
@@ -625,5 +636,6 @@ func get_solar_status() -> Dictionary:
 		"phase_name": lighting["phase_name"],
 		"sun_color": lighting["sun_color"],
 		"intensity": lighting["intensity"],
-		"is_real_time": use_real_time
+		"is_real_time": use_real_time,
+		"time_scale": time_scale
 	}

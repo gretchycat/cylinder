@@ -219,6 +219,16 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 7
 
+[node name="Time" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
+visible = false
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="VBoxTime" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/Time"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
 [node name="Physics" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
 visible = false
 layout_mode = 2
