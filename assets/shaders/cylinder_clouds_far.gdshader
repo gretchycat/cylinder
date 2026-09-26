@@ -16,10 +16,8 @@ uniform float cloud_softness : hint_range(0.01, 1.0) = 0.25;
 uniform float dust_density : hint_range(0.0, 1.0) = 0.20;
 
 // Coriolis & Wind flow vectors (updated by WeatherSystem)
-uniform vec2 wind_velocity = vec2(0.003, 0.001); // (theta_speed, z_speed)
 uniform float coriolis_spin_direction = 1.0;      // +1.0 for CCW, -1.0 for CW
-uniform float time_scale = 0.05;
-uniform vec2 cloud_deck_offset = vec2(0.0, 0.0); // (theta_offset_radians, z_offset_meters)
+uniform vec2 cloud_deck_offset = vec2(0.0, 0.0); // Continuous monotonic (u_offset, v_offset)
 
 // Axial Lighting & Atmosphere synchronization
 uniform vec4 cloud_color_day : source_color = vec4(0.98, 0.98, 1.0, 1.0);
@@ -39,8 +37,9 @@ uniform float global_light_intensity = 3.5;
 
 varying vec3 world_pos;
 varying vec3 local_normal;
+varying vec2 v_mesh_uv;
 
-// Fractional Brownian Motion noise for fluffy cumulus clouds
+// Fractional Brownian Motion noise for cumulus cloud formation
 float hash(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
 	p3 += dot(p3, p3.yzx + 33.33);
@@ -76,6 +75,7 @@ float fbm(vec2 p) {
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	local_normal = normalize(NORMAL);
+	v_mesh_uv = UV;
 }
 
 void fragment() {
@@ -91,29 +91,21 @@ void fragment() {
 	}
 	float seam_blend = smoothstep(0.20, -0.20, side_dot);
 
-	float angle = atan(world_pos.y, world_pos.x);
-	if (angle < 0.0) {
-		angle += 6.28318530718;
-	}
+	// 1. Unified rigid Coriolis atmospheric coordinate flow
+	float z_norm = (v_mesh_uv.y - 0.5) * 2.0; // -1.0 at South Cap to +1.0 at North Cap
+	float coriolis_shear = -z_norm * 0.25 * coriolis_spin_direction;
 
-	// 1. Helical coordinate flow driven by Coriolis circulation from end caps
-	float z_norm = world_pos.z / (cylinder_length * 0.5); // -1.0 at South Cap to +1.0 at North Cap
-	float z_dist = world_pos.z;
+	float u_flow = v_mesh_uv.x + coriolis_shear + cloud_deck_offset.x;
+	float v_flow = v_mesh_uv.y + cloud_deck_offset.y;
 
-	// Coriolis spiral distortion: rising humid air turns prograde (+theta) or retrograde (-theta)
-	float coriolis_shear = -z_norm * 0.45 * coriolis_spin_direction;
-	float flow_theta = angle + coriolis_shear + cloud_deck_offset.x;
-	float flow_z = (world_pos.z + cloud_deck_offset.y) * 0.0006;
+	// Scale UV with cloud thickness
+	float thickness_freq_mult = mix(0.85, 1.35, clamp(cloud_thickness / 400.0, 0.0, 2.0));
+	vec2 cloud_coords = vec2(u_flow * 20.0 * thickness_freq_mult, v_flow * 10.0 * thickness_freq_mult);
 
-	// Scale UV with cloud thickness: thicker clouds have more billowing internal structures
-	float thickness_freq_mult = mix(0.85, 1.4, clamp(cloud_thickness / 400.0, 0.0, 2.0));
-	vec2 uv_cloud1 = vec2(flow_theta * 4.0 * thickness_freq_mult, flow_z * 3.0 * thickness_freq_mult);
-	vec2 uv_cloud2 = vec2(flow_theta * 8.0 - flow_z * 2.0, flow_z * 7.0 + flow_theta * 1.5) * thickness_freq_mult;
-
-	// 2. Multi-scale cloud density computation
-	float n1 = fbm(uv_cloud1);
-	float n2 = fbm(uv_cloud2 + vec2(TIME * 0.005 * coriolis_spin_direction, 0.0));
-	float cloud_shape = mix(n1, n2, 0.35);
+	// 2. Multi-scale unified cloud density computation (purely co-moving octaves)
+	float n1 = fbm(cloud_coords);
+	float n2 = fbm(cloud_coords * 2.0);
+	float cloud_shape = n1 * 0.72 + n2 * 0.28;
 
 	// Cloud cover and thickness influence on condensation threshold
 	float thickness_boost = clamp(cloud_thickness / 300.0, 0.2, 2.0);
@@ -122,7 +114,7 @@ void fragment() {
 	float raw_alpha = smoothstep(threshold, threshold + cloud_softness, cloud_shape);
 	float density = raw_alpha * cloud_density * thickness_boost * seam_blend;
 
-	// End cap boundary fading (dissipates softly into clear air hundreds of meters before cylinder ends)
+	// End cap boundary fading
 	float z_half = cylinder_length * 0.5;
 	float endcap_fade = 1.0 - smoothstep(z_half * 0.65, z_half * 0.90, abs(world_pos.z));
 	density *= endcap_fade;
