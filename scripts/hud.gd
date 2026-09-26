@@ -140,14 +140,14 @@ func _ready() -> void:
 		telem_vbox.add_child(weather_badge_label)
 		telem_vbox.move_child(weather_badge_label, 4)
 
-	if toggle_controls_btn:
+	if toggle_controls_btn and not toggle_controls_btn.pressed.is_connected(_on_toggle_controls_pressed):
 		toggle_controls_btn.focus_mode = Control.FOCUS_NONE
 		toggle_controls_btn.pressed.connect(_on_toggle_controls_pressed)
 
-	if wobble_test_btn:
+	if wobble_test_btn and not wobble_test_btn.pressed.is_connected(_on_wobble_test_pressed):
 		wobble_test_btn.focus_mode = Control.FOCUS_NONE
 		wobble_test_btn.pressed.connect(_on_wobble_test_pressed)
-	if reset_spawn_btn:
+	if reset_spawn_btn and not reset_spawn_btn.pressed.is_connected(_on_reset_spawn_pressed):
 		reset_spawn_btn.focus_mode = Control.FOCUS_NONE
 		reset_spawn_btn.pressed.connect(_on_reset_spawn_pressed)
 
@@ -227,11 +227,7 @@ func _on_viewport_size_changed() -> void:
 		ui_root.size = vp_size / current_ui_scale
 
 static func slider_pos_to_intensity(s: float) -> float:
-	# Continuous scale from 0.0 to 3.5
-	# s=0.0 -> 0.0, s=1.0 -> 3.5
 	var s_clamped = clampf(s, 0.0, 1.0)
-	if s_clamped <= 0.001:
-		return 0.0
 	const MIN_INTENSITY: float = 0.001
 	const MAX_INTENSITY: float = 3.5
 	return MIN_INTENSITY * pow(MAX_INTENSITY / MIN_INTENSITY, s_clamped)
@@ -239,7 +235,7 @@ static func slider_pos_to_intensity(s: float) -> float:
 static func intensity_to_slider_pos(intensity: float) -> float:
 	const MIN_INTENSITY: float = 0.001
 	const MAX_INTENSITY: float = 3.5
-	if intensity <= 0.0001:
+	if intensity <= MIN_INTENSITY:
 		return 0.0
 	return clampf(log(intensity / MIN_INTENSITY) / log(MAX_INTENSITY / MIN_INTENSITY), 0.0, 1.0)
 

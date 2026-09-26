@@ -104,6 +104,8 @@ enum LightingPreset {
 	set(val):
 		global_intensity_multiplier = max(val, 0.0)
 		_refresh_all_segments()
+		if is_inside_tree():
+			_sync_fog_and_atmosphere()
 
 @export var start_color: Color = Color(1.0, 0.98, 0.95) # Clean daylight
 @export var end_color: Color = Color(0.96, 0.98, 1.0)
@@ -167,6 +169,8 @@ func _find_global_lighting() -> void:
 				sun_lights.append(child)
 			elif child is WorldEnvironment:
 				world_environment = child
+	if not world_environment:
+		world_environment = get_tree().root.find_child("WorldEnvironment", true, false) as WorldEnvironment
 
 func rebuild_light_bar() -> void:
 	# Clear existing children

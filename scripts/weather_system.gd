@@ -629,48 +629,56 @@ func _setup_weather_emitters() -> void:
 	if not rain_particles:
 		rain_particles = CPUParticles3D.new()
 		rain_particles.name = "CoriolisRainParticles"
-		rain_particles.amount = 1200
-		rain_particles.lifetime = 2.4
+		rain_particles.amount = 2500
+		rain_particles.lifetime = 1.4
 		rain_particles.preprocess = 1.0
+		rain_particles.local_coords = false
 		rain_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-		rain_particles.emission_box_extents = Vector3(45.0, 45.0, 45.0)
+		rain_particles.emission_box_extents = Vector3(32.0, 32.0, 32.0)
+		rain_particles.spread = 10.0
 
 		var rain_mat = StandardMaterial3D.new()
 		rain_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		rain_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		rain_mat.albedo_color = Color(0.80, 0.92, 1.0, 0.70)
+		rain_mat.albedo_color = Color(0.92, 0.97, 1.0, 0.90)
 		rain_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		rain_mat.billboard_keep_scale = true
+		rain_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		rain_mat.render_priority = 10
 		rain_particles.material_override = rain_mat
 
 		var quad_mesh = QuadMesh.new()
-		quad_mesh.size = Vector2(0.08, 1.6)
-		rain_particles.draw_pass_1 = quad_mesh
+		quad_mesh.size = Vector2(0.12, 2.2)
+		rain_particles.mesh = quad_mesh
 		add_child(rain_particles)
 
 	if not splash_particles:
 		splash_particles = CPUParticles3D.new()
 		splash_particles.name = "RainGroundSplashParticles"
-		splash_particles.amount = 500
+		splash_particles.amount = 600
 		splash_particles.lifetime = 0.35
 		splash_particles.preprocess = 0.2
+		splash_particles.local_coords = false
 		splash_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-		splash_particles.emission_box_extents = Vector3(35.0, 2.0, 35.0)
+		splash_particles.emission_box_extents = Vector3(30.0, 1.5, 30.0)
+		splash_particles.spread = 35.0
 		splash_particles.initial_velocity_min = 2.0
-		splash_particles.initial_velocity_max = 5.0
+		splash_particles.initial_velocity_max = 5.5
 
 		var splash_mat = StandardMaterial3D.new()
 		splash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		splash_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		splash_mat.albedo_color = Color(0.85, 0.95, 1.0, 0.65)
+		splash_mat.albedo_color = Color(0.90, 0.96, 1.0, 0.75)
 		splash_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		splash_mat.billboard_keep_scale = true
+		splash_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		splash_mat.render_priority = 10
 		splash_particles.material_override = splash_mat
 
 		var splash_mesh = SphereMesh.new()
-		splash_mesh.radius = 0.08
-		splash_mesh.height = 0.16
-		splash_particles.draw_pass_1 = splash_mesh
+		splash_mesh.radius = 0.10
+		splash_mesh.height = 0.20
+		splash_particles.mesh = splash_mesh
 		add_child(splash_particles)
 
 	if not dust_particles:
@@ -679,6 +687,7 @@ func _setup_weather_emitters() -> void:
 		dust_particles.amount = 300
 		dust_particles.lifetime = 6.0
 		dust_particles.preprocess = 1.0
+		dust_particles.local_coords = false
 		dust_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
 		dust_particles.emission_sphere_radius = 25.0
 		dust_particles.gravity = Vector3.ZERO
@@ -698,7 +707,7 @@ func _setup_weather_emitters() -> void:
 		var sphere_mesh = SphereMesh.new()
 		sphere_mesh.radius = 0.03
 		sphere_mesh.height = 0.06
-		dust_particles.draw_pass_1 = sphere_mesh
+		dust_particles.mesh = sphere_mesh
 		add_child(dust_particles)
 
 	_update_precipitation_emitter()
@@ -710,7 +719,7 @@ func _update_precipitation_emitter() -> void:
 		if precipitation_rate_mmh > 0.05:
 			emitter.rain_stream_enabled = true
 			var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
-			emitter.rain_stream_rate = lerpf(25.0, 180.0, intensity_norm)
+			emitter.rain_stream_rate = lerpf(35.0, 200.0, intensity_norm)
 			emitter.rain_stream_altitude = cloud_altitude_m
 			emitter.spin_direction = int(spin_direction)
 			emitter.base_gravity = base_gravity
@@ -728,14 +737,14 @@ func _update_precipitation_emitter() -> void:
 
 	rain_particles.emitting = true
 	var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
-	rain_particles.amount = int(lerpf(250.0, 2000.0, intensity_norm))
+	rain_particles.amount = int(lerpf(400.0, 3000.0, intensity_norm))
 
 	if splash_particles:
 		splash_particles.emitting = true
-		splash_particles.amount = int(lerpf(100.0, 800.0, intensity_norm))
+		splash_particles.amount = int(lerpf(150.0, 900.0, intensity_norm))
 
 	var spin_sign = float(spin_direction)
-	var fall_speed = lerpf(14.0, 28.0, intensity_norm)
+	var fall_speed = lerpf(18.0, 34.0, intensity_norm)
 
 	rain_particles.initial_velocity_min = fall_speed * 0.9
 	rain_particles.initial_velocity_max = fall_speed * 1.1
@@ -755,10 +764,14 @@ func _update_dust_emitter() -> void:
 		dust_mat.albedo_color = Color(0.95, 0.90, 0.78, clampf(dust_density * 0.5, 0.1, 0.7))
 
 func _update_particle_positions() -> void:
+	if not is_inside_tree():
+		return
 	if not target_player or not is_instance_valid(target_player):
 		target_player = get_tree().get_first_node_in_group("player") as Node3D
 		if not target_player:
 			return
+	if not target_player.is_inside_tree():
+		return
 
 	var p_pos = target_player.global_position
 	var r_vec = Vector2(p_pos.x, p_pos.y)
@@ -768,19 +781,20 @@ func _update_particle_positions() -> void:
 	var tangent_3d = Vector3(-r_dir.y, r_dir.x, 0.0)
 	var spin_sign = float(spin_direction)
 
-	if rain_particles and rain_particles.emitting:
-		# Position rain volume 30m overhead so drops fall all the way down past the player
-		rain_particles.global_position = p_pos + (up_sky_3d * 30.0)
-		var gravity_mag = base_gravity * 3.0
-		var coriolis_mag = 2.0 * coriolis_omega_rad_s * 20.0 * spin_sign * 3.0
+	if rain_particles and rain_particles.is_inside_tree() and rain_particles.emitting:
+		# Position rain volume 25m overhead so drops fall all the way down past the player
+		rain_particles.global_position = p_pos + (up_sky_3d * 25.0)
+		rain_particles.direction = down_3d
+		var gravity_mag = base_gravity * 3.5
+		var coriolis_mag = 2.0 * coriolis_omega_rad_s * 22.0 * spin_sign * 3.5
 		rain_particles.gravity = (down_3d * gravity_mag) - (tangent_3d * coriolis_mag)
 
-	if splash_particles and splash_particles.emitting:
+	if splash_particles and splash_particles.is_inside_tree() and splash_particles.emitting:
 		splash_particles.global_position = p_pos
 		splash_particles.direction = up_sky_3d
 		splash_particles.gravity = down_3d * (base_gravity * 4.0)
 
-	if dust_particles and dust_particles.emitting:
+	if dust_particles and dust_particles.is_inside_tree() and dust_particles.emitting:
 		dust_particles.global_position = p_pos
 
 func _update_dynamic_wind(delta: float) -> void:
