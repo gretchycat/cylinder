@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CylinderParticleEmitter = preload("res://scripts/cylinder_particle_emitter.gd")
+
 func _watchdog(timeout_sec: float = 20.0) -> void:
 	await create_timer(timeout_sec).timeout
 	printerr("\n[WATCHDOG TIMEOUT] Test suite exceeded %.1f seconds! Terminating..." % timeout_sec)
@@ -543,9 +545,62 @@ func _init() -> void:
 	var local_up = deployed_fire.global_basis.y
 	test_check(absf(local_up.dot(Vector3(0, 0, 1))) < 0.01, "Deployed light Local Up must be strictly perpendicular to cylinder axis")
 
-	print("[PASS] Test 10: Max On daylight lighting level, 18 km cylinder scale, and atmospheric air tinting verified.")
+	# --- TEST 11: Rotating Reference Frame Particle Emitter & Coriolis Trajectories ---
+	print("\n--- TEST 11: Particle Emitter, Coriolis Physics & Trajectories ---")
+	var emitter = root_node.get_node_or_null("ParticleEmitter") as CylinderParticleEmitter
+	test_check(emitter != null, "ParticleEmitter node must exist in main scene")
+	test_check(emitter.is_in_group("particle_emitter"), "ParticleEmitter must be in group 'particle_emitter'")
+
+	# Check theoretical rotating frame omega and centrifugal acceleration
+	var omega = emitter.get_omega()
+	var expected_omega = sqrt(emitter.base_gravity / emitter.cylinder_radius)
+	test_check(absf(omega - expected_omega) < 0.0001, "Omega must match sqrt(g/R)")
+
+	# Verify acceleration calculation:
+	# Position at bottom of cylinder: (0, -4000, 0)
+	# Upward velocity: (0, +30, 0) (inward toward axis)
+	var test_pos = Vector3(0, -4000, 0)
+	var test_vel = Vector3(0, 30, 0)
+	var accel = emitter.compute_acceleration(test_pos, test_vel)
+
+	# Centrifugal acceleration should point radially outward: (0, -9.5, 0)
+	test_check(absf(accel.y - (-9.5)) < 0.05, "Centrifugal acceleration at floor must be 9.5 m/s² outward (-Y)")
+
+	# Coriolis acceleration for inward velocity (vy > 0) with CCW spin (+Z):
+	# a_coriolis_x = 2 * Omega * vy = 2 * omega * 30 > 0 (prograde +X)
+	var expected_coriolis_x = 2.0 * omega * float(emitter.spin_direction) * 30.0
+	test_check(absf(accel.x - expected_coriolis_x) < 0.05, "Coriolis acceleration must deflect inward-moving particle prograde (+X)")
+
+	# Test trajectory prediction
+	var pred_pts = emitter.predict_trajectory(test_pos, test_vel, 100, 0.05)
+	test_check(pred_pts.size() > 10, "Trajectory prediction must generate path points")
+	# As particle ascends, its X coordinate should curve prograde (+X)
+	var max_x = -99999.0
+	for pt in pred_pts:
+		if pt.x > max_x:
+			max_x = pt.x
+	test_check(max_x > 0.5, "Particle trajectory must demonstrate prograde Coriolis curve")
+
+	# Test live particle launch and step integration
+	var pre_p_count = emitter.get_particle_count()
+	var p_id = emitter.launch_relative_to_surface(test_pos, 0.0, 30.0, 0.0, {
+		"color": Color(0.2, 0.9, 1.0, 1.0),
+		"size": 1.2
+	})
+	test_check(p_id > 0, "Particle launch must return valid particle ID")
+	test_check(emitter.get_particle_count() == pre_p_count + 1, "Particle count must increment")
+
+	# Step physics frames to verify numerical integration and trail recording
+	for step in range(30):
+		await physics_frame
+
+	test_check(emitter.particles.size() > 0, "Launched particle must be active in simulation")
+	var live_p = emitter.particles[emitter.particles.size() - 1]
+	test_check(live_p.trail.size() >= 2, "Particle must record trajectory trail points for rendering")
+
+	print("[PASS] Test 11: Rotating frame centrifugal/Coriolis physics, particle launches, and trajectory trails verified.")
 
 	print("\n=======================================================")
-	print(" ALL O'NEILL CYLINDER SIMULATION TESTS PASSED (10/10)! ")
+	print(" ALL O'NEILL CYLINDER SIMULATION TESTS PASSED (11/11)! ")
 	print("=======================================================\n")
 	quit(0)

@@ -1,6 +1,8 @@
 class_name PlayerController
 extends CharacterBody3D
 
+const CylinderParticleEmitter = preload("res://scripts/cylinder_particle_emitter.gd")
+
 signal telemetry_updated(data: Dictionary)
 
 @export_category("Cylinder Dimensions (8 km dia x 18 km length)")
@@ -100,7 +102,7 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("reset_position"):
 		reset_to_spawn()
 
-	# Hotkeys: T (wobble test), C (deploy campfire when walking), L (deploy lamp post)
+	# Hotkeys: T (wobble test), C (deploy campfire), L (deploy lamp post), P (launch particle), G (vertical toss)
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_T:
 			wobble_impulse(22.0)
@@ -108,6 +110,10 @@ func _input(event: InputEvent) -> void:
 			deploy_campfire()
 		elif event.keycode == KEY_L:
 			deploy_lamp_post()
+		elif event.keycode == KEY_P:
+			launch_aimed_particle()
+		elif event.keycode == KEY_G:
+			launch_vertical_particle()
 
 	# Movement key release
 	if event.is_action_released("move_forward") or event.is_action_released("move_backward") or event.is_action_released("move_left") or event.is_action_released("move_right"):
@@ -478,3 +484,24 @@ func _emit_telemetry() -> void:
 	}
 	last_telemetry = telemetry
 	telemetry_updated.emit(telemetry)
+
+func launch_aimed_particle(speed: float = 35.0) -> void:
+	var emitter = get_tree().get_first_node_in_group("particle_emitter") as CylinderParticleEmitter if is_inside_tree() else null
+	if emitter:
+		var cam_forward = -camera.global_transform.basis.z.normalized() if camera else -global_transform.basis.z.normalized()
+		var spawn_pos = (camera.global_position if camera else global_position) + cam_forward * 1.5
+		emitter.launch_particle(spawn_pos, cam_forward * speed, {
+			"color": Color(0.2, 0.9, 1.0, 1.0),
+			"size": 1.2,
+			"bounces": 2
+		})
+
+func launch_vertical_particle(speed: float = 30.0) -> void:
+	var emitter = get_tree().get_first_node_in_group("particle_emitter") as CylinderParticleEmitter if is_inside_tree() else null
+	if emitter:
+		var spawn_pos = global_position + global_basis.y * 1.8
+		emitter.launch_relative_to_surface(spawn_pos, 0.0, speed, 0.0, {
+			"color": Color(1.0, 0.85, 0.2, 1.0),
+			"size": 1.4,
+			"bounces": 2
+		})

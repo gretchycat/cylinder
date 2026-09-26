@@ -2,10 +2,12 @@ class_name HUD
 extends CanvasLayer
 
 const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
+const CylinderParticleEmitter = preload("res://scripts/cylinder_particle_emitter.gd")
 
 @export var player: PlayerController
 @export var light_bar: AxisLightBar
 @export var weather_system: WeatherSystem
+@export var particle_emitter: CylinderParticleEmitter
 
 # Root Container for Adaptive Scaling
 @onready var ui_root: Control = $UIRoot
@@ -63,6 +65,18 @@ var reset_spawn_btn: Button = null
 var south_cap_btn: Button = null
 var north_cap_btn: Button = null
 
+# Particle Emitter Controls
+var launch_speed: float = 35.0
+var launch_speed_slider: HSlider = null
+var launch_speed_val: Label = null
+var launch_up_btn: Button = null
+var launch_prograde_btn: Button = null
+var launch_retrograde_btn: Button = null
+var launch_aimed_btn: Button = null
+var toggle_rain_stream_btn: Button = null
+var toggle_trajectories_btn: Button = null
+var clear_trajectories_btn: Button = null
+
 # Tab 4: System & Scale UI Controls
 var scale_slider: HSlider = null
 var scale_val: Label = null
@@ -83,6 +97,8 @@ func _ready() -> void:
 		light_bar = get_tree().get_first_node_in_group("light_bar")
 	if not weather_system:
 		weather_system = get_tree().get_first_node_in_group("weather_system")
+	if not particle_emitter:
+		particle_emitter = get_tree().get_first_node_in_group("particle_emitter")
 
 	_setup_underwater_overlay()
 
@@ -432,6 +448,84 @@ func _setup_physics_tab(vbox: VBoxContainer) -> void:
 	north_cap_btn.add_theme_font_size_override("font_size", 11)
 	north_cap_btn.pressed.connect(_on_view_north_cap_pressed)
 	vbox.add_child(north_cap_btn)
+
+	var p_sep = HSeparator.new()
+	vbox.add_child(p_sep)
+
+	var emitter_title = Label.new()
+	emitter_title.text = "🚀 Coriolis Particle Launcher"
+	emitter_title.add_theme_font_size_override("font_size", 12)
+	emitter_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(emitter_title)
+
+	var r_spd = _create_slider_row(vbox, "Launch Speed (m/s):", 5.0, 150.0, 5.0, launch_speed, _on_launch_speed_changed)
+	launch_speed_slider = r_spd[0]
+	launch_speed_val = r_spd[1]
+	launch_speed_val.text = "%.0f m/s" % launch_speed
+
+	var cur_drag = particle_emitter.air_drag_coefficient if particle_emitter else 0.0
+	_create_slider_row(vbox, "Aerodynamic Drag:", 0.0, 0.05, 0.002, cur_drag, _on_particle_drag_changed)
+
+	launch_up_btn = Button.new()
+	launch_up_btn.text = "🚀 Toss Upward (Coriolis Curve)"
+	launch_up_btn.focus_mode = Control.FOCUS_NONE
+	launch_up_btn.add_theme_font_size_override("font_size", 11)
+	launch_up_btn.pressed.connect(_on_launch_up_pressed)
+	vbox.add_child(launch_up_btn)
+
+	var hbox_pro_ret = HBoxContainer.new()
+	vbox.add_child(hbox_pro_ret)
+
+	launch_prograde_btn = Button.new()
+	launch_prograde_btn.text = "➡️ Prograde (+θ)"
+	launch_prograde_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	launch_prograde_btn.focus_mode = Control.FOCUS_NONE
+	launch_prograde_btn.add_theme_font_size_override("font_size", 10)
+	launch_prograde_btn.pressed.connect(_on_launch_prograde_pressed)
+	hbox_pro_ret.add_child(launch_prograde_btn)
+
+	launch_retrograde_btn = Button.new()
+	launch_retrograde_btn.text = "⬅️ Retrograde (-θ)"
+	launch_retrograde_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	launch_retrograde_btn.focus_mode = Control.FOCUS_NONE
+	launch_retrograde_btn.add_theme_font_size_override("font_size", 10)
+	launch_retrograde_btn.pressed.connect(_on_launch_retrograde_pressed)
+	hbox_pro_ret.add_child(launch_retrograde_btn)
+
+	launch_aimed_btn = Button.new()
+	launch_aimed_btn.text = "🎯 Launch in View Direction (HotKey: P)"
+	launch_aimed_btn.focus_mode = Control.FOCUS_NONE
+	launch_aimed_btn.add_theme_font_size_override("font_size", 11)
+	launch_aimed_btn.pressed.connect(_on_launch_aimed_pressed)
+	vbox.add_child(launch_aimed_btn)
+
+	toggle_rain_stream_btn = Button.new()
+	var is_rain_stream = particle_emitter.rain_stream_enabled if particle_emitter else false
+	toggle_rain_stream_btn.text = "🌧️ Cloud Rain Stream: %s" % ("ON" if is_rain_stream else "OFF")
+	toggle_rain_stream_btn.focus_mode = Control.FOCUS_NONE
+	toggle_rain_stream_btn.add_theme_font_size_override("font_size", 11)
+	toggle_rain_stream_btn.pressed.connect(_on_toggle_rain_stream_pressed)
+	vbox.add_child(toggle_rain_stream_btn)
+
+	var hbox_traj = HBoxContainer.new()
+	vbox.add_child(hbox_traj)
+
+	toggle_trajectories_btn = Button.new()
+	var show_traj = particle_emitter.show_trajectories if particle_emitter else true
+	toggle_trajectories_btn.text = "Trajectories: %s" % ("ON" if show_traj else "OFF")
+	toggle_trajectories_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toggle_trajectories_btn.focus_mode = Control.FOCUS_NONE
+	toggle_trajectories_btn.add_theme_font_size_override("font_size", 10)
+	toggle_trajectories_btn.pressed.connect(_on_toggle_trajectories_pressed)
+	hbox_traj.add_child(toggle_trajectories_btn)
+
+	clear_trajectories_btn = Button.new()
+	clear_trajectories_btn.text = "🧹 Clear Trails"
+	clear_trajectories_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	clear_trajectories_btn.focus_mode = Control.FOCUS_NONE
+	clear_trajectories_btn.add_theme_font_size_override("font_size", 10)
+	clear_trajectories_btn.pressed.connect(_on_clear_trajectories_pressed)
+	hbox_traj.add_child(clear_trajectories_btn)
 
 func _setup_system_tab(vbox: VBoxContainer) -> void:
 	var r_scale = _create_slider_row(vbox, "UI Scaling Factor:", 0.75, 2.75, 0.05, current_ui_scale, _on_scale_slider_changed)
@@ -798,3 +892,66 @@ func _on_deploy_lamp_pressed() -> void:
 		deploy_lamp_btn.release_focus()
 	if player and player.has_method("deploy_lamp_post"):
 		player.deploy_lamp_post()
+
+func _on_launch_speed_changed(val: float) -> void:
+	launch_speed = val
+	if launch_speed_val:
+		launch_speed_val.text = "%.0f m/s" % val
+
+func _on_particle_drag_changed(val: float) -> void:
+	if particle_emitter:
+		particle_emitter.air_drag_coefficient = val
+
+func _on_launch_up_pressed() -> void:
+	if launch_up_btn:
+		launch_up_btn.release_focus()
+	if player:
+		player.launch_vertical_particle(launch_speed)
+
+func _on_launch_prograde_pressed() -> void:
+	if launch_prograde_btn:
+		launch_prograde_btn.release_focus()
+	if particle_emitter and player:
+		var spawn_pos = player.global_position + player.global_basis.y * 1.5
+		particle_emitter.launch_relative_to_surface(spawn_pos, launch_speed, 5.0, 0.0, {
+			"color": Color(0.2, 1.0, 0.4, 1.0),
+			"size": 1.2
+		})
+
+func _on_launch_retrograde_pressed() -> void:
+	if launch_retrograde_btn:
+		launch_retrograde_btn.release_focus()
+	if particle_emitter and player:
+		var spawn_pos = player.global_position + player.global_basis.y * 1.5
+		particle_emitter.launch_relative_to_surface(spawn_pos, -launch_speed, 5.0, 0.0, {
+			"color": Color(1.0, 0.3, 0.7, 1.0),
+			"size": 1.2
+		})
+
+func _on_launch_aimed_pressed() -> void:
+	if launch_aimed_btn:
+		launch_aimed_btn.release_focus()
+	if player:
+		player.launch_aimed_particle(launch_speed)
+
+func _on_toggle_rain_stream_pressed() -> void:
+	if toggle_rain_stream_btn:
+		toggle_rain_stream_btn.release_focus()
+	if particle_emitter:
+		particle_emitter.rain_stream_enabled = not particle_emitter.rain_stream_enabled
+		if toggle_rain_stream_btn:
+			toggle_rain_stream_btn.text = "🌧️ Cloud Rain Stream: %s" % ("ON" if particle_emitter.rain_stream_enabled else "OFF")
+
+func _on_toggle_trajectories_pressed() -> void:
+	if toggle_trajectories_btn:
+		toggle_trajectories_btn.release_focus()
+	if particle_emitter:
+		particle_emitter.show_trajectories = not particle_emitter.show_trajectories
+		if toggle_trajectories_btn:
+			toggle_trajectories_btn.text = "Trajectories: %s" % ("ON" if particle_emitter.show_trajectories else "OFF")
+
+func _on_clear_trajectories_pressed() -> void:
+	if clear_trajectories_btn:
+		clear_trajectories_btn.release_focus()
+	if particle_emitter:
+		particle_emitter.clear_all()
