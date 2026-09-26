@@ -85,10 +85,10 @@ void fragment() {
 	if (cam_len > 1.0) {
 		side_dot = dot(normalize(world_pos.xy), cam_xy / cam_len);
 	}
-	if (side_dot < -0.05) {
-		discard; // Near pass only renders near hemisphere (side_dot >= -0.05)
+	if (side_dot < -0.20) {
+		discard; // Near pass only renders near hemisphere (side_dot >= -0.20)
 	}
-	float seam_blend = smoothstep(-0.05, 0.05, side_dot);
+	float seam_blend = smoothstep(-0.20, 0.20, side_dot);
 
 	float angle = atan(world_pos.y, world_pos.x);
 	if (angle < 0.0) {
@@ -121,11 +121,12 @@ void fragment() {
 	float raw_alpha = smoothstep(threshold, threshold + cloud_softness, cloud_shape);
 	float density = raw_alpha * cloud_density * thickness_boost * seam_blend;
 
-	// End cap boundary fading (clearer air near ventilation injection collars)
-	float endcap_fade = 1.0 - smoothstep(cylinder_length * 0.45, cylinder_length * 0.50, abs(world_pos.z));
+	// End cap boundary fading (dissipates softly into clear air hundreds of meters before cylinder ends)
+	float z_half = cylinder_length * 0.5;
+	float endcap_fade = 1.0 - smoothstep(z_half * 0.65, z_half * 0.90, abs(world_pos.z));
 	density *= endcap_fade;
 
-	if (density < 0.008) {
+	if (density < 0.005) {
 		discard;
 	}
 

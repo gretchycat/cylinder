@@ -204,9 +204,9 @@ func _generate_cloud_geometry() -> void:
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	# Single continuous cylindrical shell geometry at cloud altitude
+	# Single continuous cylindrical shell geometry spanning full cylinder length
 	var cloud_r = cylinder_radius - cloud_altitude_m
-	var cloud_len = cylinder_length * 0.96
+	var cloud_len = cylinder_length
 	var half_len = cloud_len * 0.5
 
 	var radial_segs = 96
