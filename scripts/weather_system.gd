@@ -602,13 +602,14 @@ func _add_rain_quad(st: SurfaceTool, A: Vector3, B: Vector3, y_bottom: float, h:
 	var p2 = B + Vector3(0.0, y_top, 0.0)
 	var p3 = A + Vector3(0.0, y_top, 0.0)
 
-	var u_off = rng_geom.randf()
-	var u_span = maxf(w * 0.35, 0.8)
+	var u_off = rng_geom.randf_range(0.0, 100.0)
+	var v_off = rng_geom.randf_range(0.0, 100.0)
 
-	var uv0 = Vector2(u_off, 0.0)
-	var uv1 = Vector2(u_off + u_span, 0.0)
-	var uv2 = Vector2(u_off + u_span, 1.0)
-	var uv3 = Vector2(u_off, 1.0)
+	# Metric UVs: exactly 1.0 UV unit per 1.0 meter in world space (1:1 isotropic)
+	var uv0 = Vector2(u_off, v_off)
+	var uv1 = Vector2(u_off + w, v_off)
+	var uv2 = Vector2(u_off + w, v_off + h)
+	var uv3 = Vector2(u_off, v_off + h)
 
 	st.set_normal(norm)
 	st.set_uv(uv0)
@@ -659,18 +660,18 @@ func _get_or_render_rain_texture(density_tier: int, snow: bool) -> ImageTexture:
 		return tex
 
 func _generate_rain_streak_texture(density_tier: int) -> ImageTexture:
-	var width = 256
+	var width = 512
 	var height = 512
 	var img = Image.create(width, height, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 
-	var streak_counts = [0, 220, 550, 1100, 2100, 3600]
+	var streak_counts = [0, 300, 750, 1500, 2800, 4800]
 	var count = streak_counts[clamp(density_tier, 0, streak_counts.size() - 1)]
 
 	var rng_tex = RandomNumberGenerator.new()
 	rng_tex.seed = 9871 + density_tier * 4099
 	var streak_w = 2
-	var streak_h = 6
+	var streak_h = 12
 
 	for i in range(count):
 		var rx = rng_tex.randi_range(0, width - 1)
@@ -683,8 +684,8 @@ func _generate_rain_streak_texture(density_tier: int) -> ImageTexture:
 
 			for dx in range(streak_w):
 				var px = (rx + dx) % width
-				var final_alpha = clampf(0.50 * v_factor * a_mod, 0.0, 1.0)
-				var streak_color = Color(0.12, 0.28, 0.58, final_alpha)
+				var final_alpha = clampf(0.55 * v_factor * a_mod, 0.0, 1.0)
+				var streak_color = Color(0.15, 0.30, 0.60, final_alpha)
 
 				var existing = img.get_pixel(px, py)
 				if existing.a > 0.0:
@@ -699,12 +700,12 @@ func _generate_rain_streak_texture(density_tier: int) -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 func _generate_snow_streak_texture(density_tier: int) -> ImageTexture:
-	var width = 256
+	var width = 512
 	var height = 512
 	var img = Image.create(width, height, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 
-	var flake_counts = [0, 350, 850, 1600, 2900, 4800]
+	var flake_counts = [0, 250, 600, 1200, 2200, 3600]
 	var count = flake_counts[clamp(density_tier, 0, flake_counts.size() - 1)]
 
 	var rng_tex = RandomNumberGenerator.new()
@@ -713,25 +714,29 @@ func _generate_snow_streak_texture(density_tier: int) -> ImageTexture:
 	for i in range(count):
 		var rx = rng_tex.randi_range(0, width - 1)
 		var ry = rng_tex.randi_range(0, height - 1)
-		var size = rng_tex.randi_range(2, 4)
-		var a_mod = rng_tex.randf_range(0.65, 0.95)
+		# Flake radius in pixels (1.5 to 3.8 px, strictly 1:1 circular aspect ratio)
+		var radius = rng_tex.randf_range(1.5, 3.8)
+		var rad_ceil = int(ceil(radius))
+		var a_mod = rng_tex.randf_range(0.70, 1.0)
 
-		for dy in range(size):
-			var py = (ry + dy) % height
-			for dx in range(size):
-				var px = (rx + dx) % width
-				var dist = Vector2(dx - size * 0.5, dy - size * 0.5).length()
-				var falloff = clampf(1.0 - dist / (size * 0.6), 0.0, 1.0)
-				var flake_color = Color(0.95, 0.97, 1.0, falloff * a_mod)
+		for dy in range(-rad_ceil, rad_ceil + 1):
+			var py = (ry + dy + height) % height
+			for dx in range(-rad_ceil, rad_ceil + 1):
+				var px = (rx + dx + width) % width
+				var d = sqrt(float(dx * dx + dy * dy))
+				if d <= radius:
+					var falloff = clampf(1.0 - (d / radius), 0.0, 1.0)
+					var alpha = falloff * 0.85 * a_mod
+					var flake_color = Color(0.96, 0.98, 1.0, alpha)
 
-				var existing = img.get_pixel(px, py)
-				if existing.a > 0.0:
-					var blended_a = clampf(existing.a + flake_color.a * (1.0 - existing.a), 0.0, 1.0)
-					var blended_rgb = existing.blend(flake_color)
-					blended_rgb.a = blended_a
-					img.set_pixel(px, py, blended_rgb)
-				else:
-					img.set_pixel(px, py, flake_color)
+					var existing = img.get_pixel(px, py)
+					if existing.a > 0.0:
+						var blended_a = clampf(existing.a + flake_color.a * (1.0 - existing.a), 0.0, 1.0)
+						var blended_rgb = existing.blend(flake_color)
+						blended_rgb.a = blended_a
+						img.set_pixel(px, py, blended_rgb)
+					else:
+						img.set_pixel(px, py, flake_color)
 
 	img.generate_mipmaps()
 	return ImageTexture.create_from_image(img)
@@ -789,8 +794,8 @@ func _update_precipitation_emitter(effective_dt: float = 0.0) -> void:
 		rain_sheet_material.set_shader_parameter("rain_texture", tex)
 
 	var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
-	# Snow terminal velocity is ~0.5 to 1.1 m/s vs Rain at ~8.0 to 15.0 m/s
-	var fall_speed = lerpf(0.5, 1.1, intensity_norm) if is_snow_mode else lerpf(8.0, 15.0, intensity_norm)
+	# Snow terminal velocity is ~0.6 to 1.2 m/s vs Rain at ~10.0 to 18.0 m/s
+	var fall_speed = lerpf(0.6, 1.2, intensity_norm) if is_snow_mode else lerpf(10.0, 18.0, intensity_norm)
 	var spin_sign = float(spin_direction)
 	var coriolis_drift = -2.0 * coriolis_omega_rad_s * fall_speed * spin_sign
 
@@ -798,23 +803,27 @@ func _update_precipitation_emitter(effective_dt: float = 0.0) -> void:
 		var uv_scroll_y: float
 		var uv_scroll_x: float
 		if is_snow_mode:
-			# Snowfall: Very slow, serene, tranquil floating flakes (~0.025 to 0.050 UV/s)
-			uv_scroll_y = fall_speed * 0.045
+			# Snowfall: In metric coordinates (1 UV = 1 meter), 0.6 to 1.2 m/s fall speed
+			uv_scroll_y = fall_speed
 			# Gentle swaying flutter in the cylinder air currents
-			var sway = sin(rain_scroll_offset.y * 14.0) * 0.012
-			uv_scroll_x = (coriolis_drift * 0.02) + (wind_velocity.x * 0.03) + sway
+			var sway = sin(rain_scroll_offset.y * 1.6) * 0.35
+			uv_scroll_x = (coriolis_drift * 0.1) + (wind_velocity.x * 0.4) + sway
 		else:
-			# Rain: Fast, energetic downpour streaks (~2.8 to 5.2 UV/s)
-			uv_scroll_y = fall_speed * 0.35
-			uv_scroll_x = coriolis_drift * 0.12
+			# Rain: Fast, energetic downpour in meters/s
+			uv_scroll_y = fall_speed
+			uv_scroll_x = coriolis_drift
 
 		rain_scroll_offset += Vector2(uv_scroll_x, uv_scroll_y) * effective_dt
-		rain_scroll_offset.x = fposmod(rain_scroll_offset.x, 100.0)
-		rain_scroll_offset.y = fposmod(rain_scroll_offset.y, 100.0)
+		rain_scroll_offset.x = fposmod(rain_scroll_offset.x, 1000.0)
+		rain_scroll_offset.y = fposmod(rain_scroll_offset.y, 1000.0)
 
 	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
 	var lut_tex = light_bar.lut_texture if light_bar else null
 	var light_int = light_bar.global_intensity_multiplier if light_bar else 3.5
+
+	# Set 1:1 isotropic metric scale for snow (0.22, 0.22), stretched metric scale for rain streaks (0.28, 0.08)
+	var uv_scale_val = Vector2(0.22, 0.22) if is_snow_mode else Vector2(0.28, 0.08)
+	rain_sheet_material.set_shader_parameter("uv_scale", uv_scale_val)
 
 	if lut_tex:
 		rain_sheet_material.set_shader_parameter("axial_light_lut", lut_tex)
