@@ -789,19 +789,28 @@ func _update_precipitation_emitter(effective_dt: float = 0.0) -> void:
 		rain_sheet_material.set_shader_parameter("rain_texture", tex)
 
 	var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
-	# Snow terminal velocity is ~0.8 to 1.6 m/s (approx 7-8x slower than rain at 6.5 to 11.0 m/s)
-	var fall_speed = lerpf(0.8, 1.6, intensity_norm) if is_snow_mode else lerpf(6.5, 11.0, intensity_norm)
+	# Snow terminal velocity is ~0.6 to 1.3 m/s vs Rain at ~8.0 to 15.0 m/s (~10x difference)
+	var fall_speed = lerpf(0.6, 1.3, intensity_norm) if is_snow_mode else lerpf(8.0, 15.0, intensity_norm)
 	var spin_sign = float(spin_direction)
 	var coriolis_drift = -2.0 * coriolis_omega_rad_s * fall_speed * spin_sign
 
 	if effective_dt > 0.0:
-		# UV scroll rates: Rain falls rapidly (~1.6 to 2.6 UV/s), while snowflakes drift down gently (~0.16 to 0.32 UV/s)
-		var uv_scroll_y = fall_speed * (0.20 if is_snow_mode else 0.24)
-		var uv_scroll_x = (coriolis_drift + (wind_velocity.x * 1.5 if is_snow_mode else 0.0)) * (0.20 if is_snow_mode else 0.12)
+		# UV scroll rates: Rain falls rapidly (~3.0 to 5.5 UV/s), while snowflakes drift down leisurely (~0.25 to 0.55 UV/s)
+		var uv_scroll_y = fall_speed * (0.42 if is_snow_mode else 0.38)
+		var uv_scroll_x = (coriolis_drift + (wind_velocity.x * 2.0 if is_snow_mode else 0.0)) * (0.25 if is_snow_mode else 0.12)
 		rain_scroll_offset += Vector2(uv_scroll_x, uv_scroll_y) * effective_dt
 		rain_scroll_offset.x = fposmod(rain_scroll_offset.x, 100.0)
 		rain_scroll_offset.y = fposmod(rain_scroll_offset.y, 100.0)
 
+	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
+	var lut_tex = light_bar.lut_texture if light_bar else null
+	var light_int = light_bar.global_intensity_multiplier if light_bar else 3.5
+
+	if lut_tex:
+		rain_sheet_material.set_shader_parameter("axial_light_lut", lut_tex)
+		rain_sheet_material.set_shader_parameter("axial_light_enabled", 1.0)
+	rain_sheet_material.set_shader_parameter("global_light_intensity", light_int)
+	rain_sheet_material.set_shader_parameter("cylinder_length", cylinder_length)
 	rain_sheet_material.set_shader_parameter("uv_scroll_offset", rain_scroll_offset)
 	rain_sheet_material.set_shader_parameter("rain_tint", Color(1.0, 1.0, 1.0, 1.0))
 
@@ -817,8 +826,10 @@ func _update_dust_emitter() -> void:
 	dust_particles.amount = int(lerpf(40.0, 350.0, dust_density))
 	var dust_mat = dust_particles.material_override as StandardMaterial3D
 	if dust_mat:
+		var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
+		var light_mult = clampf((light_bar.global_intensity_multiplier if light_bar else 3.5) / 3.5, 0.05, 1.25)
 		var dust_col = Color(0.95, 0.98, 1.0) if is_snow_mode else Color(0.95, 0.90, 0.78)
-		dust_mat.albedo_color = Color(dust_col.r, dust_col.g, dust_col.b, clampf(dust_density * 0.45, 0.1, 0.6))
+		dust_mat.albedo_color = Color(dust_col.r * light_mult, dust_col.g * light_mult, dust_col.b * light_mult, clampf(dust_density * 0.45 * light_mult, 0.04, 0.6))
 
 func _update_particle_positions() -> void:
 	if not is_inside_tree():

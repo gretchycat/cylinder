@@ -134,9 +134,10 @@ void fragment() {
 		axial_lum = clamp(axial_light.a, 0.0, 1.5);
 	}
 
-	// Blend cloud illumination based on axial diurnal cycle
-	vec3 day_tint = cloud_color_day.rgb * axial_col;
-	vec3 night_tint = cloud_color_night.rgb;
+	// Direct scaling with light bar intensity & diurnal lighting
+	float light_scale = clamp(global_light_intensity / 3.5, 0.02, 1.5);
+	vec3 day_tint = cloud_color_day.rgb * axial_col * light_scale;
+	vec3 night_tint = cloud_color_night.rgb * clamp(light_scale * 0.85, 0.10, 1.0);
 	vec3 illuminated_cloud = mix(night_tint, day_tint, clamp(axial_lum, 0.0, 1.0));
 
 	// Incorporate atmospheric dust scattering into cloud illumination
@@ -153,7 +154,7 @@ void fragment() {
 	float air_factor = clamp((dist_to_cam - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
 	float air_scatter = 1.0 - exp(-air_factor * 2.8);
 	float fog_blend = clamp(air_scatter * air_density, 0.0, 1.0);
-	vec3 target_air_color = air_color.rgb * mix(vec3(1.0), axial_col, 0.65);
+	vec3 target_air_color = air_color.rgb * mix(vec3(1.0), axial_col, 0.65) * light_scale;
 	final_cloud_rgb = mix(final_cloud_rgb, target_air_color, fog_blend * 0.65);
 
 	ALBEDO = final_cloud_rgb;
