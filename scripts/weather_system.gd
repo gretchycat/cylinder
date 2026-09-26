@@ -205,11 +205,19 @@ var splash_particles: CPUParticles3D = null
 var dust_particles: CPUParticles3D = null
 var target_player: Node3D = null
 
+# Pre-rendered Textured Rain Sheets
+var rain_sheets_root: Node3D = null
+var rain_sheets_mesh_instance: MeshInstance3D = null
+var rain_sheet_material: ShaderMaterial = null
+var rain_texture_cache: Dictionary = {}
+var current_rendered_density_tier: int = -1
+
 func _ready() -> void:
 	add_to_group("weather_system")
 	_recalculate_coriolis_vectors()
 	_recalculate_thermodynamics()
 	_build_cloud_mesh()
+	_build_rain_sheets()
 	_setup_weather_emitters()
 	_sync_with_scene_lighting()
 	_init_weather_trajectory()
@@ -625,50 +633,199 @@ func _update_cloud_mesh_radius() -> void:
 	_generate_cloud_geometry()
 	_update_shader_parameters()
 
+func _build_rain_sheets() -> void:
+	if rain_sheets_root and is_instance_valid(rain_sheets_root):
+		rain_sheets_root.queue_free()
+
+	rain_sheets_root = Node3D.new()
+	rain_sheets_root.name = "RainSheetsRoot"
+	add_child(rain_sheets_root)
+
+	rain_sheets_mesh_instance = MeshInstance3D.new()
+	rain_sheets_mesh_instance.name = "RainSheetsMesh"
+	rain_sheets_root.add_child(rain_sheets_mesh_instance)
+
+	var shader = load("res://assets/shaders/cylinder_rain_sheet.gdshader") as Shader
+	if shader:
+		rain_sheet_material = ShaderMaterial.new()
+		rain_sheet_material.shader = shader
+		rain_sheet_material.render_priority = 8
+		rain_sheets_mesh_instance.material_override = rain_sheet_material
+
+	# Generate multi-layered curtain cage mesh around player for volumetric depth
+	var st = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	# 4 concentric layers with varied radii, heights, and UV scales: [radius, num_planes, height, width, uv_sx, uv_sy]
+	var layers = [
+		[5.0, 4, 16.0, 9.0, 2.0, 1.0],
+		[11.0, 6, 24.0, 14.0, 3.0, 1.5],
+		[20.0, 8, 34.0, 20.0, 4.0, 2.0],
+		[34.0, 8, 46.0, 30.0, 5.0, 2.5]
+	]
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = 4242
+
+	for layer in layers:
+		var rad: float = layer[0]
+		var count: int = layer[1]
+		var h: float = layer[2]
+		var w: float = layer[3]
+		var uv_sx: float = layer[4]
+		var uv_sy: float = layer[5]
+
+		var d_ang = TAU / float(count)
+		var angle_offset = rng.randf_range(0.0, TAU)
+
+		for i in range(count):
+			var ang = float(i) * d_ang + angle_offset
+			var cos_a = cos(ang)
+			var sin_a = sin(ang)
+
+			var center = Vector3(cos_a * rad, 0.0, sin_a * rad)
+			var right_dir = Vector3(-sin_a, 0.0, cos_a)
+			var up_dir = Vector3.UP
+
+			var half_w = w * 0.5
+			var half_h = h * 0.5
+
+			var p0 = center - (right_dir * half_w) - (up_dir * half_h)
+			var p1 = center + (right_dir * half_w) - (up_dir * half_h)
+			var p2 = center + (right_dir * half_w) + (up_dir * half_h)
+			var p3 = center - (right_dir * half_w) + (up_dir * half_h)
+
+			var u_off = rng.randf()
+			var v_off = rng.randf()
+
+			var uv0 = Vector2(u_off, v_off + uv_sy)
+			var uv1 = Vector2(u_off + uv_sx, v_off + uv_sy)
+			var uv2 = Vector2(u_off + uv_sx, v_off)
+			var uv3 = Vector2(u_off, v_off)
+
+			var norm = Vector3(cos_a, 0.0, sin_a)
+
+			# Triangle 1
+			st.set_normal(norm)
+			st.set_uv(uv0)
+			st.add_vertex(p0)
+
+			st.set_normal(norm)
+			st.set_uv(uv1)
+			st.add_vertex(p1)
+
+			st.set_normal(norm)
+			st.set_uv(uv2)
+			st.add_vertex(p2)
+
+			# Triangle 2
+			st.set_normal(norm)
+			st.set_uv(uv0)
+			st.add_vertex(p0)
+
+			st.set_normal(norm)
+			st.set_uv(uv2)
+			st.add_vertex(p2)
+
+			st.set_normal(norm)
+			st.set_uv(uv3)
+			st.add_vertex(p3)
+
+	var mesh = st.commit()
+	rain_sheets_mesh_instance.mesh = mesh
+	rain_sheets_root.visible = false
+
+func _get_density_tier(precip_rate: float) -> int:
+	if precip_rate <= 0.05:
+		return 0
+	elif precip_rate < 6.0:
+		return 1 # Mist / Drizzle
+	elif precip_rate < 15.0:
+		return 2 # Light Rain
+	elif precip_rate < 28.0:
+		return 3 # Moderate Rain
+	elif precip_rate < 42.0:
+		return 4 # Heavy Rain
+	else:
+		return 5 # Torrential Downpour
+
+func _get_or_render_rain_texture(density_tier: int) -> ImageTexture:
+	if rain_texture_cache.has(density_tier):
+		return rain_texture_cache[density_tier]
+
+	var img_tex = _generate_rain_streak_texture(density_tier)
+	rain_texture_cache[density_tier] = img_tex
+	return img_tex
+
+func _generate_rain_streak_texture(density_tier: int) -> ImageTexture:
+	var width = 256
+	var height = 512
+	var img = Image.create(width, height, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Density tiers: 0=None, 1=Mist, 2=Light, 3=Moderate, 4=Heavy, 5=Torrential
+	var streak_counts = [0, 220, 550, 1100, 2100, 3600]
+	var count = streak_counts[clamp(density_tier, 0, streak_counts.size() - 1)]
+
+	var rng = RandomNumberGenerator.new()
+	rng.seed = 9871 + density_tier * 4099
+
+	# Dark blue 50% Alpha streaks with 1:3 aspect ratio (width 2px, height 6px)
+	var streak_w = 2
+	var streak_h = 6
+
+	for i in range(count):
+		var rx = rng.randi_range(0, width - 1)
+		var ry = rng.randi_range(0, height - 1)
+		var a_mod = rng.randf_range(0.85, 1.15)
+
+		for dy in range(streak_h):
+			var py = (ry + dy) % height
+			# Vertical gradient profile with 1:3 aspect ratio
+			var v_factor: float
+			if dy == 0 or dy == streak_h - 1:
+				v_factor = 0.35
+			elif dy == 1 or dy == streak_h - 2:
+				v_factor = 0.75
+			else:
+				v_factor = 1.0
+
+			for dx in range(streak_w):
+				var px = (rx + dx) % width
+				var final_alpha = clampf(0.50 * v_factor * a_mod, 0.0, 1.0)
+				# Dark blue streaks (50% alpha)
+				var streak_color = Color(0.12, 0.28, 0.58, final_alpha)
+
+				var existing = img.get_pixel(px, py)
+				if existing.a > 0.0:
+					var blended_a = clampf(existing.a + streak_color.a * (1.0 - existing.a), 0.0, 1.0)
+					var blended_rgb = existing.blend(streak_color)
+					blended_rgb.a = blended_a
+					img.set_pixel(px, py, blended_rgb)
+				else:
+					img.set_pixel(px, py, streak_color)
+
+	img.generate_mipmaps()
+	return ImageTexture.create_from_image(img)
+
 func _setup_weather_emitters() -> void:
-	if not rain_particles:
-		rain_particles = CPUParticles3D.new()
-		rain_particles.name = "CoriolisRainParticles"
-		rain_particles.amount = 2500
-		rain_particles.lifetime = 1.4
-		rain_particles.preprocess = 1.0
-		rain_particles.local_coords = false
-		rain_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-		rain_particles.emission_box_extents = Vector3(32.0, 32.0, 32.0)
-		rain_particles.spread = 10.0
-
-		var rain_mat = StandardMaterial3D.new()
-		rain_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		rain_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		rain_mat.albedo_color = Color(0.92, 0.97, 1.0, 0.90)
-		rain_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-		rain_mat.billboard_keep_scale = true
-		rain_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-		rain_mat.render_priority = 10
-		rain_particles.material_override = rain_mat
-
-		var quad_mesh = QuadMesh.new()
-		quad_mesh.size = Vector2(0.12, 2.2)
-		rain_particles.mesh = quad_mesh
-		add_child(rain_particles)
-
 	if not splash_particles:
 		splash_particles = CPUParticles3D.new()
 		splash_particles.name = "RainGroundSplashParticles"
-		splash_particles.amount = 600
-		splash_particles.lifetime = 0.35
-		splash_particles.preprocess = 0.2
+		splash_particles.amount = 120
+		splash_particles.lifetime = 0.25
+		splash_particles.preprocess = 0.1
 		splash_particles.local_coords = false
 		splash_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-		splash_particles.emission_box_extents = Vector3(30.0, 1.5, 30.0)
-		splash_particles.spread = 35.0
-		splash_particles.initial_velocity_min = 2.0
-		splash_particles.initial_velocity_max = 5.5
+		splash_particles.emission_box_extents = Vector3(20.0, 0.5, 20.0)
+		splash_particles.spread = 45.0
+		splash_particles.initial_velocity_min = 1.2
+		splash_particles.initial_velocity_max = 3.5
 
 		var splash_mat = StandardMaterial3D.new()
 		splash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		splash_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		splash_mat.albedo_color = Color(0.90, 0.96, 1.0, 0.75)
+		splash_mat.albedo_color = Color(0.65, 0.82, 1.0, 0.45)
 		splash_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 		splash_mat.billboard_keep_scale = true
 		splash_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -676,15 +833,15 @@ func _setup_weather_emitters() -> void:
 		splash_particles.material_override = splash_mat
 
 		var splash_mesh = SphereMesh.new()
-		splash_mesh.radius = 0.10
-		splash_mesh.height = 0.20
+		splash_mesh.radius = 0.03
+		splash_mesh.height = 0.06
 		splash_particles.mesh = splash_mesh
 		add_child(splash_particles)
 
 	if not dust_particles:
 		dust_particles = CPUParticles3D.new()
 		dust_particles.name = "AtmosphericDustParticles"
-		dust_particles.amount = 300
+		dust_particles.amount = 200
 		dust_particles.lifetime = 6.0
 		dust_particles.preprocess = 1.0
 		dust_particles.local_coords = false
@@ -699,7 +856,7 @@ func _setup_weather_emitters() -> void:
 		var dust_mat = StandardMaterial3D.new()
 		dust_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		dust_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		dust_mat.albedo_color = Color(0.95, 0.90, 0.78, 0.4)
+		dust_mat.albedo_color = Color(0.95, 0.90, 0.78, 0.35)
 		dust_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 		dust_mat.render_priority = 10
 		dust_particles.material_override = dust_mat
@@ -714,40 +871,42 @@ func _setup_weather_emitters() -> void:
 	_update_dust_emitter()
 
 func _update_precipitation_emitter() -> void:
+	# Ensure particle emitter doesn't spawn macro blobs
 	var emitter = get_tree().get_first_node_in_group("particle_emitter") as CylinderParticleEmitter if is_inside_tree() else null
 	if emitter:
-		if precipitation_rate_mmh > 0.05:
-			emitter.rain_stream_enabled = true
-			var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
-			emitter.rain_stream_rate = lerpf(35.0, 200.0, intensity_norm)
-			emitter.rain_stream_altitude = cloud_altitude_m
-			emitter.spin_direction = int(spin_direction)
-			emitter.base_gravity = base_gravity
-		else:
-			emitter.rain_stream_enabled = false
+		emitter.rain_stream_enabled = false
 
-	if not rain_particles:
+	if not rain_sheets_root or not rain_sheet_material:
 		return
 
 	if precipitation_rate_mmh <= 0.05:
-		rain_particles.emitting = false
+		rain_sheets_root.visible = false
 		if splash_particles:
 			splash_particles.emitting = false
 		return
 
-	rain_particles.emitting = true
+	rain_sheets_root.visible = true
+
+	var tier = _get_density_tier(precipitation_rate_mmh)
+	if tier != current_rendered_density_tier:
+		current_rendered_density_tier = tier
+		var tex = _get_or_render_rain_texture(tier)
+		rain_sheet_material.set_shader_parameter("rain_texture", tex)
+
 	var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
-	rain_particles.amount = int(lerpf(400.0, 3000.0, intensity_norm))
+	var fall_speed = lerpf(16.0, 32.0, intensity_norm)
+	var spin_sign = float(spin_direction)
+	var coriolis_drift = -2.0 * coriolis_omega_rad_s * fall_speed * spin_sign
+
+	# Scroll UVs in fall direction and Coriolis tilt
+	var uv_scroll_y = fall_speed * 0.16
+	var uv_scroll_x = coriolis_drift * 0.10
+	rain_sheet_material.set_shader_parameter("uv_scroll_speed", Vector2(uv_scroll_x, uv_scroll_y))
+	rain_sheet_material.set_shader_parameter("rain_alpha_multiplier", lerpf(0.75, 1.25, intensity_norm))
 
 	if splash_particles:
 		splash_particles.emitting = true
-		splash_particles.amount = int(lerpf(150.0, 900.0, intensity_norm))
-
-	var spin_sign = float(spin_direction)
-	var fall_speed = lerpf(18.0, 34.0, intensity_norm)
-
-	rain_particles.initial_velocity_min = fall_speed * 0.9
-	rain_particles.initial_velocity_max = fall_speed * 1.1
+		splash_particles.amount = int(lerpf(30.0, 150.0, intensity_norm))
 
 func _update_dust_emitter() -> void:
 	if not dust_particles:
@@ -758,10 +917,10 @@ func _update_dust_emitter() -> void:
 		return
 
 	dust_particles.emitting = true
-	dust_particles.amount = int(lerpf(50.0, 600.0, dust_density))
+	dust_particles.amount = int(lerpf(40.0, 350.0, dust_density))
 	var dust_mat = dust_particles.material_override as StandardMaterial3D
 	if dust_mat:
-		dust_mat.albedo_color = Color(0.95, 0.90, 0.78, clampf(dust_density * 0.5, 0.1, 0.7))
+		dust_mat.albedo_color = Color(0.95, 0.90, 0.78, clampf(dust_density * 0.45, 0.1, 0.6))
 
 func _update_particle_positions() -> void:
 	if not is_inside_tree():
@@ -781,18 +940,21 @@ func _update_particle_positions() -> void:
 	var tangent_3d = Vector3(-r_dir.y, r_dir.x, 0.0)
 	var spin_sign = float(spin_direction)
 
-	if rain_particles and rain_particles.is_inside_tree() and rain_particles.emitting:
-		# Position rain volume 25m overhead so drops fall all the way down past the player
-		rain_particles.global_position = p_pos + (up_sky_3d * 25.0)
-		rain_particles.direction = down_3d
-		var gravity_mag = base_gravity * 3.5
-		var coriolis_mag = 2.0 * coriolis_omega_rad_s * 22.0 * spin_sign * 3.5
-		rain_particles.gravity = (down_3d * gravity_mag) - (tangent_3d * coriolis_mag)
+	if rain_sheets_root and rain_sheets_root.is_inside_tree() and rain_sheets_root.visible:
+		rain_sheets_root.global_position = p_pos
+		var local_up = up_sky_3d
+		var local_forward = Vector3(0, 0, 1)
+		var local_right = tangent_3d * spin_sign
+
+		var tilt_rad = deg_to_rad(coriolis_rain_tilt_deg)
+		var basis_rain = Basis(local_right, local_up, local_forward)
+		basis_rain = basis_rain.rotated(local_forward, tilt_rad)
+		rain_sheets_root.global_basis = basis_rain
 
 	if splash_particles and splash_particles.is_inside_tree() and splash_particles.emitting:
 		splash_particles.global_position = p_pos
 		splash_particles.direction = up_sky_3d
-		splash_particles.gravity = down_3d * (base_gravity * 4.0)
+		splash_particles.gravity = down_3d * (base_gravity * 3.5)
 
 	if dust_particles and dust_particles.is_inside_tree() and dust_particles.emitting:
 		dust_particles.global_position = p_pos

@@ -390,18 +390,18 @@ func _update_visuals() -> void:
 
 			if p.is_rain:
 				if p.has_landed:
-					# Landed rain drop puddle / splash ring
+					# Landed rain drop puddle / splash ring (small realistic scale)
 					fade = clampf(1.0 - (p.landed_age / 0.55), 0.0, 1.0)
-					var splash_r = lerpf(p.size * 0.5, p.size * 3.5, p.landed_age / 0.55)
-					t = Transform3D(Basis().scaled(Vector3(splash_r, 0.15, splash_r)), p.position)
+					var splash_r = lerpf(0.06, 0.22, p.landed_age / 0.55)
+					t = Transform3D(Basis().scaled(Vector3(splash_r, 0.04, splash_r)), p.position)
 				else:
 					# In-flight falling rain droplet streak
-					var scale_factor = p.size
+					var scale_factor = clampf(p.size * 0.08, 0.05, 0.35)
 					if p.velocity.length_squared() > 1.0:
 						var v_dir = p.velocity.normalized()
 						var v_up = Vector3.UP if abs(v_dir.y) < 0.9 else Vector3.FORWARD
 						var b = Basis.looking_at(v_dir, v_up)
-						var stretch = clampf(p.velocity.length() * 0.18, 1.5, 7.0)
+						var stretch = clampf(p.velocity.length() * 0.15, 1.2, 4.0)
 						b = b.scaled(Vector3(scale_factor, scale_factor, scale_factor * stretch))
 						t = Transform3D(b, p.position)
 					else:
