@@ -68,7 +68,7 @@ func _ready() -> void:
 		camera.far = 40000.0
 
 	# Seamless slope climbing across terrain hills and 26 km end cap dishes
-	floor_snap_length = 0.8
+	floor_snap_length = 1.2
 	floor_max_angle = deg_to_rad(89.0)
 	floor_constant_speed = true
 	floor_stop_on_slope = false
@@ -252,7 +252,7 @@ func _process_ground_movement(delta: float) -> void:
 	var move_speed = sprint_speed if is_sprinting else walk_speed
 	var input_len = input_axis.length()
 
-	# Flat movement direction in player's local horizontal frame
+	# Base movement direction in player's local horizontal frame (tangent to cylinder surface)
 	var flat_move_dir = (global_basis.x * input_axis.x + global_basis.z * input_axis.y)
 	flat_move_dir = (flat_move_dir - current_up * flat_move_dir.dot(current_up))
 	if flat_move_dir.length_squared() > 1e-5:
@@ -260,56 +260,46 @@ func _process_ground_movement(delta: float) -> void:
 	else:
 		flat_move_dir = Vector3.ZERO
 
-	var on_floor = is_on_floor()
-	var floor_norm = get_floor_normal() if on_floor and get_floor_normal().length_squared() > 0.5 else current_up
-
-	# Project movement along actual surface / terrain / end cap slope
-	var surface_move_dir = flat_move_dir
-	if on_floor and flat_move_dir != Vector3.ZERO:
-		surface_move_dir = (flat_move_dir - floor_norm * flat_move_dir.dot(floor_norm))
-		if surface_move_dir.length_squared() > 1e-5:
-			surface_move_dir = surface_move_dir.normalized()
-		else:
-			surface_move_dir = flat_move_dir
-
-	# --- Grade / Steepness Speed Scaling ---
+	# Grade / Slope steepness speed scaling
+	var floor_norm = get_floor_normal() if is_on_floor() and get_floor_normal().length_squared() > 0.5 else current_up
 	var slope_angle = current_up.angle_to(floor_norm)
 	var uphill_component = -flat_move_dir.dot(floor_norm)
 
 	var grade_speed_mult = 1.0
-	if on_floor and flat_move_dir != Vector3.ZERO:
-		if uphill_component > 0.001:
+	if is_on_floor() and flat_move_dir != Vector3.ZERO:
+		if uphill_component > 0.01:
 			# Uphill: forward progress relates to steepness of the grade (steeper = slower, never trapped)
 			var sin_slope = sin(slope_angle)
-			grade_speed_mult = clampf(1.0 - (sin_slope * uphill_component * 0.75), 0.20, 1.0)
-		elif uphill_component < -0.001:
+			grade_speed_mult = clampf(1.0 - (sin_slope * uphill_component * 0.70), 0.25, 1.0)
+		elif uphill_component < -0.01:
 			# Downhill: slight natural acceleration
 			var sin_slope = sin(slope_angle)
 			grade_speed_mult = clampf(1.0 + (sin_slope * (-uphill_component) * 0.15), 1.0, 1.20)
 
-	var effective_speed = move_speed * grade_speed_mult
-	var target_v = surface_move_dir * (effective_speed * input_len)
-	var accel = acceleration if on_floor else air_control
-	velocity = velocity.lerp(target_v, accel * delta)
+	var target_speed = move_speed * grade_speed_mult
+	var target_h_vel = flat_move_dir * (target_speed * input_len)
 
-	# Vertical gravity and smooth surface adhesion
-	if not on_floor:
-		var v_up = velocity.dot(current_up) - current_gravity * delta
-		var v_planar = velocity - current_up * velocity.dot(current_up)
-		velocity = v_planar + current_up * v_up
+	# Decompose current velocity into vertical (along current_up) and planar (horizontal)
+	var v_up_scalar = velocity.dot(current_up)
+	var v_h = velocity - current_up * v_up_scalar
+
+	var accel = acceleration if is_on_floor() else air_control
+	v_h = v_h.lerp(target_h_vel, accel * delta)
+
+	# Apply gravity along current_up
+	if not is_on_floor():
+		v_up_scalar -= current_gravity * delta
 	else:
-		# Smooth ground contact
-		var v_up = velocity.dot(current_up)
-		if v_up > 0.0:
-			velocity -= current_up * (v_up * minf(10.0 * delta, 1.0))
-		else:
-			velocity -= current_up * (0.5 * delta)
+		# On floor: maintain continuous floor contact without accumulating unbounded downward velocity
+		v_up_scalar = -maxf(2.0, current_gravity * 0.1)
 
 	# Jump handling
 	if jump_requested:
 		jump_requested = false
-		if on_floor:
-			velocity += current_up * jump_velocity
+		if is_on_floor():
+			v_up_scalar = jump_velocity
+
+	velocity = v_h + current_up * v_up_scalar
 
 func _process_flying_movement(delta: float) -> void:
 	jump_requested = false
