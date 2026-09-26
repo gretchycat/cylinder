@@ -102,8 +102,8 @@ void fragment() {
 
 	// Coriolis spiral distortion: rising humid air turns prograde (+theta) or retrograde (-theta)
 	float coriolis_shear = -z_norm * 0.45 * coriolis_spin_direction;
-	float flow_theta = angle + coriolis_shear + cloud_deck_offset.x + (wind_velocity.x * coriolis_spin_direction) * (TIME * time_scale);
-	float flow_z = ((z_dist + cloud_deck_offset.y) * 0.0006) + wind_velocity.y * (TIME * time_scale);
+	float flow_theta = angle + coriolis_shear + cloud_deck_offset.x;
+	float flow_z = (world_pos.z + cloud_deck_offset.y) * 0.0006;
 
 	// Scale UV with cloud thickness: thicker clouds have more billowing internal structures
 	float thickness_freq_mult = mix(0.85, 1.4, clamp(cloud_thickness / 400.0, 0.0, 2.0));

@@ -209,24 +209,15 @@ func _process(delta: float) -> void:
 		if light_bar.day_of_year > 0 and light_bar.day_of_year != day_of_year:
 			day_of_year = light_bar.day_of_year
 
-	var effective_dt = delta * trajectory_speed_scale
-
-	if tie_to_in_game_clock and light_bar:
-		if last_in_game_time_hours >= 0.0:
-			var dh = current_clock_hours - last_in_game_time_hours
-			if dh < -12.0:
-				dh += 24.0
-			elif dh > 12.0:
-				dh -= 24.0
-			
-			var clock_dt = dh * 3600.0 * trajectory_speed_scale
-			if absf(dh) > 0.00005:
-				effective_dt = clock_dt
-		last_in_game_time_hours = current_clock_hours
+	# Weather state progression timescale: smooth delta progression scaled gracefully
+	var time_mult = 1.0
+	if light_bar and not light_bar.use_real_time and light_bar.time_scale > 1.0:
+		time_mult = clampf(sqrt(light_bar.time_scale), 1.0, 3.5)
+	var effective_dt = delta * time_mult * trajectory_speed_scale
 
 	_update_weather_queue_progression(effective_dt, current_clock_hours)
 	_update_dynamic_wind(delta)
-	_update_cloud_deck_coriolis_motion(delta, current_clock_hours)
+	_update_cloud_deck_coriolis_motion(delta)
 	_update_shader_parameters()
 	_update_precipitation_emitter()
 	_update_dust_emitter()
@@ -847,26 +838,15 @@ func _update_dynamic_wind(delta: float) -> void:
 	var wind_fluct = sin(time_val * 0.2) * 0.001
 	wind_velocity.x = (0.006 + wind_fluct) * spin_sign
 
-func _update_cloud_deck_coriolis_motion(delta: float, current_clock_hours: float) -> void:
+func _update_cloud_deck_coriolis_motion(delta: float) -> void:
 	var spin_sign = float(spin_direction)
 	var thickness_factor = clampf(cloud_thickness_m / 350.0, 0.7, 1.5)
-	cloud_deck_angular_velocity = (0.012 + 0.004 * thickness_factor) * spin_sign * (coriolis_omega_rad_s / 0.0487)
-	cloud_deck_axial_velocity = 2.2 + sin(Time.get_ticks_msec() * 0.00015) * 0.8
+	cloud_deck_angular_velocity = (0.010 + 0.003 * thickness_factor) * spin_sign * (coriolis_omega_rad_s / 0.0487)
+	cloud_deck_axial_velocity = 2.0 + sin(Time.get_ticks_msec() * 0.0001) * 0.5
 
-	cloud_deck_accumulated_spin += cloud_deck_angular_velocity * delta
-	cloud_deck_accumulated_drift += cloud_deck_axial_velocity * delta
-
-	if tie_to_in_game_clock:
-		var diurnal_theta = (current_clock_hours / 24.0) * TAU * spin_sign * 2.0
-		var diurnal_z = sin((current_clock_hours / 24.0) * TAU) * 1400.0 + (current_clock_hours / 24.0) * 3200.0
-
-		cloud_deck_rotation_theta = fposmod(diurnal_theta + cloud_deck_accumulated_spin, TAU)
-		var half_len = cylinder_length * 0.5
-		cloud_deck_translation_z = fposmod(diurnal_z + cloud_deck_accumulated_drift + half_len, cylinder_length) - half_len
-	else:
-		cloud_deck_rotation_theta = fposmod(cloud_deck_rotation_theta + cloud_deck_angular_velocity * delta, TAU)
-		var half_len = cylinder_length * 0.5
-		cloud_deck_translation_z = fposmod(cloud_deck_translation_z + cloud_deck_axial_velocity * delta + half_len, cylinder_length) - half_len
+	# Smooth, continuous monotonic accumulation without wrapping jumps or direction flipping
+	cloud_deck_rotation_theta += cloud_deck_angular_velocity * delta
+	cloud_deck_translation_z += cloud_deck_axial_velocity * delta
 
 func _update_shader_parameters() -> void:
 	var materials: Array[ShaderMaterial] = []
