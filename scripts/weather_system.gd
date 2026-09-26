@@ -85,8 +85,10 @@ var coriolis_deflection_rate: float = 0.0
 var coriolis_rain_tilt_deg: float = 0.0
 var wind_velocity: Vector2 = Vector2.ZERO # (theta_rad_s, z_m_s)
 
-var cloud_mesh_instance: MeshInstance3D = null
-var cloud_material: ShaderMaterial = null
+var far_cloud_mesh_instance: MeshInstance3D = null
+var near_cloud_mesh_instance: MeshInstance3D = null
+var far_cloud_material: ShaderMaterial = null
+var near_cloud_material: ShaderMaterial = null
 
 # Localized Emitters tracking player position
 var rain_particles: CPUParticles3D = null
@@ -166,82 +168,91 @@ func _recalculate_thermodynamics() -> void:
 			precipitation_rate_mmh = 12.0
 
 func _build_cloud_mesh() -> void:
-	if cloud_mesh_instance and is_instance_valid(cloud_mesh_instance):
-		cloud_mesh_instance.queue_free()
+	if far_cloud_mesh_instance and is_instance_valid(far_cloud_mesh_instance):
+		far_cloud_mesh_instance.queue_free()
+	if near_cloud_mesh_instance and is_instance_valid(near_cloud_mesh_instance):
+		near_cloud_mesh_instance.queue_free()
 
-	cloud_mesh_instance = MeshInstance3D.new()
-	cloud_mesh_instance.name = "CylinderCloudLayer"
-	add_child(cloud_mesh_instance)
+	far_cloud_mesh_instance = MeshInstance3D.new()
+	far_cloud_mesh_instance.name = "FarCloudLayer"
+	add_child(far_cloud_mesh_instance)
 
-	var shader = load("res://assets/shaders/cylinder_clouds.gdshader") as Shader
-	if shader:
-		cloud_material = ShaderMaterial.new()
-		cloud_material.shader = shader
-		cloud_material.render_priority = 5 # Ensure clouds render on top of far water and terrain
-		cloud_mesh_instance.material_override = cloud_material
+	near_cloud_mesh_instance = MeshInstance3D.new()
+	near_cloud_mesh_instance.name = "NearCloudLayer"
+	add_child(near_cloud_mesh_instance)
+
+	var far_shader = load("res://assets/shaders/cylinder_clouds_far.gdshader") as Shader
+	if far_shader:
+		far_cloud_material = ShaderMaterial.new()
+		far_cloud_material.shader = far_shader
+		far_cloud_material.render_priority = 4 # Far clouds render over far water/terrain (P0), behind near clouds (P5)
+		far_cloud_mesh_instance.material_override = far_cloud_material
+
+	var near_shader = load("res://assets/shaders/cylinder_clouds.gdshader") as Shader
+	if near_shader:
+		near_cloud_material = ShaderMaterial.new()
+		near_cloud_material.shader = near_shader
+		near_cloud_material.render_priority = 5 # Near clouds render over far clouds (P4) and central axis light bar
+		near_cloud_mesh_instance.material_override = near_cloud_material
 
 	_generate_cloud_geometry()
 	_update_shader_parameters()
 
 func _generate_cloud_geometry() -> void:
-	if not cloud_mesh_instance:
-		return
-
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	# Multi-shell volumetric cloud geometry (Base shell, Mid shell, Top shell)
-	var cloud_r_base = cylinder_radius - cloud_altitude_m
+	# Single continuous cylindrical shell geometry at cloud altitude
+	var cloud_r = cylinder_radius - cloud_altitude_m
 	var cloud_len = cylinder_length * 0.96
 	var half_len = cloud_len * 0.5
 
-	var radial_segs = 64
-	var length_segs = 32
+	var radial_segs = 96
+	var length_segs = 48
 	var d_theta = TAU / float(radial_segs)
 	var d_z = cloud_len / float(length_segs)
 
-	var num_shells = 3
-	var vertex_offset = 0
+	for j in range(length_segs + 1):
+		var z = -half_len + float(j) * d_z
+		var v_coord = float(j) / float(length_segs)
 
-	for shell in range(num_shells):
-		var shell_fraction = float(shell) / float(max(num_shells - 1, 1))
-		var shell_r = cloud_r_base - (shell_fraction * cloud_thickness_m)
+		for i in range(radial_segs + 1):
+			var theta = float(i) * d_theta
+			var u_coord = float(i) / float(radial_segs)
 
-		for j in range(length_segs + 1):
-			var z = -half_len + float(j) * d_z
-			for i in range(radial_segs + 1):
-				var theta = float(i) * d_theta
-				var cos_t = cos(theta)
-				var sin_t = sin(theta)
+			var cos_t = cos(theta)
+			var sin_t = sin(theta)
 
-				var pos = Vector3(shell_r * cos_t, shell_r * sin_t, z)
-				var normal = Vector3(-cos_t, -sin_t, 0.0)
+			var pos = Vector3(cloud_r * cos_t, cloud_r * sin_t, z)
+			var normal = Vector3(-cos_t, -sin_t, 0.0)
 
-				st.set_normal(normal)
-				st.set_uv(Vector2(float(i) / float(radial_segs), float(j) / float(length_segs)))
-				st.add_vertex(pos)
+			st.set_normal(normal)
+			st.set_uv(Vector2(u_coord, v_coord))
+			st.add_vertex(pos)
 
-		var stride = radial_segs + 1
-		for j in range(length_segs):
-			for i in range(radial_segs):
-				var i00 = vertex_offset + j * stride + i
-				var i10 = vertex_offset + j * stride + (i + 1)
-				var i01 = vertex_offset + (j + 1) * stride + i
-				var i11 = vertex_offset + (j + 1) * stride + (i + 1)
+	var stride = radial_segs + 1
+	for j in range(length_segs):
+		for i in range(radial_segs):
+			var i00 = j * stride + i
+			var i10 = j * stride + (i + 1)
+			var i01 = (j + 1) * stride + i
+			var i11 = (j + 1) * stride + (i + 1)
 
-				st.add_index(i00)
-				st.add_index(i10)
-				st.add_index(i01)
+			st.add_index(i00)
+			st.add_index(i10)
+			st.add_index(i01)
 
-				st.add_index(i10)
-				st.add_index(i11)
-				st.add_index(i01)
-
-		vertex_offset += (length_segs + 1) * (radial_segs + 1)
+			st.add_index(i10)
+			st.add_index(i11)
+			st.add_index(i01)
 
 	st.generate_tangents()
 	var mesh = st.commit()
-	cloud_mesh_instance.mesh = mesh
+
+	if far_cloud_mesh_instance and is_instance_valid(far_cloud_mesh_instance):
+		far_cloud_mesh_instance.mesh = mesh
+	if near_cloud_mesh_instance and is_instance_valid(near_cloud_mesh_instance):
+		near_cloud_mesh_instance.mesh = mesh
 
 func _update_cloud_mesh_radius() -> void:
 	_generate_cloud_geometry()
@@ -373,25 +384,34 @@ func _update_dynamic_wind(delta: float) -> void:
 	wind_velocity.x = (0.006 + wind_fluct) * spin_sign
 
 func _update_shader_parameters() -> void:
-	if not cloud_material:
+	var materials: Array[ShaderMaterial] = []
+	if far_cloud_material:
+		materials.append(far_cloud_material)
+	if near_cloud_material:
+		materials.append(near_cloud_material)
+
+	if materials.is_empty():
 		return
 
-	cloud_material.set_shader_parameter("cylinder_radius", cylinder_radius)
-	cloud_material.set_shader_parameter("cylinder_length", cylinder_length)
-	cloud_material.set_shader_parameter("cloud_altitude", cloud_altitude_m)
-	cloud_material.set_shader_parameter("cloud_thickness", cloud_thickness_m)
-	cloud_material.set_shader_parameter("humidity_density", humidity_density_gm3)
-	cloud_material.set_shader_parameter("cloud_coverage", cloud_coverage)
-	cloud_material.set_shader_parameter("dust_density", dust_density)
-	cloud_material.set_shader_parameter("coriolis_spin_direction", float(spin_direction))
-	cloud_material.set_shader_parameter("wind_velocity", wind_velocity)
-
-	# Axial light synchronization
 	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
-	if light_bar and light_bar.lut_texture:
-		cloud_material.set_shader_parameter("axial_light_lut", light_bar.lut_texture)
-		cloud_material.set_shader_parameter("axial_light_enabled", 1.0)
-		cloud_material.set_shader_parameter("global_light_intensity", light_bar.global_intensity_multiplier)
+	var lut_tex = light_bar.lut_texture if light_bar else null
+	var light_int = light_bar.global_intensity_multiplier if light_bar else 3.5
+
+	for mat in materials:
+		mat.set_shader_parameter("cylinder_radius", cylinder_radius)
+		mat.set_shader_parameter("cylinder_length", cylinder_length)
+		mat.set_shader_parameter("cloud_altitude", cloud_altitude_m)
+		mat.set_shader_parameter("cloud_thickness", cloud_thickness_m)
+		mat.set_shader_parameter("humidity_density", humidity_density_gm3)
+		mat.set_shader_parameter("cloud_coverage", cloud_coverage)
+		mat.set_shader_parameter("dust_density", dust_density)
+		mat.set_shader_parameter("coriolis_spin_direction", float(spin_direction))
+		mat.set_shader_parameter("wind_velocity", wind_velocity)
+
+		if lut_tex:
+			mat.set_shader_parameter("axial_light_lut", lut_tex)
+			mat.set_shader_parameter("axial_light_enabled", 1.0)
+			mat.set_shader_parameter("global_light_intensity", light_int)
 
 func _sync_with_scene_lighting() -> void:
 	_update_shader_parameters()

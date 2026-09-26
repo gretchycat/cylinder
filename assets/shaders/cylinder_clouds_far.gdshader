@@ -1,8 +1,8 @@
 shader_type spatial;
-render_mode cull_back, blend_mix, depth_draw_never, diffuse_burley, specular_disabled;
+render_mode cull_front, blend_mix, depth_draw_never, diffuse_burley, specular_disabled;
 
-// Atmospheric Near Cloud Layer for O'Neill Cylinder (~1.25 km overhead)
-// Render Priority = 5 (Renders over far clouds P4, light bar, and far landscape)
+// Atmospheric Far Cloud Layer for O'Neill Cylinder (Opposite side across axis, ~6.75 km distance)
+// Render Priority = 4 (Renders after far water/terrain P0, before near clouds P5)
 uniform float cylinder_radius = 4000.0;
 uniform float cylinder_length = 18000.0;
 uniform float cloud_altitude = 1250.0;    // Meters above ground (1.0 to 1.5 km)
@@ -142,7 +142,7 @@ void fragment() {
 	float cloud_top_light = smoothstep(threshold + 0.08, threshold + 0.38, cloud_shape);
 	vec3 final_cloud_rgb = mix(illuminated_cloud * cloud_shadow_color.rgb, illuminated_cloud * 1.15, cloud_top_light);
 
-	// 4. Atmospheric aerial perspective for near overhead clouds (~1.25 km distance)
+	// 4. Atmospheric aerial perspective across cylinder diameter (~6.75 km distance)
 	float dist_to_cam = length(world_pos - CAMERA_POSITION_WORLD);
 	float air_factor = clamp((dist_to_cam - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
 	float air_scatter = 1.0 - exp(-air_factor * 2.8);
