@@ -363,7 +363,7 @@ func _update_animated_wave() -> void:
 			var col_night = Color(0.322, 0.306, 0.613)
 			var col_day = Color(1.0, 0.96, 0.90)
 			var col = col_night.lerp(col_day, wave_factor)
-			var intensity = lerpf(0.01163, 4.0, wave_factor)
+			var intensity = lerpf(0.0, 4.0, wave_factor)
 			segment_colors[i] = col
 			segment_intensities[i] = intensity
 		elif preset == LightingPreset.NEON_AURORA:
@@ -455,7 +455,7 @@ func _update_axial_lut() -> void:
 
 	for i in range(num_segments):
 		var c = segment_colors[i]
-		var intensity_factor = clampf(segment_intensities[i] / 3.5, 0.05, 1.5)
+		var intensity_factor = clampf(segment_intensities[i] / 3.5, 0.0, 1.5)
 		lut_image.set_pixel(i, 0, Color(c.r, c.g, c.b, intensity_factor))
 
 	if not lut_texture:

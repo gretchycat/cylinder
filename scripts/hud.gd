@@ -164,16 +164,19 @@ func _on_viewport_size_changed() -> void:
 		ui_root.size = vp_size / current_ui_scale
 
 static func slider_pos_to_intensity(s: float) -> float:
-	# Logarithmic scale from 0.01163 (1/10th of 5:28 AM, 0° lat) to 3.5
-	# s=0.0 -> 0.01163, s=1.0 -> 3.5
-	const MIN_INTENSITY: float = 0.01163
+	# Continuous scale from 0.0 to 3.5
+	# s=0.0 -> 0.0, s=1.0 -> 3.5
+	var s_clamped = clampf(s, 0.0, 1.0)
+	if s_clamped <= 0.001:
+		return 0.0
+	const MIN_INTENSITY: float = 0.001
 	const MAX_INTENSITY: float = 3.5
-	return MIN_INTENSITY * pow(MAX_INTENSITY / MIN_INTENSITY, clampf(s, 0.0, 1.0))
+	return MIN_INTENSITY * pow(MAX_INTENSITY / MIN_INTENSITY, s_clamped)
 
 static func intensity_to_slider_pos(intensity: float) -> float:
-	const MIN_INTENSITY: float = 0.01163
+	const MIN_INTENSITY: float = 0.001
 	const MAX_INTENSITY: float = 3.5
-	if intensity <= MIN_INTENSITY:
+	if intensity <= 0.0001:
 		return 0.0
 	return clampf(log(intensity / MIN_INTENSITY) / log(MAX_INTENSITY / MIN_INTENSITY), 0.0, 1.0)
 
