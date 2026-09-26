@@ -306,11 +306,14 @@ text = "Base Surface Gravity:"
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
-text = "12.0 m/s²"
+text = "-9.5 m/s²"
 horizontal_alignment = 2
 
 [node name="HSlider" type="HSlider" parent="UIRoot/ControlPanel/VBoxContainer/HBoxGravity"]
 layout_mode = 2
+max_value = 25.0
+step = 0.5
+value = 9.5
 
 [node name="HSeparator" type="HSeparator" parent="UIRoot/ControlPanel/VBoxContainer"]
 layout_mode = 2

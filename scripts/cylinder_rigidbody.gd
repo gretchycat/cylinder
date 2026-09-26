@@ -2,7 +2,7 @@ class_name CylinderRigidBody
 extends RigidBody3D
 
 @export var cylinder_radius: float = 80.0
-@export var base_gravity: float = 12.0
+@export var base_gravity: float = 9.5
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	var pos = state.transform.origin

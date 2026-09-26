@@ -230,10 +230,10 @@ func _setup_control_panel() -> void:
 		gravity_slider.min_value = 0.0
 		gravity_slider.max_value = 25.0
 		gravity_slider.step = 0.5
-		gravity_slider.value = player.base_gravity if player else 12.0
+		gravity_slider.value = player.base_gravity if player else 9.5
 		gravity_slider.value_changed.connect(_on_gravity_changed)
 		if gravity_val:
-			gravity_val.text = "%.1f m/s²" % gravity_slider.value
+			gravity_val.text = "-%.1f m/s²" % gravity_slider.value
 
 	var btn_vbox = $UIRoot/ControlPanel/VBoxContainer
 	if btn_vbox:
@@ -536,7 +536,7 @@ func _on_gravity_changed(value: float) -> void:
 	if player:
 		player.base_gravity = value
 	if gravity_val:
-		gravity_val.text = "%.1f m/s²" % value
+		gravity_val.text = "-%.1f m/s²" % value
 
 func _on_toggle_controls_pressed() -> void:
 	if toggle_controls_btn:

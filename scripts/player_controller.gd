@@ -13,7 +13,7 @@ signal telemetry_updated(data: Dictionary)
 @export var fly_speed: float = 80.0
 @export var acceleration: float = 16.0
 @export var air_control: float = 5.0
-@export var base_gravity: float = 12.0
+@export var base_gravity: float = 9.5
 @export var jump_velocity: float = 8.5
 @export var horizon_alignment_speed: float = 20.0
 @export var attitude_flatten_speed: float = 3.0
