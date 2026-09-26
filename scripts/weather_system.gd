@@ -406,7 +406,7 @@ func _recalculate_coriolis_vectors() -> void:
 	coriolis_deflection_rate = coriolis_accel_theta
 	wind_velocity = Vector2(0.008 * spin_sign, 0.002)
 
-	var fall_speed = 6.0 if is_snow_mode else 14.0 # m/s terminal velocity
+	var fall_speed = 1.2 if is_snow_mode else 8.5 # m/s physical terminal velocity (Snow: ~1.0-1.5 m/s vs Rain: ~7-10 m/s)
 	var coriolis_rain_v_tangent = -2.0 * coriolis_omega_rad_s * fall_speed * spin_sign
 	coriolis_rain_tilt_deg = rad_to_deg(atan2(coriolis_rain_v_tangent, fall_speed))
 
@@ -789,13 +789,15 @@ func _update_precipitation_emitter(effective_dt: float = 0.0) -> void:
 		rain_sheet_material.set_shader_parameter("rain_texture", tex)
 
 	var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
-	var fall_speed = lerpf(3.5, 7.0, intensity_norm) if is_snow_mode else lerpf(16.0, 32.0, intensity_norm)
+	# Snow terminal velocity is ~0.8 to 1.6 m/s (approx 7-8x slower than rain at 6.5 to 11.0 m/s)
+	var fall_speed = lerpf(0.8, 1.6, intensity_norm) if is_snow_mode else lerpf(6.5, 11.0, intensity_norm)
 	var spin_sign = float(spin_direction)
 	var coriolis_drift = -2.0 * coriolis_omega_rad_s * fall_speed * spin_sign
 
 	if effective_dt > 0.0:
-		var uv_scroll_y = fall_speed * (0.08 if is_snow_mode else 0.25)
-		var uv_scroll_x = coriolis_drift * (0.05 if is_snow_mode else 0.12)
+		# UV scroll rates: Rain falls rapidly (~1.6 to 2.6 UV/s), while snowflakes drift down gently (~0.16 to 0.32 UV/s)
+		var uv_scroll_y = fall_speed * (0.20 if is_snow_mode else 0.24)
+		var uv_scroll_x = (coriolis_drift + (wind_velocity.x * 1.5 if is_snow_mode else 0.0)) * (0.20 if is_snow_mode else 0.12)
 		rain_scroll_offset += Vector2(uv_scroll_x, uv_scroll_y) * effective_dt
 		rain_scroll_offset.x = fposmod(rain_scroll_offset.x, 100.0)
 		rain_scroll_offset.y = fposmod(rain_scroll_offset.y, 100.0)
