@@ -177,6 +177,7 @@ func _build_cloud_mesh() -> void:
 	if shader:
 		cloud_material = ShaderMaterial.new()
 		cloud_material.shader = shader
+		cloud_material.render_priority = 5 # Ensure clouds render on top of far water and terrain
 		cloud_mesh_instance.material_override = cloud_material
 
 	_generate_cloud_geometry()
@@ -263,6 +264,7 @@ func _setup_weather_emitters() -> void:
 		rain_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		rain_mat.albedo_color = Color(0.75, 0.88, 1.0, 0.55)
 		rain_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		rain_mat.render_priority = 10
 		rain_particles.material_override = rain_mat
 
 		var quad_mesh = QuadMesh.new()
@@ -290,6 +292,7 @@ func _setup_weather_emitters() -> void:
 		dust_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		dust_mat.albedo_color = Color(0.95, 0.90, 0.78, 0.4)
 		dust_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		dust_mat.render_priority = 10
 		dust_particles.material_override = dust_mat
 
 		var sphere_mesh = SphereMesh.new()
