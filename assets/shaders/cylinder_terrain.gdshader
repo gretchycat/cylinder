@@ -25,6 +25,7 @@ uniform float endcap_emission_factor : hint_range(0.0, 1.0) = 1.0;
 uniform sampler2D axial_light_lut : hint_default_white, filter_linear, repeat_disable;
 uniform float cylinder_length = 18000.0;
 uniform float axial_light_enabled = 1.0;
+uniform float cloud_coverage : hint_range(0.0, 1.0) = 0.55;
 
 varying vec3 world_pos;
 varying vec4 vert_attr; // r: elevation_ratio (0..1), g: terrain_type_id (0..8), b: is_end_cap (0..1)
@@ -208,6 +209,22 @@ void fragment() {
 		float fog_blend = clamp(air_scatter * air_density, 0.0, 1.0);
 		final_color = mix(final_color, target_air_color, fog_blend);
 	}
+
+	// Cloud overcast lighting attenuation and diffuse cool blue shift on terrain & end caps
+	float c_norm = clamp(cloud_coverage, 0.0, 1.0);
+	float weather_dim = 1.0;
+	if (c_norm <= 0.50) {
+		weather_dim = mix(1.0, 0.95, c_norm / 0.50);
+	} else {
+		weather_dim = mix(0.95, 0.25, (c_norm - 0.50) / 0.50);
+	}
+
+	// Diffuse overcast skylight is cooler / bluer than direct axial sunbeams
+	vec3 cool_overcast_tint = vec3(0.78, 0.88, 1.15);
+	float blue_shift = smoothstep(0.35, 1.0, c_norm) * 0.75;
+	vec3 weather_modulation = mix(vec3(1.0), cool_overcast_tint, blue_shift) * weather_dim;
+
+	final_color *= weather_modulation;
 
 	ALBEDO = final_color;
 	ROUGHNESS = roughness_val;

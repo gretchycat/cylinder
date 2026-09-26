@@ -363,6 +363,7 @@ func _create_terrain_material() -> ShaderMaterial:
 	mat.set_shader_parameter("air_density", air_density)
 	mat.set_shader_parameter("air_distance_min", air_distance_min)
 	mat.set_shader_parameter("air_distance_max", air_distance_max)
+	mat.set_shader_parameter("cloud_coverage", 0.55)
 	return mat
 
 func _create_water_material() -> ShaderMaterial:
@@ -379,6 +380,7 @@ func _create_water_material() -> ShaderMaterial:
 	mat.set_shader_parameter("air_density", air_density)
 	mat.set_shader_parameter("air_distance_min", air_distance_min)
 	mat.set_shader_parameter("air_distance_max", air_distance_max)
+	mat.set_shader_parameter("cloud_coverage", 0.55)
 	_update_water_material_textures(mat)
 	return mat
 

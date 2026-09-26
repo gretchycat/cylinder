@@ -1,8 +1,8 @@
 shader_type spatial;
-render_mode cull_back, blend_mix, depth_draw_never, diffuse_burley, specular_disabled;
+render_mode cull_disabled, blend_mix, depth_draw_never, diffuse_burley, specular_disabled;
 
 // Atmospheric Near Cloud Layer for O'Neill Cylinder (~1.25 km overhead)
-// Render Priority = 5 (Renders over far clouds P4, light bar, and far landscape)
+// Render Priority = 5 (Renders on top of far clouds P4, light bar, and far landscape)
 uniform float cylinder_radius = 4000.0;
 uniform float cylinder_length = 18000.0;
 uniform float cloud_altitude = 1250.0;    // Meters above ground (1.0 to 1.5 km)
@@ -78,6 +78,18 @@ void vertex() {
 }
 
 void fragment() {
+	// Near / Far hemispherical partition based on camera radial azimuth
+	vec2 cam_xy = CAMERA_POSITION_WORLD.xy;
+	float cam_len = length(cam_xy);
+	float side_dot = 1.0;
+	if (cam_len > 1.0) {
+		side_dot = dot(normalize(world_pos.xy), cam_xy / cam_len);
+	}
+	if (side_dot < -0.05) {
+		discard; // Near pass only renders near hemisphere (side_dot >= -0.05)
+	}
+	float seam_blend = smoothstep(-0.05, 0.05, side_dot);
+
 	float angle = atan(world_pos.y, world_pos.x);
 	if (angle < 0.0) {
 		angle += 6.28318530718;
@@ -107,7 +119,7 @@ void fragment() {
 	float threshold = (1.0 - (cloud_coverage * 0.95)) * 0.82;
 
 	float raw_alpha = smoothstep(threshold, threshold + cloud_softness, cloud_shape);
-	float density = raw_alpha * cloud_density * thickness_boost;
+	float density = raw_alpha * cloud_density * thickness_boost * seam_blend;
 
 	// End cap boundary fading (clearer air near ventilation injection collars)
 	float endcap_fade = 1.0 - smoothstep(cylinder_length * 0.45, cylinder_length * 0.50, abs(world_pos.z));

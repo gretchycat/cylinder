@@ -413,6 +413,14 @@ func _update_shader_parameters() -> void:
 			mat.set_shader_parameter("axial_light_enabled", 1.0)
 			mat.set_shader_parameter("global_light_intensity", light_int)
 
+	# Synchronize overcast cloud coverage to terrain, end caps, and water materials
+	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
+	if cylinder_world:
+		if cylinder_world.surface_material is ShaderMaterial:
+			cylinder_world.surface_material.set_shader_parameter("cloud_coverage", cloud_coverage)
+		if cylinder_world.water_material is ShaderMaterial:
+			cylinder_world.water_material.set_shader_parameter("cloud_coverage", cloud_coverage)
+
 func _sync_with_scene_lighting() -> void:
 	_update_shader_parameters()
 
