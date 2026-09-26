@@ -104,8 +104,8 @@ func _setup_visual_nodes() -> void:
 	particle_multimesh.instance_count = max_particles
 
 	var sphere_mesh = SphereMesh.new()
-	sphere_mesh.radius = 2.0
-	sphere_mesh.height = 4.0
+	sphere_mesh.radius = 0.3
+	sphere_mesh.height = 0.6
 	particle_multimesh.mesh = sphere_mesh
 
 	var p_mat = StandardMaterial3D.new()
@@ -125,7 +125,6 @@ func _setup_visual_nodes() -> void:
 
 func _physics_process(delta: float) -> void:
 	_update_physics_parameters()
-	_process_continuous_rain_stream(delta)
 	_integrate_particles(delta)
 	_update_visuals()
 
@@ -134,13 +133,6 @@ func _update_physics_parameters() -> void:
 	if weather:
 		spin_direction = int(weather.spin_direction)
 		base_gravity = weather.base_gravity
-		if weather.precipitation_rate_mmh > 0.05:
-			rain_stream_enabled = true
-			var intensity_norm = clampf(weather.precipitation_rate_mmh / 40.0, 0.05, 1.0)
-			rain_stream_rate = lerpf(15.0, 120.0, intensity_norm)
-			rain_stream_altitude = weather.cloud_altitude_m
-		else:
-			rain_stream_enabled = false
 
 func get_omega() -> float:
 	return sqrt(base_gravity / maxf(cylinder_radius, 1.0))
@@ -388,36 +380,9 @@ func _update_visuals() -> void:
 			var t: Transform3D
 			var fade = 1.0
 
-			if p.is_rain:
-				if p.has_landed:
-					# Landed rain drop puddle / splash ring (small realistic scale)
-					fade = clampf(1.0 - (p.landed_age / 0.55), 0.0, 1.0)
-					var splash_r = lerpf(0.06, 0.22, p.landed_age / 0.55)
-					t = Transform3D(Basis().scaled(Vector3(splash_r, 0.04, splash_r)), p.position)
-				else:
-					# In-flight falling rain droplet streak
-					var scale_factor = clampf(p.size * 0.08, 0.05, 0.35)
-					if p.velocity.length_squared() > 1.0:
-						var v_dir = p.velocity.normalized()
-						var v_up = Vector3.UP if abs(v_dir.y) < 0.9 else Vector3.FORWARD
-						var b = Basis.looking_at(v_dir, v_up)
-						var stretch = clampf(p.velocity.length() * 0.15, 1.2, 4.0)
-						b = b.scaled(Vector3(scale_factor, scale_factor, scale_factor * stretch))
-						t = Transform3D(b, p.position)
-					else:
-						t = Transform3D(Basis().scaled(Vector3.ONE * scale_factor), p.position)
-			else:
-				var scale_factor = p.size if p.is_active else p.size * 0.6
-				fade = clampf(1.0 - (p.age / trail_lifetime), 0.0, 1.0)
-				if p.velocity.length_squared() > 4.0:
-					var v_dir = p.velocity.normalized()
-					var v_up = Vector3.UP if abs(v_dir.y) < 0.9 else Vector3.FORWARD
-					var b = Basis.looking_at(v_dir, v_up)
-					var stretch = clampf(p.velocity.length() * 0.12, 1.0, 5.0)
-					b = b.scaled(Vector3(scale_factor, scale_factor, scale_factor * stretch))
-					t = Transform3D(b, p.position)
-				else:
-					t = Transform3D(Basis().scaled(Vector3.ONE * scale_factor), p.position)
+			var scale_factor = p.size if p.is_active else p.size * 0.6
+			fade = clampf(1.0 - (p.age / trail_lifetime), 0.0, 1.0)
+			t = Transform3D(Basis().scaled(Vector3.ONE * scale_factor), p.position)
 
 			particle_multimesh.set_instance_transform(i, t)
 			particle_multimesh.set_instance_color(i, Color(p.color.r, p.color.g, p.color.b, p.color.a * fade))
