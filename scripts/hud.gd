@@ -216,7 +216,7 @@ func _setup_control_panel() -> void:
 		fog_slider.max_value = 2.0
 		fog_slider.step = 0.01
 		var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator
-		var cur_fog = cylinder_world.air_density if cylinder_world else 0.65
+		var cur_fog = cylinder_world.air_density if cylinder_world else 1.25
 		fog_slider.value = cur_fog
 		fog_slider.value_changed.connect(_on_fog_changed)
 		if fog_val:

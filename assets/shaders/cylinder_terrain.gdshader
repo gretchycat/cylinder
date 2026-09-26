@@ -17,10 +17,10 @@ uniform float water_level = 20.0;
 uniform float max_elevation = 100.0;
 
 uniform vec4 air_color : source_color = vec4(0.52, 0.72, 0.88, 1.0);
-uniform float air_density : hint_range(0.0, 1.0) = 0.65;
+uniform float air_density : hint_range(0.0, 3.0) = 1.25;
 uniform float air_distance_min = 200.0;
 uniform float air_distance_max = 18000.0;
-uniform float endcap_emission_factor : hint_range(0.0,1.0) = 1.0;
+uniform float endcap_emission_factor : hint_range(0.0, 1.0) = 1.0;
 
 uniform sampler2D axial_light_lut : hint_default_white, filter_linear, repeat_disable;
 uniform float cylinder_length = 18000.0;
@@ -146,24 +146,6 @@ void fragment() {
 		final_color = bulkhead_base;
 		roughness_val = 0.75;
 		metallic_val = 0.05;
-
-		// Central Zero-G spaceport active docking ring and guidance lighting
-		if (r_axis < 350.0) {
-			float dock_circle = abs(r_axis - 220.0);
-			if (dock_circle < 16.0) {
-				final_color = vec3(0.98, 0.78, 0.22); // Golden aerospace guidance ring
-				emission_color += vec3(1.0, 0.82, 0.25) * 3.0;
-				roughness_val = 0.20;
-				metallic_val = 0.20;
-			}
-			float inner_ring = abs(r_axis - 100.0);
-			if (inner_ring < 12.0) {
-				final_color = vec3(0.20, 0.85, 0.95); // Cyan active docking beacon ring
-				emission_color += vec3(0.20, 0.88, 1.0) * 4.0;
-				roughness_val = 0.15;
-				metallic_val = 0.20;
-			}
-		}
 
 		// Architectural foundation transition into the cylinder floor perimeter apron
 		if (alpha > 0.90) {

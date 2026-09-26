@@ -471,7 +471,7 @@ func _init() -> void:
 
 	test_check(terr_air_col != null and terr_air_col.b > terr_air_col.r, "Terrain air color must have cyan/blue Rayleigh scattering tint")
 	test_check(terr_air_max == 18000.0, "Terrain air tint distance max must be 18 km")
-	test_check(terr_air_density > 0.0 and terr_air_density <= 1.0, "Terrain air density must be within (0, 1]")
+	test_check(terr_air_density > 0.0 and terr_air_density <= 3.0, "Terrain air density must be within (0, 3]")
 	test_check(water_air_col != null and water_air_max == 18000.0, "Water air tint must reach 18 km")
 
 	# Verify end cap mesh structure & hemispherical depth (4 km radius hemispheres on both ends = 26 km total)

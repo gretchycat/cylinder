@@ -85,7 +85,7 @@ const TerrainManagerClass = preload("res://scripts/terrain_manager.gd")
 		air_color = val
 		_update_atmosphere_parameters()
 
-@export var air_density: float = 0.65:
+@export var air_density: float = 1.25:
 	set(val):
 		air_density = clampf(val, 0.0, 3.0)
 		_update_atmosphere_parameters()
