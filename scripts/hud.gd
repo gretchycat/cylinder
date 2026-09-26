@@ -98,8 +98,6 @@ var clear_trajectories_btn: Button = null
 var scale_slider: HSlider = null
 var scale_val: Label = null
 var reset_scale_btn: Button = null
-var deploy_campfire_btn: Button = null
-var deploy_lamp_btn: Button = null
 
 var current_ui_scale: float = 1.0
 var is_scale_auto: bool = true
@@ -700,23 +698,6 @@ func _setup_system_tab(vbox: VBoxContainer) -> void:
 	var sep = HSeparator.new()
 	vbox.add_child(sep)
 
-	deploy_campfire_btn = Button.new()
-	deploy_campfire_btn.text = "Deploy Campfire at Feet (C)"
-	deploy_campfire_btn.focus_mode = Control.FOCUS_NONE
-	deploy_campfire_btn.add_theme_font_size_override("font_size", 11)
-	deploy_campfire_btn.pressed.connect(_on_deploy_campfire_pressed)
-	vbox.add_child(deploy_campfire_btn)
-
-	deploy_lamp_btn = Button.new()
-	deploy_lamp_btn.text = "Deploy Lamp Post at Feet (L)"
-	deploy_lamp_btn.focus_mode = Control.FOCUS_NONE
-	deploy_lamp_btn.add_theme_font_size_override("font_size", 11)
-	deploy_lamp_btn.pressed.connect(_on_deploy_lamp_pressed)
-	vbox.add_child(deploy_lamp_btn)
-
-	var stats_sep = HSeparator.new()
-	vbox.add_child(stats_sep)
-
 	system_fps_label = Label.new()
 	system_fps_label.name = "SystemPerformanceLabel"
 	system_fps_label.add_theme_font_size_override("font_size", 10)
@@ -1272,18 +1253,6 @@ func _on_view_north_cap_pressed() -> void:
 		north_cap_btn.release_focus()
 	if player and player.has_method("teleport_to_z"):
 		player.teleport_to_z(8500.0, true)
-
-func _on_deploy_campfire_pressed() -> void:
-	if deploy_campfire_btn:
-		deploy_campfire_btn.release_focus()
-	if player and player.has_method("deploy_campfire"):
-		player.deploy_campfire()
-
-func _on_deploy_lamp_pressed() -> void:
-	if deploy_lamp_btn:
-		deploy_lamp_btn.release_focus()
-	if player and player.has_method("deploy_lamp_post"):
-		player.deploy_lamp_post()
 
 func _on_launch_speed_changed(val: float) -> void:
 	launch_speed = val

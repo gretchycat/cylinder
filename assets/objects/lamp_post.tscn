@@ -1,0 +1,69 @@
+[gd_scene format=3 uid="uid://c0lampp0st0bj"]
+
+[sub_resource type="StandardMaterial3D" id="MetalMat"]
+albedo_color = Color(0.16, 0.18, 0.22, 1)
+metallic = 0.85
+roughness = 0.35
+
+[sub_resource type="CylinderMesh" id="PedestalMesh"]
+material = SubResource("MetalMat")
+top_radius = 0.32
+bottom_radius = 0.45
+height = 0.55
+
+[sub_resource type="CylinderMesh" id="PostMesh"]
+material = SubResource("MetalMat")
+top_radius = 0.09
+bottom_radius = 0.14
+height = 4.2
+
+[sub_resource type="BoxMesh" id="ArmMesh"]
+material = SubResource("MetalMat")
+size = Vector3(0.12, 0.12, 0.95)
+
+[sub_resource type="StandardMaterial3D" id="LanternMat"]
+albedo_color = Color(1, 0.96, 0.85, 1)
+emission_enabled = true
+emission = Color(1, 0.92, 0.78, 1)
+emission_energy_multiplier = 3.8
+
+[sub_resource type="CylinderMesh" id="LanternMesh"]
+material = SubResource("LanternMat")
+top_radius = 0.24
+bottom_radius = 0.18
+height = 0.55
+
+[sub_resource type="CylinderMesh" id="CapMesh"]
+material = SubResource("MetalMat")
+top_radius = 0.06
+bottom_radius = 0.34
+height = 0.22
+
+[node name="LampPost" type="Node3D"]
+
+[node name="Pedestal" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.27, 0)
+mesh = SubResource("PedestalMesh")
+
+[node name="Post" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.45, 0)
+mesh = SubResource("PostMesh")
+
+[node name="Arm" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.45, 0.35)
+mesh = SubResource("ArmMesh")
+
+[node name="LanternHead" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 0.7)
+mesh = SubResource("LanternMesh")
+
+[node name="Cap" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.6, 0.7)
+mesh = SubResource("CapMesh")
+
+[node name="LampLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.15, 0.7)
+light_color = Color(1, 0.92, 0.78, 1)
+light_energy = 4.8
+omni_range = 45.0
+omni_attenuation = 0.85

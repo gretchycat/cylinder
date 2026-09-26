@@ -160,7 +160,6 @@ Drag Anywhere Else : Rotate camera view
 Space : Jump / Ascend | Shift : Sprint
 F : Toggle 3D Fly Mode (Microgravity exploration)
 Q/E : Fly Down / Up
-C : Deploy Campfire | L : Deploy Lamp Post
 T / Wobble Button : Perturb Horizon Roll
 R : Reset to Spawn"
 horizontal_alignment = 2

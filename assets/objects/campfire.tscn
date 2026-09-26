@@ -1,0 +1,140 @@
+[gd_scene format=3 uid="uid://b0campf1re0bj"]
+
+[sub_resource type="StandardMaterial3D" id="StoneMat"]
+albedo_color = Color(0.2, 0.21, 0.24, 1)
+roughness = 0.92
+
+[sub_resource type="SphereMesh" id="StoneMesh"]
+material = SubResource("StoneMat")
+radius = 0.28
+height = 0.38
+
+[sub_resource type="StandardMaterial3D" id="CoalMat"]
+albedo_color = Color(0.12, 0.06, 0.04, 1)
+roughness = 0.95
+emission_enabled = true
+emission = Color(1, 0.25, 0.04, 1)
+emission_energy_multiplier = 2.4
+
+[sub_resource type="CylinderMesh" id="CoalMesh"]
+material = SubResource("CoalMat")
+top_radius = 0.95
+bottom_radius = 1.05
+height = 0.18
+
+[sub_resource type="StandardMaterial3D" id="LogMat"]
+albedo_color = Color(0.32, 0.2, 0.12, 1)
+roughness = 0.88
+
+[sub_resource type="CylinderMesh" id="LogMesh"]
+material = SubResource("LogMat")
+top_radius = 0.1
+bottom_radius = 0.13
+height = 1.25
+
+[sub_resource type="StandardMaterial3D" id="FlameCoreMat"]
+shading_mode = 0
+albedo_color = Color(1, 0.85, 0.25, 1)
+emission_enabled = true
+emission = Color(1, 0.55, 0.12, 1)
+emission_energy_multiplier = 4.5
+
+[sub_resource type="CylinderMesh" id="FlameCoreMesh"]
+material = SubResource("FlameCoreMat")
+top_radius = 0.02
+bottom_radius = 0.45
+height = 1.35
+
+[sub_resource type="StandardMaterial3D" id="FlameOuterMat"]
+shading_mode = 0
+albedo_color = Color(1, 0.4, 0.05, 1)
+emission_enabled = true
+emission = Color(1, 0.3, 0.02, 1)
+emission_energy_multiplier = 3.2
+
+[sub_resource type="CylinderMesh" id="FlameOuterMesh"]
+material = SubResource("FlameOuterMat")
+top_radius = 0.04
+bottom_radius = 0.65
+height = 1.1
+
+[node name="Campfire" type="Node3D"]
+
+[node name="StoneRing" type="Node3D" parent="."]
+
+[node name="Stone0" type="MeshInstance3D" parent="StoneRing"]
+transform = Transform3D(1.1, 0, 0, 0, 0.8, 0, 0, 0, 1.2, 1.3, 0.14, 0)
+mesh = SubResource("StoneMesh")
+
+[node name="Stone1" type="MeshInstance3D" parent="StoneRing"]
+transform = Transform3D(1.1, 0, 0, 0, 0.8, 0, 0, 0, 1.2, 1.05172, 0.14, 0.76412)
+mesh = SubResource("StoneMesh")
+
+[node name="Stone2" type="MeshInstance3D" parent="StoneRing"]
+transform = Transform3D(1.1, 0, 0, 0, 0.8, 0, 0, 0, 1.2, 0.40172, 0.14, 1.23637)
+mesh = SubResource("StoneMesh")
+
+[node name="Stone3" type="MeshInstance3D" parent="StoneRing"]
+transform = Transform3D(1.1, 0, 0, 0, 0.8, 0, 0, 0, 1.2, -0.40172, 0.14, 1.23637)
+mesh = SubResource("StoneMesh")
+
+[node name="Stone4" type="MeshInstance3D" parent="StoneRing"]
+transform = Transform3D(1.1, 0, 0, 0, 0.8, 0, 0, 0, 1.2, -1.05172, 0.14, 0.76412)
+mesh = SubResource("StoneMesh")
+
+[node name="Stone5" type="MeshInstance3D" parent="StoneRing"]
+transform = Transform3D(1.1, 0, 0, 0, 0.8, 0, 0, 0, 1.2, -1.3, 0.14, 0)
+mesh = SubResource("StoneMesh")
+
+[node name="Stone6" type="MeshInstance3D" parent="StoneRing"]
+transform = Transform3D(1.1, 0, 0, 0, 0.8, 0, 0, 0, 1.2, -1.05172, 0.14, -0.76412)
+mesh = SubResource("StoneMesh")
+
+[node name="Stone7" type="MeshInstance3D" parent="StoneRing"]
+transform = Transform3D(1.1, 0, 0, 0, 0.8, 0, 0, 0, 1.2, -0.40172, 0.14, -1.23637)
+mesh = SubResource("StoneMesh")
+
+[node name="Stone8" type="MeshInstance3D" parent="StoneRing"]
+transform = Transform3D(1.1, 0, 0, 0, 0.8, 0, 0, 0, 1.2, 0.40172, 0.14, -1.23637)
+mesh = SubResource("StoneMesh")
+
+[node name="Stone9" type="MeshInstance3D" parent="StoneRing"]
+transform = Transform3D(1.1, 0, 0, 0, 0.8, 0, 0, 0, 1.2, 1.05172, 0.14, -0.76412)
+mesh = SubResource("StoneMesh")
+
+[node name="Coals" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+mesh = SubResource("CoalMesh")
+
+[node name="Logs" type="Node3D" parent="."]
+
+[node name="Log0" type="MeshInstance3D" parent="Logs"]
+transform = Transform3D(0.939373, -0.007684, 0.342811, 0.117621, 0.945207, -0.301072, -0.322301, 0.326384, 0.888876, 0.4227, 0.35, 0.1543)
+mesh = SubResource("LogMesh")
+
+[node name="Log1" type="MeshInstance3D" parent="Logs"]
+transform = Transform3D(-0.342811, -0.007684, 0.939373, 0.301072, 0.945207, 0.117621, -0.888876, 0.326384, -0.322301, -0.1543, 0.35, 0.4227)
+mesh = SubResource("LogMesh")
+
+[node name="Log2" type="MeshInstance3D" parent="Logs"]
+transform = Transform3D(-0.939373, -0.007684, -0.342811, -0.117621, 0.945207, 0.301072, 0.322301, 0.326384, -0.888876, -0.4227, 0.35, -0.1543)
+mesh = SubResource("LogMesh")
+
+[node name="Log3" type="MeshInstance3D" parent="Logs"]
+transform = Transform3D(0.342811, -0.007684, -0.939373, -0.301072, 0.945207, -0.117621, 0.888876, 0.326384, 0.322301, 0.1543, 0.35, -0.4227)
+mesh = SubResource("LogMesh")
+
+[node name="FlameCore" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72, 0)
+mesh = SubResource("FlameCoreMesh")
+
+[node name="FlameOuter" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 0, 0.58, 0)
+mesh = SubResource("FlameOuterMesh")
+
+[node name="CampfireLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+light_color = Color(1, 0.55, 0.18, 1)
+light_energy = 5.5
+omni_range = 55.0
+omni_attenuation = 0.85
