@@ -22,6 +22,10 @@ enum WeatherType {
 @export var cylinder_radius: float = 4000.0
 @export var cylinder_length: float = 18000.0
 
+@export_category("Weather Trajectory & Autonomous Cycling")
+@export var auto_weather_cycle_enabled: bool = true
+@export var trajectory_speed_scale: float = 1.0
+
 @export_category("Atmospheric Thermodynamics & Heating")
 @export var endcap_air_temperature_c: float = 22.5: # Heated in cylinder walls, piped through end caps
 	set(val):
@@ -87,6 +91,99 @@ var coriolis_deflection_rate: float = 0.0
 var coriolis_rain_tilt_deg: float = 0.0
 var wind_velocity: Vector2 = Vector2.ZERO # (theta_rad_s, z_m_s)
 
+# Cloud Deck Coriolis Rotation & Axial Translation Accumulators
+var cloud_deck_rotation_theta: float = 0.0 # Radians
+var cloud_deck_translation_z: float = 0.0  # Meters
+var cloud_deck_angular_velocity: float = 0.0 # rad/s
+var cloud_deck_axial_velocity: float = 0.0 # m/s
+
+# Trajectory Sequencer State
+var current_trajectory_index: int = 0
+var trajectory_timer: float = 0.0
+var trajectory_duration: float = 45.0
+var trajectory_start_state: Dictionary = {}
+var trajectory_target_state: Dictionary = {}
+
+var weather_trajectories: Array[Dictionary] = [
+	{
+		"name": "Fair Cumulus Morning",
+		"duration": 45.0,
+		"cloud_coverage": 0.35,
+		"cloud_thickness_m": 200.0,
+		"precipitation_rate_mmh": 0.0,
+		"humidity_density_gm3": 12.0,
+		"dust_density": 0.12,
+		"endcap_air_temperature_c": 21.5,
+		"water_pipe_temperature_c": 23.0
+	},
+	{
+		"name": "Building Cumulus Deck",
+		"duration": 50.0,
+		"cloud_coverage": 0.62,
+		"cloud_thickness_m": 360.0,
+		"precipitation_rate_mmh": 0.0,
+		"humidity_density_gm3": 16.5,
+		"dust_density": 0.18,
+		"endcap_air_temperature_c": 23.0,
+		"water_pipe_temperature_c": 24.5
+	},
+	{
+		"name": "Overcast Coriolis Squall",
+		"duration": 55.0,
+		"cloud_coverage": 0.88,
+		"cloud_thickness_m": 520.0,
+		"precipitation_rate_mmh": 10.5,
+		"humidity_density_gm3": 21.5,
+		"dust_density": 0.14,
+		"endcap_air_temperature_c": 19.5,
+		"water_pipe_temperature_c": 22.5
+	},
+	{
+		"name": "Atmospheric Downpour",
+		"duration": 40.0,
+		"cloud_coverage": 0.98,
+		"cloud_thickness_m": 680.0,
+		"precipitation_rate_mmh": 28.0,
+		"humidity_density_gm3": 26.0,
+		"dust_density": 0.06,
+		"endcap_air_temperature_c": 18.0,
+		"water_pipe_temperature_c": 21.0
+	},
+	{
+		"name": "Post-Storm Clearing",
+		"duration": 45.0,
+		"cloud_coverage": 0.38,
+		"cloud_thickness_m": 210.0,
+		"precipitation_rate_mmh": 0.0,
+		"humidity_density_gm3": 12.5,
+		"dust_density": 0.08,
+		"endcap_air_temperature_c": 20.5,
+		"water_pipe_temperature_c": 22.5
+	},
+	{
+		"name": "Hazy Golden Afternoon",
+		"duration": 50.0,
+		"cloud_coverage": 0.18,
+		"cloud_thickness_m": 130.0,
+		"precipitation_rate_mmh": 0.0,
+		"humidity_density_gm3": 8.5,
+		"dust_density": 0.35,
+		"endcap_air_temperature_c": 25.0,
+		"water_pipe_temperature_c": 26.0
+	},
+	{
+		"name": "Clear Sky & Axis View",
+		"duration": 40.0,
+		"cloud_coverage": 0.05,
+		"cloud_thickness_m": 80.0,
+		"precipitation_rate_mmh": 0.0,
+		"humidity_density_gm3": 5.0,
+		"dust_density": 0.15,
+		"endcap_air_temperature_c": 22.0,
+		"water_pipe_temperature_c": 23.5
+	}
+]
+
 var far_cloud_mesh_instance: MeshInstance3D = null
 var near_cloud_mesh_instance: MeshInstance3D = null
 var far_cloud_material: ShaderMaterial = null
@@ -104,12 +201,98 @@ func _ready() -> void:
 	_build_cloud_mesh()
 	_setup_weather_emitters()
 	_sync_with_scene_lighting()
+	_init_weather_trajectory()
 
 func _process(delta: float) -> void:
+	_update_weather_trajectory(delta)
 	_update_dynamic_wind(delta)
+	_update_cloud_deck_coriolis_motion(delta)
 	_update_shader_parameters()
 	_update_particle_positions()
 	_emit_weather_telemetry()
+
+func _init_weather_trajectory() -> void:
+	if weather_trajectories.is_empty():
+		return
+	start_trajectory(0)
+
+func start_trajectory(index: int) -> void:
+	if weather_trajectories.is_empty():
+		return
+	current_trajectory_index = index % weather_trajectories.size()
+	var target = weather_trajectories[current_trajectory_index]
+	trajectory_duration = maxf(float(target.get("duration", 45.0)), 1.0)
+	trajectory_timer = 0.0
+	trajectory_start_state = {
+		"cloud_coverage": cloud_coverage,
+		"cloud_thickness_m": cloud_thickness_m,
+		"precipitation_rate_mmh": precipitation_rate_mmh,
+		"humidity_density_gm3": humidity_density_gm3,
+		"dust_density": dust_density,
+		"endcap_air_temperature_c": endcap_air_temperature_c,
+		"water_pipe_temperature_c": water_pipe_temperature_c
+	}
+	trajectory_target_state = target.duplicate()
+
+func advance_to_next_trajectory() -> void:
+	if weather_trajectories.is_empty():
+		return
+	var next_idx = (current_trajectory_index + 1) % weather_trajectories.size()
+	start_trajectory(next_idx)
+
+func set_auto_weather_cycle(enabled: bool) -> void:
+	auto_weather_cycle_enabled = enabled
+	if auto_weather_cycle_enabled and trajectory_start_state.is_empty():
+		start_trajectory(current_trajectory_index)
+
+func get_current_trajectory_name() -> String:
+	if weather_trajectories.is_empty() or current_trajectory_index < 0 or current_trajectory_index >= weather_trajectories.size():
+		return "Custom Atmosphere"
+	return String(weather_trajectories[current_trajectory_index].get("name", "Standard"))
+
+func get_current_trajectory_progress() -> float:
+	return clampf(trajectory_timer / maxf(trajectory_duration, 0.1), 0.0, 1.0)
+
+func get_current_trajectory_time_remaining() -> float:
+	return maxf(0.0, trajectory_duration - trajectory_timer)
+
+func _update_weather_trajectory(delta: float) -> void:
+	if not auto_weather_cycle_enabled or weather_trajectories.is_empty() or trajectory_start_state.is_empty():
+		return
+
+	trajectory_timer += delta * trajectory_speed_scale
+	var t = clampf(trajectory_timer / maxf(trajectory_duration, 0.1), 0.0, 1.0)
+	# Smooth S-curve (cosine interpolation for organic meteorological progression)
+	var s = 0.5 - 0.5 * cos(t * PI)
+
+	cloud_coverage = lerpf(float(trajectory_start_state.get("cloud_coverage", cloud_coverage)), float(trajectory_target_state.get("cloud_coverage", cloud_coverage)), s)
+	cloud_thickness_m = lerpf(float(trajectory_start_state.get("cloud_thickness_m", cloud_thickness_m)), float(trajectory_target_state.get("cloud_thickness_m", cloud_thickness_m)), s)
+	precipitation_rate_mmh = lerpf(float(trajectory_start_state.get("precipitation_rate_mmh", precipitation_rate_mmh)), float(trajectory_target_state.get("precipitation_rate_mmh", precipitation_rate_mmh)), s)
+	humidity_density_gm3 = lerpf(float(trajectory_start_state.get("humidity_density_gm3", humidity_density_gm3)), float(trajectory_target_state.get("humidity_density_gm3", humidity_density_gm3)), s)
+	dust_density = lerpf(float(trajectory_start_state.get("dust_density", dust_density)), float(trajectory_target_state.get("dust_density", dust_density)), s)
+	endcap_air_temperature_c = lerpf(float(trajectory_start_state.get("endcap_air_temperature_c", endcap_air_temperature_c)), float(trajectory_target_state.get("endcap_air_temperature_c", endcap_air_temperature_c)), s)
+	water_pipe_temperature_c = lerpf(float(trajectory_start_state.get("water_pipe_temperature_c", water_pipe_temperature_c)), float(trajectory_target_state.get("water_pipe_temperature_c", water_pipe_temperature_c)), s)
+
+	if trajectory_timer >= trajectory_duration:
+		advance_to_next_trajectory()
+
+func _update_cloud_deck_coriolis_motion(delta: float) -> void:
+	var spin_sign = float(spin_direction)
+	# Convective updrafts with v_r < 0 generate prograde Coriolis rotation:
+	# omega_cloud = 2 * Omega * (h / r_cloud) scaled for visual realism
+	var thickness_factor = clampf(cloud_thickness_m / 350.0, 0.7, 1.5)
+	cloud_deck_angular_velocity = (0.012 + 0.004 * thickness_factor) * spin_sign * (coriolis_omega_rad_s / 0.0487)
+	
+	# Axial ventilation drift between end caps
+	var time_val = Time.get_ticks_msec() * 0.001
+	cloud_deck_axial_velocity = 2.2 + sin(time_val * 0.15) * 0.8
+
+	cloud_deck_rotation_theta += cloud_deck_angular_velocity * delta
+	cloud_deck_translation_z += cloud_deck_axial_velocity * delta
+
+	cloud_deck_rotation_theta = fposmod(cloud_deck_rotation_theta, TAU)
+	var half_len = cylinder_length * 0.5
+	cloud_deck_translation_z = fposmod(cloud_deck_translation_z + half_len, cylinder_length) - half_len
 
 func _recalculate_coriolis_vectors() -> void:
 	coriolis_omega_rad_s = sqrt(base_gravity / maxf(cylinder_radius, 1.0))
@@ -149,25 +332,14 @@ func _recalculate_thermodynamics() -> void:
 	# Determine weather state from humidity density & relative humidity
 	if relative_humidity_pct < 45.0:
 		current_weather = WeatherType.CLEAR
-		if is_equal_approx(precipitation_rate_mmh, 0.0):
-			cloud_coverage = 0.15
 	elif relative_humidity_pct < 65.0:
 		current_weather = WeatherType.FAIR_CUMULUS
-		if is_equal_approx(precipitation_rate_mmh, 0.0):
-			cloud_coverage = 0.45
 	elif relative_humidity_pct < 85.0:
 		current_weather = WeatherType.SCATTERED_CLOUDS
-		if is_equal_approx(precipitation_rate_mmh, 0.0):
-			cloud_coverage = 0.70
 	elif relative_humidity_pct < 95.0:
 		current_weather = WeatherType.OVERCAST
-		if is_equal_approx(precipitation_rate_mmh, 0.0):
-			cloud_coverage = 0.88
 	else:
 		current_weather = WeatherType.RAIN_MIST
-		if is_equal_approx(precipitation_rate_mmh, 0.0):
-			cloud_coverage = 0.98
-			precipitation_rate_mmh = 12.0
 
 func _build_cloud_mesh() -> void:
 	if far_cloud_mesh_instance and is_instance_valid(far_cloud_mesh_instance):
@@ -422,6 +594,7 @@ func _update_shader_parameters() -> void:
 		mat.set_shader_parameter("dust_density", dust_density)
 		mat.set_shader_parameter("coriolis_spin_direction", float(spin_direction))
 		mat.set_shader_parameter("wind_velocity", wind_velocity)
+		mat.set_shader_parameter("cloud_deck_offset", Vector2(cloud_deck_rotation_theta, cloud_deck_translation_z))
 
 		if lut_tex:
 			mat.set_shader_parameter("axial_light_lut", lut_tex)
@@ -464,6 +637,12 @@ func get_telemetry() -> Dictionary:
 	var spin_name = "Counter-Clockwise (CCW)" if spin_direction == SpinDirection.COUNTER_CLOCKWISE else "Clockwise (CW)"
 	return {
 		"weather_state": get_weather_state_name(),
+		"auto_cycle_enabled": auto_weather_cycle_enabled,
+		"trajectory_index": current_trajectory_index,
+		"trajectory_name": get_current_trajectory_name(),
+		"trajectory_progress": get_current_trajectory_progress(),
+		"trajectory_time_remaining": get_current_trajectory_time_remaining(),
+		"trajectory_duration": trajectory_duration,
 		"humidity_density_gm3": humidity_density_gm3,
 		"relative_humidity_pct": relative_humidity_pct,
 		"dew_point_c": dew_point_c,
@@ -478,7 +657,11 @@ func get_telemetry() -> Dictionary:
 		"spin_direction_name": spin_name,
 		"coriolis_omega_rpm": (coriolis_omega_rad_s * 60.0) / TAU,
 		"coriolis_deflection_deg_s": rad_to_deg(coriolis_deflection_rate),
-		"coriolis_rain_tilt_deg": coriolis_rain_tilt_deg
+		"coriolis_rain_tilt_deg": coriolis_rain_tilt_deg,
+		"cloud_deck_rotation_deg": rad_to_deg(cloud_deck_rotation_theta),
+		"cloud_deck_drift_z": cloud_deck_translation_z,
+		"cloud_deck_omega_deg_s": rad_to_deg(cloud_deck_angular_velocity),
+		"cloud_deck_vz_ms": cloud_deck_axial_velocity
 	}
 
 func _emit_weather_telemetry() -> void:

@@ -27,6 +27,9 @@ var solar_badge_label: Label = null
 var weather_badge_label: Label = null
 
 # Tab 1: Weather & Atmosphere UI Controls
+var auto_cycle_btn: Button = null
+var next_trajectory_btn: Button = null
+var trajectory_status_label: Label = null
 var spin_direction_btn: Button = null
 var cloud_cover_slider: HSlider = null
 var cloud_cover_val: Label = null
@@ -283,6 +286,35 @@ func _setup_control_panel() -> void:
 	_update_solar_ui()
 
 func _setup_weather_tab(vbox: VBoxContainer) -> void:
+	var hbox_cycle = HBoxContainer.new()
+	vbox.add_child(hbox_cycle)
+
+	auto_cycle_btn = Button.new()
+	var is_auto = weather_system.auto_weather_cycle_enabled if weather_system else true
+	auto_cycle_btn.text = "Auto Weather Cycle: %s" % ("ON" if is_auto else "OFF")
+	auto_cycle_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	auto_cycle_btn.focus_mode = Control.FOCUS_NONE
+	auto_cycle_btn.add_theme_font_size_override("font_size", 11)
+	auto_cycle_btn.pressed.connect(_on_auto_cycle_toggle_pressed)
+	hbox_cycle.add_child(auto_cycle_btn)
+
+	next_trajectory_btn = Button.new()
+	next_trajectory_btn.text = "Advance ⏭️"
+	next_trajectory_btn.focus_mode = Control.FOCUS_NONE
+	next_trajectory_btn.add_theme_font_size_override("font_size", 11)
+	next_trajectory_btn.pressed.connect(_on_next_trajectory_pressed)
+	hbox_cycle.add_child(next_trajectory_btn)
+
+	trajectory_status_label = Label.new()
+	trajectory_status_label.name = "TrajectoryStatusLabel"
+	trajectory_status_label.add_theme_font_size_override("font_size", 10)
+	trajectory_status_label.text = "Forecast: Initializing Trajectory Cycle..."
+	trajectory_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(trajectory_status_label)
+
+	var sep_cycle = HSeparator.new()
+	vbox.add_child(sep_cycle)
+
 	spin_direction_btn = Button.new()
 	var is_ccw_init = (weather_system.spin_direction == WeatherSystem.SpinDirection.COUNTER_CLOCKWISE) if weather_system else true
 	spin_direction_btn.text = "Cylinder Spin: %s" % ("Counter-Clockwise (CCW)" if is_ccw_init else "Clockwise (CW)")
@@ -751,7 +783,93 @@ func _on_gravity_changed(value: float) -> void:
 	if gravity_val:
 		gravity_val.text = "-%.1f m/s²" % value
 
+func _on_auto_cycle_toggle_pressed() -> void:
+	if auto_cycle_btn:
+		auto_cycle_btn.release_focus()
+	if not weather_system:
+		return
+	weather_system.set_auto_weather_cycle(not weather_system.auto_weather_cycle_enabled)
+	if auto_cycle_btn:
+		auto_cycle_btn.text = "Auto Weather Cycle: %s" % ("ON" if weather_system.auto_weather_cycle_enabled else "OFF")
+
+func _on_next_trajectory_pressed() -> void:
+	if next_trajectory_btn:
+		next_trajectory_btn.release_focus()
+	if weather_system:
+		weather_system.advance_to_next_trajectory()
+
 func _on_weather_updated(data: Dictionary) -> void:
+	var traj_name = data.get("trajectory_name", "Fair Cumulus Morning")
+	var traj_rem = data.get("trajectory_time_remaining", 0.0)
+	var traj_prog = data.get("trajectory_progress", 0.0)
+	var is_auto = data.get("auto_cycle_enabled", true)
+	var cloud_rot_deg = data.get("cloud_deck_rotation_deg", 0.0)
+	var cloud_z_drift = data.get("cloud_deck_drift_z", 0.0)
+
+	if auto_cycle_btn:
+		auto_cycle_btn.text = "Auto Weather Cycle: %s" % ("ON" if is_auto else "OFF")
+
+	if trajectory_status_label:
+		if is_auto:
+			trajectory_status_label.text = "Forecast: %s [%d%% | %ds left]\nCloud Deck: Rot %.1f° | Drift Z: %+.0fm" % [
+				traj_name, int(round(traj_prog * 100.0)), int(round(traj_rem)), cloud_rot_deg, cloud_z_drift
+			]
+		else:
+			trajectory_status_label.text = "Forecast: Manual Control Mode\nCloud Deck: Rot %.1f° | Drift Z: %+.0fm" % [
+				cloud_rot_deg, cloud_z_drift
+			]
+
+	if is_auto:
+		var cov = float(data.get("cloud_coverage_pct", 55)) / 100.0
+		var thick = float(data.get("cloud_thickness_m", 250.0))
+		var precip = float(data.get("precipitation_rate_mmh", 0.0))
+		var dust = float(data.get("dust_density_pct", 20)) / 100.0
+		var hum = float(data.get("humidity_density_gm3", 14.5))
+		var hvac_t = float(data.get("endcap_air_temp_c", 22.5))
+		var water_t = float(data.get("water_pipe_temp_c", 24.0))
+
+		if cloud_cover_slider:
+			cloud_cover_slider.set_value_no_signal(cov)
+		if cloud_cover_val:
+			cloud_cover_val.text = "%d%%" % int(round(cov * 100.0))
+
+		if cloud_thickness_slider:
+			cloud_thickness_slider.set_value_no_signal(thick)
+		if cloud_thickness_val:
+			cloud_thickness_val.text = "%.0f m" % thick
+
+		if precipitation_slider:
+			precipitation_slider.set_value_no_signal(precip)
+		if precipitation_val:
+			if precip <= 0.05:
+				precipitation_val.text = "0.0 mm/hr [None]"
+			elif precip < 8.0:
+				precipitation_val.text = "%.1f mm/hr [Mist]" % precip
+			elif precip < 25.0:
+				precipitation_val.text = "%.1f mm/hr [Rain]" % precip
+			else:
+				precipitation_val.text = "%.1f mm/hr [Heavy]" % precip
+
+		if dust_slider:
+			dust_slider.set_value_no_signal(dust)
+		if dust_val:
+			dust_val.text = "%d%%" % int(round(dust * 100.0))
+
+		if humidity_slider:
+			humidity_slider.set_value_no_signal(hum)
+		if humidity_val:
+			humidity_val.text = "%.1f g/m³" % hum
+
+		if hvac_air_slider:
+			hvac_air_slider.set_value_no_signal(hvac_t)
+		if hvac_air_val:
+			hvac_air_val.text = "%.1f °C" % hvac_t
+
+		if water_pipe_slider:
+			water_pipe_slider.set_value_no_signal(water_t)
+		if water_pipe_val:
+			water_pipe_val.text = "%.1f °C" % water_t
+
 	if weather_badge_label:
 		var w_state = data.get("weather_state", "Fair Cumulus")
 		var rh = data.get("relative_humidity_pct", 68.0)
@@ -765,8 +883,9 @@ func _on_weather_updated(data: Dictionary) -> void:
 		if precip > 0.05:
 			precip_str = " | Rain: %.1f mm/h (Tilt: %+.1f°)" % [precip, data.get("coriolis_rain_tilt_deg", 0.0)]
 
-		weather_badge_label.text = "WEATHER: [%s] | Hum: %.1f g/m³ (RH: %d%%)%s\nCLOUDS: Deck @ %.2f km AGL (Thick: %.0fm) | Dust: %d%%" % [
-			w_state.to_upper(), density_gm3, int(round(rh)), precip_str, cloud_km, cloud_th, dust_pct
+		var cycle_tag = "[%s]" % traj_name if is_auto else "[MANUAL]"
+		weather_badge_label.text = "WEATHER: %s %s | Hum: %.1f g/m³ (RH: %d%%)%s\nCLOUDS: Deck @ %.2f km AGL (Thick: %.0fm) | Rot: %.1f° | Dust: %d%%" % [
+			cycle_tag, w_state.to_upper(), density_gm3, int(round(rh)), precip_str, cloud_km, cloud_th, cloud_rot_deg, dust_pct
 		]
 		match w_state:
 			"Clear Sky":

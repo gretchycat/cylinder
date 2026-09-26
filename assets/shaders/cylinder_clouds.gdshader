@@ -19,6 +19,7 @@ uniform float dust_density : hint_range(0.0, 1.0) = 0.20;
 uniform vec2 wind_velocity = vec2(0.003, 0.001); // (theta_speed, z_speed)
 uniform float coriolis_spin_direction = 1.0;      // +1.0 for CCW, -1.0 for CW
 uniform float time_scale = 0.05;
+uniform vec2 cloud_deck_offset = vec2(0.0, 0.0); // (theta_offset_radians, z_offset_meters)
 
 // Axial Lighting & Atmosphere synchronization
 uniform vec4 cloud_color_day : source_color = vec4(0.98, 0.98, 1.0, 1.0);
@@ -101,8 +102,8 @@ void fragment() {
 
 	// Coriolis spiral distortion: rising humid air turns prograde (+theta) or retrograde (-theta)
 	float coriolis_shear = -z_norm * 0.45 * coriolis_spin_direction;
-	float flow_theta = angle + coriolis_shear + (wind_velocity.x * coriolis_spin_direction) * (TIME * time_scale);
-	float flow_z = (z_dist * 0.0006) + wind_velocity.y * (TIME * time_scale);
+	float flow_theta = angle + coriolis_shear + cloud_deck_offset.x + (wind_velocity.x * coriolis_spin_direction) * (TIME * time_scale);
+	float flow_z = ((z_dist + cloud_deck_offset.y) * 0.0006) + wind_velocity.y * (TIME * time_scale);
 
 	// Scale UV with cloud thickness: thicker clouds have more billowing internal structures
 	float thickness_freq_mult = mix(0.85, 1.4, clamp(cloud_thickness / 400.0, 0.0, 2.0));
