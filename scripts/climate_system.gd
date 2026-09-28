@@ -225,36 +225,36 @@ static func generate_weather_state(profile: Dictionary, rng: RandomNumberGenerat
 		state_name = "Crisp Subpolar Clear" if is_snow else "Clear Solar Sky"
 
 	elif roll < (1.0 - rain_prob):
-		# 2. Fair / Scattered Cumulus Deck
+		# 2. Fair / Scattered Cumulus Deck (Thin, non-precipitating)
 		cloud_cov = clampf(mean_clouds + rng.randf_range(-0.15, 0.15), 0.25, 0.60)
-		cloud_thick = rng.randf_range(160.0, 320.0)
+		cloud_thick = rng.randf_range(160.0, 280.0)
 		precip_rate = 0.0
 		humidity = mean_humidity
 		dust = mean_dust * 0.85
 		state_name = "Scattered Flurries Deck" if is_snow else "Fair Cumulus Skies"
 
 	elif roll < (1.0 - rain_prob * 0.40):
-		# 3. Light Precipitation (Mist / Light Rain or Flurries)
+		# 3. Light Precipitation (Mist / Light Rain or Flurries - requires thickness >= 350m)
 		cloud_cov = clampf(mean_clouds + rng.randf_range(0.15, 0.30), 0.65, 0.90)
-		cloud_thick = rng.randf_range(300.0, 520.0)
+		cloud_thick = rng.randf_range(380.0, 520.0)
 		precip_rate = rng.randf_range(2.0, maxf(max_precip * 0.35, 4.0))
 		humidity = mean_humidity * 1.25
 		dust = mean_dust * 0.40
 		state_name = "Gentle Snowfall & Flurries" if is_snow else "Light Rain & Atmospheric Mist"
 
 	elif roll < (1.0 - rain_prob * 0.12):
-		# 4. Moderate Precipitation
+		# 4. Moderate Precipitation (Thick cloud deck)
 		cloud_cov = clampf(mean_clouds + rng.randf_range(0.25, 0.40), 0.82, 0.96)
-		cloud_thick = rng.randf_range(450.0, 680.0)
+		cloud_thick = rng.randf_range(500.0, 680.0)
 		precip_rate = rng.randf_range(maxf(max_precip * 0.35, 6.0), maxf(max_precip * 0.75, 14.0))
 		humidity = mean_humidity * 1.45
 		dust = mean_dust * 0.20
 		state_name = "Moderate Snow & Drifts" if is_snow else "Moderate Precipitation Deck"
 
 	else:
-		# 5. Heavy Storm / Blizzard / Downpour
+		# 5. Heavy Storm / Blizzard / Downpour (Dense vertical cloud deck)
 		cloud_cov = rng.randf_range(0.94, 1.0)
-		cloud_thick = rng.randf_range(600.0, 800.0)
+		cloud_thick = rng.randf_range(650.0, 800.0)
 		precip_rate = rng.randf_range(maxf(max_precip * 0.75, 16.0), max_precip)
 		humidity = mean_humidity * 1.65
 		dust = 0.04

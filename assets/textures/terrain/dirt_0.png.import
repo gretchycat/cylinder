@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cvnfg1o17q1mk"
-path="res://.godot/imported/dirt_to_grass.png-3deb88d37ad352a969895dbff49342c3.ctex"
+uid="uid://ducb03j075085"
+path="res://.godot/imported/dirt_0.png-6ae49176f7d0af249516ba851da0a985.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/terrain/dirt_to_grass.png"
-dest_files=["res://.godot/imported/dirt_to_grass.png-3deb88d37ad352a969895dbff49342c3.ctex"]
+source_file="res://assets/textures/terrain/dirt_0.png"
+dest_files=["res://.godot/imported/dirt_0.png-6ae49176f7d0af249516ba851da0a985.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

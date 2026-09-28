@@ -10,6 +10,8 @@ material = SubResource("MetalMat")
 top_radius = 0.15
 bottom_radius = 0.25
 height = 2.2
+radial_segments = 5
+rings = 1
 
 [sub_resource type="StandardMaterial3D" id="BeaconMat"]
 albedo_color = Color(0.3, 0.9, 1, 1)
@@ -21,6 +23,8 @@ emission_energy_multiplier = 4.0
 material = SubResource("BeaconMat")
 radius = 0.32
 height = 0.64
+radial_segments = 6
+rings = 3
 
 [node name="BeaconLantern" type="Node3D"]
 

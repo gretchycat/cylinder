@@ -5,12 +5,22 @@ extends Node3D
 enum ObjectType {
 	CAMPFIRE,
 	LAMP_POST,
-	BEACON_LANTERN
+	BEACON_LANTERN,
+	BRIDGE,
+	BONFIRE,
+	HOUSE,
+	TREE,
+	WINDMILL
 }
 
 const CAMPFIRE_SCENE: PackedScene = preload("res://assets/objects/campfire.tscn")
 const LAMP_POST_SCENE: PackedScene = preload("res://assets/objects/lamp_post.tscn")
 const BEACON_SCENE: PackedScene = preload("res://assets/objects/beacon_lantern.tscn")
+const BRIDGE_SCENE: PackedScene = preload("res://assets/objects/bridge.tscn")
+const BONFIRE_SCENE: PackedScene = preload("res://assets/objects/bonfire.tscn")
+const HOUSE_SCENE: PackedScene = preload("res://assets/objects/house.tscn")
+const TREE_SCENE: PackedScene = preload("res://assets/objects/tree.tscn")
+const WINDMILL_SCENE: PackedScene = preload("res://assets/objects/windmill.tscn")
 
 @export var object_type: ObjectType = ObjectType.CAMPFIRE:
 	set(val):
@@ -40,6 +50,7 @@ const BEACON_SCENE: PackedScene = preload("res://assets/objects/beacon_lantern.t
 @export var enable_flicker: bool = true
 
 var omni_light: OmniLight3D = null
+var bridge_lights: Array[OmniLight3D] = []
 var flame_nodes: Array[Node3D] = []
 var flame_mats: Array[StandardMaterial3D] = []
 var base_energy: float = 5.5
@@ -47,6 +58,7 @@ var flicker_time: float = 0.0
 var rng_offset: float = 0.0
 
 func _ready() -> void:
+	add_to_group("surface_light_objects")
 	rng_offset = randf_range(0.0, 100.0)
 	flicker_time = rng_offset
 	rebuild_object()
@@ -57,6 +69,7 @@ func rebuild_object() -> void:
 
 	flame_nodes.clear()
 	flame_mats.clear()
+	bridge_lights.clear()
 	omni_light = null
 
 	var instance: Node3D = null
@@ -70,6 +83,21 @@ func rebuild_object() -> void:
 		ObjectType.BEACON_LANTERN:
 			if BEACON_SCENE:
 				instance = BEACON_SCENE.instantiate()
+		ObjectType.BRIDGE:
+			if BRIDGE_SCENE:
+				instance = BRIDGE_SCENE.instantiate()
+		ObjectType.BONFIRE:
+			if BONFIRE_SCENE:
+				instance = BONFIRE_SCENE.instantiate()
+		ObjectType.HOUSE:
+			if HOUSE_SCENE:
+				instance = HOUSE_SCENE.instantiate()
+		ObjectType.TREE:
+			if TREE_SCENE:
+				instance = TREE_SCENE.instantiate()
+		ObjectType.WINDMILL:
+			if WINDMILL_SCENE:
+				instance = WINDMILL_SCENE.instantiate()
 
 	if not instance:
 		return
@@ -87,11 +115,62 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 			var coals = instance.get_node_or_null("Coals") as MeshInstance3D
 			var flame_core = instance.get_node_or_null("FlameCore") as MeshInstance3D
 			var flame_outer = instance.get_node_or_null("FlameOuter") as MeshInstance3D
+			var flame_card0 = instance.get_node_or_null("FlameCard0") as MeshInstance3D
+			var flame_card1 = instance.get_node_or_null("FlameCard1") as MeshInstance3D
+			var flame_card2 = instance.get_node_or_null("FlameCard2") as MeshInstance3D
+			var flame_card3 = instance.get_node_or_null("FlameCard3") as MeshInstance3D
 
 			if flame_core:
 				flame_nodes.append(flame_core)
 			if flame_outer:
 				flame_nodes.append(flame_outer)
+			if flame_card0:
+				flame_nodes.append(flame_card0)
+			if flame_card1:
+				flame_nodes.append(flame_card1)
+			if flame_card2:
+				flame_nodes.append(flame_card2)
+			if flame_card3:
+				flame_nodes.append(flame_card3)
+
+			if coals and coals.mesh and coals.mesh.material:
+				var m = coals.mesh.material.duplicate() as StandardMaterial3D
+				coals.material_override = m
+				flame_mats.append(m)
+			if flame_core and flame_core.mesh and flame_core.mesh.material:
+				var m = flame_core.mesh.material.duplicate() as StandardMaterial3D
+				flame_core.material_override = m
+				flame_mats.append(m)
+			if flame_outer and flame_outer.mesh and flame_outer.mesh.material:
+				var m = flame_outer.mesh.material.duplicate() as StandardMaterial3D
+				flame_outer.material_override = m
+				flame_mats.append(m)
+
+		ObjectType.BONFIRE:
+			if light_color == Color(1.0, 0.92, 0.78) or light_color == Color.WHITE:
+				light_color = Color(1.0, 0.48, 0.12)
+
+			omni_light = instance.get_node_or_null("BonfireLight") as OmniLight3D
+			var coals = instance.get_node_or_null("Coals") as MeshInstance3D
+			var flame_core = instance.get_node_or_null("FlameCore") as MeshInstance3D
+			var flame_outer = instance.get_node_or_null("FlameOuter") as MeshInstance3D
+			var flame_card0 = instance.get_node_or_null("FlameCard0") as MeshInstance3D
+			var flame_card1 = instance.get_node_or_null("FlameCard1") as MeshInstance3D
+			var flame_card2 = instance.get_node_or_null("FlameCard2") as MeshInstance3D
+			var flame_card3 = instance.get_node_or_null("FlameCard3") as MeshInstance3D
+
+			if flame_core:
+				flame_nodes.append(flame_core)
+			if flame_outer:
+				flame_nodes.append(flame_outer)
+			if flame_card0:
+				flame_nodes.append(flame_card0)
+			if flame_card1:
+				flame_nodes.append(flame_card1)
+			if flame_card2:
+				flame_nodes.append(flame_card2)
+			if flame_card3:
+				flame_nodes.append(flame_card3)
 
 			if coals and coals.mesh and coals.mesh.material:
 				var m = coals.mesh.material.duplicate() as StandardMaterial3D
@@ -128,6 +207,22 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 				beacon.material_override = m
 				flame_mats.append(m)
 
+		ObjectType.BRIDGE:
+			var l_n = instance.get_node_or_null("BridgeLightNorth") as OmniLight3D
+			var l_s = instance.get_node_or_null("BridgeLightSouth") as OmniLight3D
+			if l_n: bridge_lights.append(l_n)
+			if l_s: bridge_lights.append(l_s)
+			if l_n: omni_light = l_n
+
+		ObjectType.HOUSE:
+			omni_light = instance.get_node_or_null("WindowLight") as OmniLight3D
+
+		ObjectType.WINDMILL:
+			omni_light = instance.get_node_or_null("LanternLight") as OmniLight3D
+
+		ObjectType.TREE:
+			enable_flicker = false
+
 	if omni_light:
 		if light_energy > 0.0:
 			base_energy = light_energy
@@ -138,39 +233,87 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 		if light_range > 0.0:
 			omni_light.omni_range = light_range
 
+	for bl in bridge_lights:
+		bl.light_color = light_color
+		bl.light_energy = base_energy
+
+static var global_active_light_distance: float = 3500.0
+var distance_check_timer: float = 0.0
+var is_near_camera: bool = true
+
 func _process(delta: float) -> void:
 	if not enable_flicker or not omni_light:
+		return
+
+	# Dynamic distance culling: disable distant OmniLight3Ds from Godot's light clusterer
+	distance_check_timer += delta
+	if distance_check_timer > 0.35:
+		distance_check_timer = 0.0
+		var vp = get_viewport()
+		var cam = vp.get_camera_3d() if is_inside_tree() and vp else null
+		if cam:
+			var d_sq = global_position.distance_squared_to(cam.global_position)
+			var max_dist = global_active_light_distance
+			var should_be_active = (max_dist > 0.0) and (d_sq < (max_dist * max_dist))
+			if is_near_camera != should_be_active:
+				is_near_camera = should_be_active
+				if omni_light:
+					omni_light.visible = is_near_camera
+				for bl in bridge_lights:
+					bl.visible = is_near_camera
+
+	if not is_near_camera:
 		return
 
 	flicker_time += delta
 
 	match object_type:
 		ObjectType.CAMPFIRE:
-			# Multi-octave organic fire flickering
 			var flick = sin(flicker_time * 16.7) * 0.26 + sin(flicker_time * 31.3) * 0.17 + sin(flicker_time * 7.9) * 0.11
 			var energy = base_energy * (1.0 + flick * 0.35)
 			omni_light.light_energy = max(energy, 0.2)
 
-			# Modulate flame core emission & subtle scale breathing
-			if flame_mats.size() > 0:
-				for mat in flame_mats:
-					mat.emission_energy_multiplier = 3.5 * (1.0 + flick * 0.30)
-			if flame_nodes.size() > 0:
-				var scale_y = 1.0 + flick * 0.14
-				var scale_xz = 1.0 - flick * 0.07
-				flame_nodes[0].scale = Vector3(scale_xz, scale_y, scale_xz)
+			var light_jitter_x = sin(flicker_time * 19.3) * 0.04
+			var light_jitter_z = cos(flicker_time * 23.7) * 0.04
+			omni_light.position = Vector3(light_jitter_x, 0.85 + flick * 0.03, light_jitter_z)
+
+			for i in range(flame_nodes.size()):
+				var f_node = flame_nodes[i]
+				var phase = flicker_time * 14.0 + float(i) * 1.57
+				var scale_y = 1.0 + sin(phase) * 0.12 + flick * 0.10
+				var scale_xz = 1.0 - sin(phase) * 0.06 - flick * 0.05
+				f_node.scale = Vector3(scale_xz, scale_y, scale_xz)
+
+		ObjectType.BONFIRE:
+			var flick = sin(flicker_time * 14.2) * 0.28 + sin(flicker_time * 27.5) * 0.18 + sin(flicker_time * 6.8) * 0.12
+			var energy = base_energy * (1.0 + flick * 0.38)
+			omni_light.light_energy = max(energy, 0.5)
+
+			var light_jitter_x = sin(flicker_time * 16.1) * 0.08
+			var light_jitter_z = cos(flicker_time * 20.4) * 0.08
+			omni_light.position = Vector3(light_jitter_x, 2.0 + flick * 0.08, light_jitter_z)
+
+			for i in range(flame_nodes.size()):
+				var f_node = flame_nodes[i]
+				var phase = flicker_time * 12.0 + float(i) * 1.57
+				var scale_y = 1.0 + sin(phase) * 0.14 + flick * 0.12
+				var scale_xz = 1.0 - sin(phase) * 0.07 - flick * 0.06
+				f_node.scale = Vector3(scale_xz, scale_y, scale_xz)
 
 		ObjectType.LAMP_POST:
-			# Subtle warm electric/gas lantern breathing
 			var hum = sin(flicker_time * 6.5) * 0.06
 			omni_light.light_energy = base_energy * (1.0 + hum)
 
 		ObjectType.BEACON_LANTERN:
-			# Rhythmic navigation beacon pulsing
 			var pulse = (sin(flicker_time * 3.5) + 1.0) * 0.5
 			omni_light.light_energy = lerpf(base_energy * 0.4, base_energy * 1.35, pulse)
 			if flame_mats.size() > 0:
 				flame_mats[0].emission_energy_multiplier = lerpf(1.5, 5.0, pulse)
+
+		ObjectType.BRIDGE:
+			var hum = sin(flicker_time * 4.0) * 0.05
+			for bl in bridge_lights:
+				bl.light_energy = base_energy * (1.0 + hum)
 
 # Static factory to create and orient a surface light object anywhere on the curved cylinder floor
 static func create_on_cylinder(
@@ -180,7 +323,10 @@ static func create_on_cylinder(
 	cylinder_radius: float,
 	elevation: float = 0.0,
 	custom_color: Color = Color.WHITE,
-	custom_range: float = -1.0
+	custom_range: float = -1.0,
+	yaw_angle_rad: float = 0.0,
+	custom_normal: Vector3 = Vector3.ZERO,
+	custom_pos: Vector3 = Vector3.ZERO
 ) -> SurfaceLightObject:
 	var obj = SurfaceLightObject.new()
 	obj.object_type = type
@@ -190,18 +336,23 @@ static func create_on_cylinder(
 	if custom_range > 0.0:
 		obj.light_range = custom_range
 
-	var surface_r = cylinder_radius - elevation
-	var pos = Vector3(surface_r * cos(theta), surface_r * sin(theta), z)
+	var pos = custom_pos
+	if pos == Vector3.ZERO:
+		var surface_r = cylinder_radius - elevation
+		pos = Vector3(surface_r * cos(theta), surface_r * sin(theta), z)
 
 	# Local coordinate basis on the curved inner surface:
-	# Y points inward towards the rotational axis (Local Up)
-	# Z points down the cylinder axis (+Z)
-	# X is the circumferential tangent
-	var up = Vector3(-cos(theta), -sin(theta), 0.0)
+	# Y points inward towards the rotational axis (Local Up) or terrain surface normal
+	var up = custom_normal if custom_normal != Vector3.ZERO else Vector3(-cos(theta), -sin(theta), 0.0)
 	var forward = Vector3(0.0, 0.0, -1.0)
-	var back = -forward
-	var right = up.cross(back).normalized()
-	var basis = Basis(right, up, back).orthonormalized()
+	if absf(up.dot(forward)) > 0.90:
+		forward = Vector3(1.0, 0.0, 0.0)
+	var right = up.cross(forward).normalized()
+	var forward_adj = right.cross(up).normalized()
+	var basis = Basis(right, up, -forward_adj).orthonormalized()
+
+	if not is_zero_approx(yaw_angle_rad):
+		basis = basis.rotated(up, yaw_angle_rad)
 
 	obj.position = pos
 	obj.basis = basis

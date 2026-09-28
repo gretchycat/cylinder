@@ -125,22 +125,22 @@ static func get_solar_lighting_at_elevation(elevation_deg: float, is_morning: bo
 	elif elevation_deg >= -8.0:
 		# Nautical Twilight down to night threshold
 		var t = smooth_step(-8.0, -6.0, elevation_deg)
-		var night_dark = Color(0.15, 0.15, 0.35)
+		var night_dark = Color(0.16, 0.20, 0.32)
 		var twilight_deep = Color(0.40, 0.35, 0.68) if is_morning else Color(0.65, 0.30, 0.65)
 		sun_col = night_dark.lerp(twilight_deep, t)
-		intensity = lerpf(0.0, 0.15, t)
+		intensity = lerpf(0.12, 0.20, t)
 
-		var fog_night = Color(0.228, 0.194, 0.443, 1.0)
+		var fog_night = Color(0.08, 0.10, 0.17, 1.0)
 		var fog_twilight = Color(0.28, 0.22, 0.50, 1.0)
 		fog_col = fog_night.lerp(fog_twilight, t)
 		phase = "Nautical Twilight (Dawn)" if is_morning else "Nautical Twilight (Dusk)"
 
 	else:
-		# Darkest Night floor: 0.0 (Pitch Black)
-		sun_col = Color(0.15, 0.15, 0.35)
-		intensity = 0.0
-		fog_col = Color(0.228, 0.194, 0.443, 1.0)
-		phase = "Night (Pitch Black)"
+		# Midnight / Deepest Night floor: luminous nocturnal starlight illumination
+		sun_col = Color(0.16, 0.20, 0.32)
+		intensity = 0.12
+		fog_col = Color(0.08, 0.10, 0.17, 1.0)
+		phase = "Night (Midnight Starlight)"
 
 	return {
 		"sun_color": sun_col,

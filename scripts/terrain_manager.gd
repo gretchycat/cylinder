@@ -6,11 +6,10 @@ enum TerrainType {
 	SAND = 1,
 	DIRT = 2,
 	GRASS = 3,
-	CONCRETE = 4,
-	ROAD = 5,
-	SAND_TO_GRASS = 6,
-	DIRT_TO_GRASS = 7,
-	ROAD_EDGE = 8
+	FARMLAND = 4,
+	ROCKS = 5,
+	CONCRETE = 6,
+	ROAD = 7
 }
 
 const PALETTE: Dictionary = {
@@ -18,11 +17,22 @@ const PALETTE: Dictionary = {
 	TerrainType.SAND: Color(0.882, 0.745, 0.490, 1.0),       # #E1BE7D Beach Gold
 	TerrainType.DIRT: Color(0.451, 0.306, 0.188, 1.0),       # #734E30 Earth Brown
 	TerrainType.GRASS: Color(0.235, 0.549, 0.165, 1.0),      # #3C8C2A Meadow Green
-	TerrainType.CONCRETE: Color(0.608, 0.627, 0.659, 1.0),   # #9BA0A8 Light Grey
+	TerrainType.FARMLAND: Color(0.647, 0.471, 0.196, 1.0),   # #A57832 Ochre Furrowed Soil
+	TerrainType.ROCKS: Color(0.373, 0.392, 0.424, 1.0),      # #5F646C Slate Mountain Rock
+	TerrainType.CONCRETE: Color(0.686, 0.706, 0.737, 1.0),   # #AFB4BC Light Grey
 	TerrainType.ROAD: Color(0.165, 0.173, 0.188, 1.0),       # #2A2C30 Asphalt
-	TerrainType.SAND_TO_GRASS: Color(0.569, 0.647, 0.333, 1.0), # #91A555 Transition
-	TerrainType.DIRT_TO_GRASS: Color(0.353, 0.431, 0.176, 1.0), # #5A6E2D Transition
-	TerrainType.ROAD_EDGE: Color(0.314, 0.333, 0.361, 1.0),     # #50555C Shoulder
+}
+
+## Connection and edge fading properties per terrain type
+const TERRAIN_RULES: Dictionary = {
+	TerrainType.WATER:    {"name": "Water",    "is_artificial": false, "fade_width": 0.35, "roughness": 0.20, "metallic": 0.05},
+	TerrainType.SAND:     {"name": "Sand",     "is_artificial": false, "fade_width": 0.40, "roughness": 0.90, "metallic": 0.02},
+	TerrainType.DIRT:     {"name": "Dirt",     "is_artificial": false, "fade_width": 0.42, "roughness": 0.88, "metallic": 0.02},
+	TerrainType.GRASS:    {"name": "Grass",    "is_artificial": false, "fade_width": 0.45, "roughness": 0.82, "metallic": 0.02},
+	TerrainType.FARMLAND: {"name": "Farmland", "is_artificial": true,  "fade_width": 0.04, "roughness": 0.85, "metallic": 0.02},
+	TerrainType.ROCKS:    {"name": "Rocks",    "is_artificial": false, "fade_width": 0.38, "roughness": 0.92, "metallic": 0.05},
+	TerrainType.CONCRETE: {"name": "Concrete", "is_artificial": true,  "fade_width": 0.01, "roughness": 0.45, "metallic": 0.15},
+	TerrainType.ROAD:     {"name": "Road",     "is_artificial": true,  "fade_width": 0.01, "roughness": 0.38, "metallic": 0.12},
 }
 
 var grid_u: int = 512   # Grid divisions around circumference (angle theta)
@@ -41,8 +51,9 @@ func _init(u_divisions: int = 512, v_divisions: int = 256, variance: float = 100
 	elevation_variance = variance
 	water_level = water_h
 
-	# Attempt to load from default PNG maps if present, otherwise generate procedurally
-	var loaded = load_maps_from_png("res://assets/maps/elevation_map.png", "res://assets/maps/terrain_map.png")
+	var loaded = load_maps_from_png("res://assets/maps/default/elevation_map.png", "res://assets/maps/default/terrain_map.png")
+	if not loaded:
+		loaded = load_maps_from_png("res://assets/maps/elevation_map.png", "res://assets/maps/terrain_map.png")
 	if not loaded:
 		generate_default_rpg_map()
 
@@ -52,24 +63,22 @@ func load_maps_from_png(elev_path: String, terrain_path: String) -> bool:
 	var ok_terr = load_terrain_from_png(terrain_path)
 	return ok_elev and ok_terr
 
-## Load elevation map from PNG image (8-bit grayscale or RGB luminance: 0..255 maps to 0..elevation_variance meters)
+## Load elevation map from PNG image (8-bit grayscale: 0..255 maps to 0..elevation_variance meters)
 func load_elevation_from_png(path: String) -> bool:
 	var img = _load_image_from_file_or_buffer(path)
 	if not img:
 		return false
 
+	img.convert(Image.FORMAT_L8)
 	grid_u = img.get_width()
 	grid_v = img.get_height()
 	var total_cells = grid_u * grid_v
 	elevation_data.resize(total_cells)
+	var raw_bytes = img.get_data()
+	var factor = elevation_variance / 255.0
 
-	for y in range(grid_v):
-		for x in range(grid_u):
-			var col = img.get_pixel(x, y)
-			# Normalize luminance/red channel 0.0..1.0 into 0.0..elevation_variance m
-			var val_norm = col.r
-			var elev = clampf(val_norm * elevation_variance, 0.0, elevation_variance)
-			elevation_data[y * grid_u + x] = elev
+	for i in range(total_cells):
+		elevation_data[i] = float(raw_bytes[i]) * factor
 
 	return true
 
@@ -79,16 +88,41 @@ func load_terrain_from_png(path: String) -> bool:
 	if not img:
 		return false
 
+	img.convert(Image.FORMAT_RGBA8)
 	grid_u = img.get_width()
 	grid_v = img.get_height()
 	var total_cells = grid_u * grid_v
 	terrain_data.resize(total_cells)
+	var raw_bytes = img.get_data()
 
-	for y in range(grid_v):
-		for x in range(grid_u):
-			var col = img.get_pixel(x, y)
-			var t_type = _color_to_terrain_type(col)
-			terrain_data[y * grid_u + x] = t_type
+	var pal_entries: Array = []
+	for t_id in PALETTE:
+		var c: Color = PALETTE[t_id]
+		pal_entries.append({
+			"type": t_id,
+			"r": int(round(c.r * 255.0)),
+			"g": int(round(c.g * 255.0)),
+			"b": int(round(c.b * 255.0))
+		})
+
+	for i in range(total_cells):
+		var p_idx = i * 4
+		var r = int(raw_bytes[p_idx])
+		var g = int(raw_bytes[p_idx + 1])
+		var b = int(raw_bytes[p_idx + 2])
+
+		var best_dist = 999999
+		var best_type = TerrainType.GRASS
+		for entry in pal_entries:
+			var dr = r - entry.r
+			var dg = g - entry.g
+			var db = b - entry.b
+			var dist_sq = dr * dr + dg * dg + db * db
+			if dist_sq < best_dist:
+				best_dist = dist_sq
+				best_type = entry.type
+
+		terrain_data[i] = best_type
 
 	return true
 
@@ -130,9 +164,17 @@ func create_terrain_image() -> Image:
 			img.set_pixel(x, y, col)
 	return img
 
+## Export terrain type as single-channel byte texture (R8) for direct shader sampling
+func create_terrain_type_id_image() -> Image:
+	var img = Image.create(grid_u, grid_v, false, Image.FORMAT_R8)
+	for y in range(grid_v):
+		for x in range(grid_u):
+			var t_type = float(terrain_data[y * grid_u + x]) / 255.0
+			img.set_pixel(x, y, Color(t_type, 0.0, 0.0, 1.0))
+	return img
+
 ## Convert an RGB pixel color to the closest TerrainType
 func _color_to_terrain_type(col: Color) -> int:
-	# 1. Direct palette color matching (Euclidean RGB distance)
 	var best_dist: float = 999999.0
 	var best_type: int = TerrainType.GRASS
 
@@ -151,7 +193,6 @@ func _color_to_terrain_type(col: Color) -> int:
 ## Robust image loader supporting res://, buffers, and exported packages
 func _load_image_from_file_or_buffer(path: String) -> Image:
 	var img = Image.new()
-	# Check FileAccess directly
 	if FileAccess.file_exists(path):
 		var file = FileAccess.open(path, FileAccess.READ)
 		if file:
@@ -169,7 +210,6 @@ func _load_image_from_file_or_buffer(path: String) -> Image:
 			if err == OK:
 				return img
 
-	# Fallback to ResourceLoader
 	if ResourceLoader.exists(path):
 		var res = ResourceLoader.load(path)
 		if res is Texture2D:
@@ -198,7 +238,7 @@ func generate_default_rpg_map() -> void:
 			var h4 = sin(angle * 14.0 - z_norm * 6.0) * 0.05
 			var raw_height = (h1 + h2 + h3 + h4 + 0.52)
 
-			# 2. Water river channel & lake (elevation depressed below 20 m)
+			# 2. Water river channel & lake
 			var river_center_angle = 0.5 * PI + sin(z_norm * PI * 2.0) * 0.55
 			var angle_dist_river = absf(wrapf(angle - river_center_angle, -PI, PI))
 			var lake_dist_sq = ((angle - 0.5 * PI) ** 2 + (z_norm * 2.5) ** 2) / 0.35
@@ -210,28 +250,28 @@ func generate_default_rpg_map() -> void:
 
 			var elevation = raw_height * elevation_variance
 			if river_factor > 0.0:
-				var target_seabed = lerpf(19.0, 5.0, river_factor) # 5m to 19m depth under 20m water
+				var target_seabed = lerpf(17.5, 3.5, river_factor)
 				elevation = lerpf(elevation, target_seabed, river_factor)
 
-			# End Cap Awareness: near cylinder ends (|z_norm| -> 1.0)
+			# End Cap Awareness
 			var dist_to_cap_norm = 1.0 - absf(z_norm)
 			var is_bulkhead_apron = dist_to_cap_norm < 0.015
 			var is_perimeter_ring_road = absf(dist_to_cap_norm - 0.035) < 0.008
 
-			# Coastal seawall containment at end cap interface
 			if dist_to_cap_norm < 0.055:
 				var seawall_blend = maxf(0.0, 1.0 - dist_to_cap_norm / 0.055)
 				elevation = elevation * (1.0 - seawall_blend) + maxf(elevation, 28.0) * seawall_blend
 
 			elevation = clampf(elevation, 0.0, elevation_variance)
 
-			# 3. Determine Terrain Type
+			# 3. Determine Pure Terrain Type
 			var angle_dist_road = absf(wrapf(angle - 0.0, -PI, PI))
 			var is_axial_road = angle_dist_road < 0.035
 			var is_ring_road = absf(z_norm - 0.5) < 0.025 or absf(z_norm + 0.5) < 0.025
 			var is_road = (is_axial_road or is_ring_road or is_perimeter_ring_road) and elevation >= (water_level - 1.0)
 
 			var is_concrete_hub = absf(wrapf(angle - 0.45, -PI, PI)) < 0.08 and absf(z_norm) < 0.08
+			var is_farmland = absf(wrapf(angle - 1.2, -PI, PI)) < 0.14 and absf(z_norm - 0.25) < 0.12 and elevation > water_level + 2.0 and elevation < 55.0
 
 			var t_type = TerrainType.GRASS
 
@@ -244,16 +284,16 @@ func generate_default_rpg_map() -> void:
 			elif is_road:
 				t_type = TerrainType.ROAD
 				elevation = max(elevation, water_level + 4.0)
+			elif is_farmland:
+				t_type = TerrainType.FARMLAND
 			elif elevation < water_level:
 				t_type = TerrainType.WATER
 			elif elevation < water_level + 6.0:
 				t_type = TerrainType.SAND
-			elif elevation < water_level + 10.0:
-				t_type = TerrainType.SAND_TO_GRASS
-			elif elevation > 78.0:
+			elif elevation > 75.0:
+				t_type = TerrainType.ROCKS
+			elif elevation > 58.0:
 				t_type = TerrainType.DIRT
-			elif elevation > 70.0:
-				t_type = TerrainType.DIRT_TO_GRASS
 			else:
 				t_type = TerrainType.GRASS
 

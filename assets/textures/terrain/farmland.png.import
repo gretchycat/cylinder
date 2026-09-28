@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://psq26utf66no"
-path="res://.godot/imported/road_edge.png-85cede6ecf4dd849097369e297d9ad03.ctex"
+uid="uid://bt712ljtnvh0i"
+path="res://.godot/imported/farmland.png-3905534612098b872ad967bb1f080d3a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/terrain/road_edge.png"
-dest_files=["res://.godot/imported/road_edge.png-85cede6ecf4dd849097369e297d9ad03.ctex"]
+source_file="res://assets/textures/terrain/farmland.png"
+dest_files=["res://.godot/imported/farmland.png-3905534612098b872ad967bb1f080d3a.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

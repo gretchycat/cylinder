@@ -10,12 +10,16 @@ material = SubResource("MetalMat")
 top_radius = 0.32
 bottom_radius = 0.45
 height = 0.55
+radial_segments = 6
+rings = 1
 
 [sub_resource type="CylinderMesh" id="PostMesh"]
 material = SubResource("MetalMat")
 top_radius = 0.09
 bottom_radius = 0.14
 height = 4.2
+radial_segments = 5
+rings = 1
 
 [sub_resource type="BoxMesh" id="ArmMesh"]
 material = SubResource("MetalMat")
@@ -32,12 +36,16 @@ material = SubResource("LanternMat")
 top_radius = 0.24
 bottom_radius = 0.18
 height = 0.55
+radial_segments = 6
+rings = 1
 
 [sub_resource type="CylinderMesh" id="CapMesh"]
 material = SubResource("MetalMat")
 top_radius = 0.06
 bottom_radius = 0.34
 height = 0.22
+radial_segments = 6
+rings = 1
 
 [node name="LampPost" type="Node3D"]
 

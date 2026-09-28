@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://bv51k8r2y1m4e"]
+[gd_scene load_steps=12 format=3 uid="uid://bv51k8r2y1m4e"]
 
 [ext_resource type="PackedScene" path="res://scenes/cylinder_world.tscn" id="1_cylinder"]
 [ext_resource type="PackedScene" path="res://scenes/light_bar.tscn" id="2_light_bar"]
@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui.tscn" id="5_ui"]
 [ext_resource type="PackedScene" path="res://scenes/weather_system.tscn" id="6_weather"]
 [ext_resource type="Script" path="res://scripts/cylinder_particle_emitter.gd" id="7_emitter"]
+[ext_resource type="PackedScene" path="res://scenes/loading_screen.tscn" id="8_loading"]
+[ext_resource type="Script" path="res://scripts/clutter_manager.gd" id="9_clutter"]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
@@ -15,9 +17,11 @@ ambient_light_source = 2
 ambient_light_color = Color(0.92, 0.95, 1, 1)
 ambient_light_energy = 1.0
 tonemap_mode = 2
-glow_enabled = true
+glow_enabled = false
+glow_normalized = true
 glow_intensity = 0.6
 glow_bloom = 0.15
+glow_hdr_threshold = 1.0
 fog_enabled = true
 fog_mode = 1
 fog_light_color = Color(0.52, 0.72, 0.88, 1)
@@ -31,7 +35,12 @@ fog_depth_end = 18000.0
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_1")
 
+[node name="LoadingScreen" parent="." instance=ExtResource("8_loading")]
+
 [node name="CylinderWorld" parent="." instance=ExtResource("1_cylinder")]
+
+[node name="ClutterManager" type="Node3D" parent="." groups=["clutter_manager"]]
+script = ExtResource("9_clutter")
 
 [node name="AxisLightBar" parent="." instance=ExtResource("2_light_bar")]
 

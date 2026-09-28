@@ -80,20 +80,20 @@ enum LightingPreset {
 		if is_inside_tree():
 			_apply_current_preset()
 
-@export var gradient_follows_solar_cycle: bool = true:
+@export var gradient_follows_solar_cycle: bool = false:
 	set(val):
 		gradient_follows_solar_cycle = val
 		if is_inside_tree():
 			_apply_current_preset()
 
-@export var uniform_follows_solar_cycle: bool = false:
+@export var uniform_follows_solar_cycle: bool = true:
 	set(val):
 		uniform_follows_solar_cycle = val
 		if is_inside_tree():
 			_apply_current_preset()
 
 @export_category("Lighting Control - Max On Full Illumination")
-@export var preset: LightingPreset = LightingPreset.GRADIENT:
+@export var preset: LightingPreset = LightingPreset.UNIFORM:
 	set(val):
 		if preset != val:
 			use_custom_extent = false
@@ -187,7 +187,8 @@ func rebuild_light_bar() -> void:
 	spine_mesh.top_radius = bar_radius * 0.45
 	spine_mesh.bottom_radius = bar_radius * 0.45
 	spine_mesh.height = bar_length + cylinder_radius * 2.0 - 80.0  # Reaches into end cap poles (±half_len ± cylinder_radius)
-	spine_mesh.radial_segments = 24
+	spine_mesh.radial_segments = 8
+	spine_mesh.rings = 1
 
 	var spine_mat = StandardMaterial3D.new()
 	spine_mat.albedo_color = Color(0.12, 0.13, 0.16)
@@ -213,7 +214,8 @@ func rebuild_light_bar() -> void:
 		tube_mesh.top_radius = bar_radius
 		tube_mesh.bottom_radius = bar_radius
 		tube_mesh.height = segment_length * 0.94
-		tube_mesh.radial_segments = 32
+		tube_mesh.radial_segments = 12
+		tube_mesh.rings = 1
 
 		var seg_mat = StandardMaterial3D.new()
 		seg_mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
@@ -277,8 +279,8 @@ func _apply_current_preset() -> void:
 		return
 
 	match preset:
-		LightingPreset.UNIFORM:
-			if uniform_follows_solar_cycle:
+		LightingPreset.UNIFORM, LightingPreset.SOLAR_CYCLE:
+			if uniform_follows_solar_cycle or preset == LightingPreset.SOLAR_CYCLE:
 				var p = SolarCycleSimulator.get_solar_lighting_at_time(
 					earth_latitude_deg,
 					_get_effective_day_of_year(),
@@ -300,16 +302,15 @@ func _apply_current_preset() -> void:
 					segment_colors[i] = start_color.lerp(end_color, t)
 					segment_intensities[i] = lerpf(start_intensity, end_intensity, t)
 			elif gradient_follows_solar_cycle:
-				var grad = SolarCycleSimulator.get_cylinder_axial_gradient(
+				var p = SolarCycleSimulator.get_solar_lighting_at_time(
 					earth_latitude_deg,
 					_get_effective_day_of_year(),
-					time_of_day_hours,
-					num_segments,
-					solar_span_hours
+					time_of_day_hours
 				)
-				segment_colors = grad["segment_colors"]
-				segment_intensities = grad["segment_intensities"]
-				solar_info = grad
+				solar_info = p
+				for i in range(num_segments):
+					segment_colors[i] = p["sun_color"]
+					segment_intensities[i] = p["intensity"]
 			else:
 				# Multi-stop Sunrise to Twilight gradient along the 18 km cylinder
 				var col_dawn = Color(1.0, 0.52, 0.18)     # Dawn Golden Orange
@@ -337,18 +338,6 @@ func _apply_current_preset() -> void:
 
 					segment_colors[i] = col
 					segment_intensities[i] = intensity
-
-		LightingPreset.SOLAR_CYCLE:
-			var grad = SolarCycleSimulator.get_cylinder_axial_gradient(
-				earth_latitude_deg,
-				_get_effective_day_of_year(),
-				time_of_day_hours,
-				num_segments,
-				solar_span_hours
-			)
-			segment_colors = grad["segment_colors"]
-			segment_intensities = grad["segment_intensities"]
-			solar_info = grad
 
 		LightingPreset.WARM_SUNSET:
 			var sunset_amber = Color(1.0, 0.48, 0.15)
@@ -380,10 +369,10 @@ func _update_animated_wave() -> void:
 
 		if preset == LightingPreset.DAY_NIGHT_WAVE:
 			var wave_factor = (sin(phase) + 1.0) * 0.5
-			var col_night = Color(0.322, 0.306, 0.613)
+			var col_night = Color(0.35, 0.34, 0.65)
 			var col_day = Color(1.0, 0.96, 0.90)
 			var col = col_night.lerp(col_day, wave_factor)
-			var intensity = lerpf(0.0, 4.0, wave_factor)
+			var intensity = lerpf(0.12, 4.0, wave_factor)
 			segment_colors[i] = col
 			segment_intensities[i] = intensity
 		elif preset == LightingPreset.NEON_AURORA:
@@ -461,7 +450,7 @@ func _refresh_all_segments() -> void:
 	if world_environment and world_environment.environment:
 		var env = world_environment.environment
 		env.ambient_light_color = avg_col
-		env.ambient_light_energy = clampf(lerpf(0.04, 1.0, solar_factor) * intensity_norm, 0.02, 1.5)
+		env.ambient_light_energy = clampf(lerpf(0.15, 1.0, solar_factor) * intensity_norm, 0.12, 1.5)
 
 	# Synchronize depth fog and material air tint with current light level and color
 	_sync_fog_and_atmosphere()

@@ -76,7 +76,7 @@ enum WeatherType {
 @export var cloud_thickness_m: float = 250.0: # Vertical deck thickness (50m to 800m)
 	set(val):
 		cloud_thickness_m = clampf(val, 50.0, 800.0)
-		_update_cloud_mesh_radius()
+		_update_shader_parameters()
 
 @export_category("Precipitation & Dust / Particulates")
 @export var precipitation_rate_mmh: float = 0.0: # 0.0 to 50.0 mm/hr
@@ -113,6 +113,7 @@ var wind_velocity: Vector2 = Vector2.ZERO # (theta_rad_s, z_m_s)
 # Climate System State
 var current_temperature_c: float = 22.0
 var is_snow_mode: bool = false
+var last_logged_snow_mode: bool = false
 var current_climate_name: String = "Temperate Mixed Forest"
 var current_season_name: String = "Summer"
 var climate_profile: Dictionary = {}
@@ -143,18 +144,83 @@ var near_cloud_material: ShaderMaterial = null
 
 # Localized Emitters tracking player position
 var dust_particles: CPUParticles3D = null
+var rain_particles: CPUParticles3D = null
+var snow_particles: CPUParticles3D = null
 var target_player: Node3D = null
 
-# Pre-rendered Textured Rain / Snow Sheets
+# Pre-rendered Textured Rain / Snow Sheets (Layered Forward Depth System)
 var rain_sheets_root: Node3D = null
 var rain_sheets_mesh_instance: MeshInstance3D = null
 var rain_sheet_material: ShaderMaterial = null
 var rain_texture_cache: Dictionary = {}
 var snow_texture_cache: Dictionary = {}
+var cloud_noise_texture: ImageTexture = null
 var current_rendered_density_tier: int = -1
 var current_rendered_snow_state: bool = false
 var current_wind_speed_m_s: float = 6.0
 var rain_scroll_offset: Vector2 = Vector2.ZERO
+var is_weather_ready: bool = false
+
+func _get_cloud_noise_texture() -> ImageTexture:
+	if cloud_noise_texture and is_instance_valid(cloud_noise_texture):
+		return cloud_noise_texture
+
+	var width = 512
+	var height = 512
+	var img = Image.create(width, height, false, Image.FORMAT_L8)
+	var noise = FastNoiseLite.new()
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.frequency = 0.022
+	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	noise.fractal_octaves = 4
+	noise.fractal_gain = 0.5
+	noise.fractal_lacunarity = 2.0
+
+	var raw = PackedByteArray()
+	raw.resize(width * height)
+
+	# 3D Toroidal embedding in 3D Simplex space:
+	# Maps the 2D periodic domain (u, v) in [0, 1) x [0, 1) onto the surface of a 3D torus.
+	# This guarantees 100% seamless C-infinity periodic boundary continuity (infinite 2D tessellation)
+	# without pinching, warping, or boundary seams.
+	var scale_factor = 20.0
+	var R = 2.0 * scale_factor
+	var r = 1.0 * scale_factor
+
+	for y in range(height):
+		var v = float(y) / float(height)
+		var phi = v * TAU
+		var cos_phi = cos(phi)
+		var sin_phi = sin(phi)
+
+		for x in range(width):
+			var u = float(x) / float(width)
+			var theta = u * TAU
+			var cos_theta = cos(theta)
+			var sin_theta = sin(theta)
+
+			var px = (R + r * cos_phi) * cos_theta
+			var py = (R + r * cos_phi) * sin_theta
+			var pz = r * sin_phi
+
+			var n = noise.get_noise_3d(px, py, pz)
+			var byte_val = clampi(int(round((n + 1.0) * 0.5 * 255.0)), 0, 255)
+			raw[y * width + x] = byte_val
+
+	img.set_data(width, height, false, Image.FORMAT_L8, raw)
+	img.generate_mipmaps()
+	cloud_noise_texture = ImageTexture.create_from_image(img)
+	return cloud_noise_texture
+
+func _warm_up_texture_caches() -> void:
+	# Pre-bake seamless cloud noise
+	var _noise = _get_cloud_noise_texture()
+	# Pre-bake all rain & snow streak textures (Tiers 0..5)
+	for tier in range(6):
+		if not rain_texture_cache.has(tier):
+			rain_texture_cache[tier] = _generate_rain_streak_texture(tier)
+		if not snow_texture_cache.has(tier):
+			snow_texture_cache[tier] = _generate_snow_streak_texture(tier)
 
 func get_effective_time_scale() -> float:
 	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
@@ -184,11 +250,13 @@ func _ready() -> void:
 	_sync_with_light_bar_time()
 	_recalculate_coriolis_vectors()
 	_recalculate_climate_profile()
+	_warm_up_texture_caches()
 	_build_cloud_mesh()
 	_build_rain_sheets()
 	_setup_weather_emitters()
 	_sync_with_scene_lighting()
 	_init_weather_state_queue()
+	is_weather_ready = true
 
 func _sync_with_light_bar_time() -> void:
 	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
@@ -218,8 +286,8 @@ func _init_weather_state_queue() -> void:
 	current_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
 	previous_weather_state = current_weather_state.duplicate()
 	next_queued_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
-	transition_timer = 0.0
 	transition_duration = float(current_weather_state.get("duration", 35.0))
+	transition_timer = transition_duration
 	_apply_state_values(current_weather_state)
 
 func _process(delta: float) -> void:
@@ -248,10 +316,11 @@ func _process(delta: float) -> void:
 	_update_dynamic_wind(effective_dt)
 	_update_cloud_deck_coriolis_motion(effective_dt)
 	_update_shader_parameters()
+	_update_concentric_render_priorities()
 	_update_precipitation_emitter(effective_dt)
 	_update_dust_emitter()
 	_update_particle_positions()
-	_emit_weather_telemetry()
+	_emit_weather_telemetry(delta)
 
 func _update_weather_queue_progression(effective_dt: float, current_clock_hours: float) -> void:
 	if not auto_weather_cycle_enabled and manual_queue.is_empty():
@@ -264,9 +333,11 @@ func _update_weather_queue_progression(effective_dt: float, current_clock_hours:
 		transition_timer -= transition_duration
 		previous_weather_state = current_weather_state.duplicate()
 
+		var source_mode = "Auto-Climate Loop"
 		# 1. Pop from manual queue if available
 		if not manual_queue.is_empty():
 			current_weather_state = manual_queue.pop_front()
+			source_mode = "Manual Queue"
 		# 2. Advance to the 1-deep pre-calculated climate queue state
 		elif not next_queued_weather_state.is_empty():
 			current_weather_state = next_queued_weather_state
@@ -279,6 +350,9 @@ func _update_weather_queue_progression(effective_dt: float, current_clock_hours:
 			next_queued_weather_state = ClimateSystem.generate_weather_state(climate_profile, rng)
 
 		transition_duration = maxf(float(current_weather_state.get("duration", 35.0)), 5.0)
+		HUD.log_event("Weather Transition -> '%s' (Duration: %.0fs, Source: %s)" % [
+			current_weather_state.get("name", "Weather"), transition_duration, source_mode
+		], "#77ccff")
 
 	# Smooth Hermite S-Curve Interpolation between previous state and current state
 	var t = clampf(transition_timer / maxf(transition_duration, 0.1), 0.0, 1.0)
@@ -315,6 +389,10 @@ func _update_weather_queue_progression(effective_dt: float, current_clock_hours:
 	# Update snow mode determination: below 4°C
 	_recalculate_thermodynamics()
 	is_snow_mode = (current_temperature_c <= 4.0)
+	if is_snow_mode != last_logged_snow_mode:
+		last_logged_snow_mode = is_snow_mode
+		var phase_name = "❄️ FREEZING / SNOWFALL (<4°C)" if is_snow_mode else "🌧️ RAIN / MIST (>4°C)"
+		HUD.log_event("Atmospheric Phase Shift -> %s (Ground Temp: %.1f°C)" % [phase_name, current_temperature_c], "#aaddff" if is_snow_mode else "#66ccee")
 
 func _apply_state_values(state: Dictionary) -> void:
 	cloud_coverage = float(state.get("cloud_coverage", cloud_coverage))
@@ -343,6 +421,9 @@ func push_weather_state(state: Dictionary, immediate: bool = false) -> void:
 		_update_precipitation_emitter()
 		_update_dust_emitter()
 		_update_particle_positions()
+		HUD.log_event("Weather Event Activated -> '%s' (Immediate: true, Duration: %.0fs)" % [
+			formatted_state.get("name", "Event"), transition_duration
+		], "#88ccff")
 	else:
 		manual_queue.append(formatted_state)
 
@@ -377,6 +458,9 @@ func skip_current_trajectory() -> void:
 	transition_timer = 0.0
 	transition_duration = float(current_weather_state.get("duration", 35.0))
 	_apply_state_values(current_weather_state)
+	HUD.log_event("Weather Trajectory Advanced -> Active: '%s' (Duration: %.0fs)" % [
+		current_weather_state.get("name", "Weather"), transition_duration
+	], "#77ccff")
 
 func clear_weather_queue() -> void:
 	manual_queue.clear()
@@ -444,39 +528,35 @@ func _recalculate_thermodynamics() -> void:
 func _build_cloud_mesh() -> void:
 	if far_cloud_mesh_instance and is_instance_valid(far_cloud_mesh_instance):
 		far_cloud_mesh_instance.queue_free()
+		far_cloud_mesh_instance = null
 	if near_cloud_mesh_instance and is_instance_valid(near_cloud_mesh_instance):
 		near_cloud_mesh_instance.queue_free()
 
-	far_cloud_mesh_instance = MeshInstance3D.new()
-	far_cloud_mesh_instance.name = "FarCloudLayer"
-	add_child(far_cloud_mesh_instance)
-
 	near_cloud_mesh_instance = MeshInstance3D.new()
-	near_cloud_mesh_instance.name = "NearCloudLayer"
+	near_cloud_mesh_instance.name = "CloudLayer"
 	add_child(near_cloud_mesh_instance)
 
-	var far_shader = load("res://assets/shaders/cylinder_clouds_far.gdshader") as Shader
-	if far_shader:
-		far_cloud_material = ShaderMaterial.new()
-		far_cloud_material.shader = far_shader
-		far_cloud_material.render_priority = 4
-		far_cloud_mesh_instance.material_override = far_cloud_material
+	var noise_tex = _get_cloud_noise_texture()
 
 	var near_shader = load("res://assets/shaders/cylinder_clouds.gdshader") as Shader
 	if near_shader:
 		near_cloud_material = ShaderMaterial.new()
 		near_cloud_material.shader = near_shader
-		near_cloud_material.render_priority = 5
+		near_cloud_material.render_priority = 0
+		near_cloud_material.set_shader_parameter("cloud_noise_tex", noise_tex)
 		near_cloud_mesh_instance.material_override = near_cloud_material
 
 	_generate_cloud_geometry()
+	_update_cloud_mesh_radius()
 	_update_shader_parameters()
+
+const CLOUD_BASE_ALTITUDE_M: float = 1250.0
 
 func _generate_cloud_geometry() -> void:
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	var cloud_r = cylinder_radius - cloud_altitude_m
+	var cloud_r = cylinder_radius - CLOUD_BASE_ALTITUDE_M
 	var cloud_len = cylinder_length
 	var half_len = cloud_len * 0.5
 
@@ -497,7 +577,7 @@ func _generate_cloud_geometry() -> void:
 			var sin_t = sin(theta)
 
 			var pos = Vector3(cloud_r * cos_t, cloud_r * sin_t, z)
-			var normal = Vector3(-cos_t, -sin_t, 0.0)
+			var normal = Vector3(cos_t, sin_t, 0.0)
 
 			st.set_normal(normal)
 			st.set_uv(Vector2(u_coord, v_coord))
@@ -528,8 +608,22 @@ func _generate_cloud_geometry() -> void:
 		near_cloud_mesh_instance.mesh = mesh
 
 func _update_cloud_mesh_radius() -> void:
-	_generate_cloud_geometry()
+	var base_r = maxf(cylinder_radius - CLOUD_BASE_ALTITUDE_M, 100.0)
+	var current_r = maxf(cylinder_radius - cloud_altitude_m, 100.0)
+	var s = current_r / base_r
+	var scale_vec = Vector3(s, s, 1.0)
+
+	if far_cloud_mesh_instance and is_instance_valid(far_cloud_mesh_instance):
+		far_cloud_mesh_instance.scale = scale_vec
+	if near_cloud_mesh_instance and is_instance_valid(near_cloud_mesh_instance):
+		near_cloud_mesh_instance.scale = scale_vec
 	_update_shader_parameters()
+
+@export var rain_sheet_layer_count: int = 4:
+	set(val):
+		rain_sheet_layer_count = clampi(val, 1, 8)
+		if is_inside_tree():
+			_build_rain_sheets()
 
 func _build_rain_sheets() -> void:
 	if rain_sheets_root and is_instance_valid(rain_sheets_root):
@@ -541,6 +635,7 @@ func _build_rain_sheets() -> void:
 
 	rain_sheets_mesh_instance = MeshInstance3D.new()
 	rain_sheets_mesh_instance.name = "RainSheetsMesh"
+	rain_sheets_mesh_instance.visible = false
 	rain_sheets_root.add_child(rain_sheets_mesh_instance)
 
 	var shader = load("res://assets/shaders/cylinder_rain_sheet.gdshader") as Shader
@@ -548,48 +643,12 @@ func _build_rain_sheets() -> void:
 		rain_sheet_material = ShaderMaterial.new()
 		rain_sheet_material.shader = shader
 		rain_sheet_material.render_priority = 8
+		rain_sheet_material.set_shader_parameter("rain_alpha_multiplier", 0.0)
 		rain_sheets_mesh_instance.material_override = rain_sheet_material
 
-	# Multi-layered hexagonal cylinder cage with circumference and opposite-vertex interior sheets
-	var st = SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-
-	var rng_geom = RandomNumberGenerator.new()
-	rng_geom.seed = 4242
-
-	var hex_tiers = [
-		[4.0, 16.0, 0.0],
-		[12.0, 24.0, 20.0],
-		[26.0, 36.0, 40.0],
-		[46.0, 52.0, 10.0]
-	]
-
-	for tier in hex_tiers:
-		var rad: float = tier[0]
-		var h: float = tier[1]
-		var angle_offset: float = deg_to_rad(tier[2])
-		var y_bottom = -0.5
-
-		var verts: Array[Vector3] = []
-		for k in range(6):
-			var ang = angle_offset + float(k) * (TAU / 6.0)
-			verts.append(Vector3(cos(ang) * rad, 0.0, sin(ang) * rad))
-
-		for k in range(6):
-			var v_start = verts[k]
-			var v_end = verts[(k + 1) % 6]
-			_add_rain_quad(st, v_start, v_end, y_bottom, h, rng_geom)
-
-		for k in range(3):
-			var v_start = verts[k]
-			var v_end = verts[k + 3]
-			_add_rain_quad(st, v_start, v_end, y_bottom, h, rng_geom)
-
-	var mesh = st.commit()
-	rain_sheets_mesh_instance.mesh = mesh
 	rain_sheets_root.visible = false
 
-func _add_rain_quad(st: SurfaceTool, A: Vector3, B: Vector3, y_bottom: float, h: float, rng_geom: RandomNumberGenerator) -> void:
+func _add_rain_quad(st: SurfaceTool, A: Vector3, B: Vector3, y_bottom: float, h: float, rng_geom: RandomNumberGenerator, speed_scale: float = 1.0) -> void:
 	var edge = B - A
 	var w = edge.length()
 	var edge_dir = edge.normalized() if w > 0.001 else Vector3.RIGHT
@@ -611,24 +670,40 @@ func _add_rain_quad(st: SurfaceTool, A: Vector3, B: Vector3, y_bottom: float, h:
 	var uv2 = Vector2(u_off + w, v_off + h)
 	var uv3 = Vector2(u_off, v_off + h)
 
+	# UV2: (x: speed_scale parallax multiplier, y: normalized height 0.0 bottom to 1.0 top for edge feathering)
+	var uv2_0 = Vector2(speed_scale, 0.0)
+	var uv2_1 = Vector2(speed_scale, 0.0)
+	var uv2_2 = Vector2(speed_scale, 1.0)
+	var uv2_3 = Vector2(speed_scale, 1.0)
+
 	st.set_normal(norm)
 	st.set_uv(uv0)
+	st.set_uv2(uv2_0)
 	st.add_vertex(p0)
+
 	st.set_normal(norm)
 	st.set_uv(uv1)
+	st.set_uv2(uv2_1)
 	st.add_vertex(p1)
+
 	st.set_normal(norm)
 	st.set_uv(uv2)
+	st.set_uv2(uv2_2)
 	st.add_vertex(p2)
 
 	st.set_normal(norm)
 	st.set_uv(uv0)
+	st.set_uv2(uv2_0)
 	st.add_vertex(p0)
+
 	st.set_normal(norm)
 	st.set_uv(uv2)
+	st.set_uv2(uv2_2)
 	st.add_vertex(p2)
+
 	st.set_normal(norm)
 	st.set_uv(uv3)
+	st.set_uv2(uv2_3)
 	st.add_vertex(p3)
 
 func _get_density_tier(precip_rate: float) -> int:
@@ -680,12 +755,13 @@ func _generate_rain_streak_texture(density_tier: int) -> ImageTexture:
 
 		for dy in range(streak_h):
 			var py = (ry + dy) % height
-			var v_factor = 0.35 if (dy == 0 or dy == streak_h - 1) else (0.75 if (dy == 1 or dy == streak_h - 2) else 1.0)
+			var v_factor = 0.70 if (dy == 0 or dy == streak_h - 1) else (0.88 if (dy == 1 or dy == streak_h - 2) else 1.0)
 
 			for dx in range(streak_w):
 				var px = (rx + dx) % width
-				var final_alpha = clampf(0.55 * v_factor * a_mod, 0.0, 1.0)
-				var streak_color = Color(0.15, 0.30, 0.60, final_alpha)
+				# Rain streak alpha calibrated strictly to 25% to 35% range
+				var final_alpha = clampf(0.30 * v_factor * a_mod, 0.0, 1.0)
+				var streak_color = Color(0.12, 0.28, 0.58, final_alpha)
 
 				var existing = img.get_pixel(px, py)
 				if existing.a > 0.0:
@@ -745,8 +821,8 @@ func _setup_weather_emitters() -> void:
 	if not dust_particles:
 		dust_particles = CPUParticles3D.new()
 		dust_particles.name = "AtmosphericDustParticles"
-		dust_particles.amount = 200
-		dust_particles.lifetime = 6.0
+		dust_particles.amount = 120
+		dust_particles.lifetime = 5.0
 		dust_particles.preprocess = 1.0
 		dust_particles.local_coords = false
 		dust_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
@@ -762,39 +838,121 @@ func _setup_weather_emitters() -> void:
 		dust_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		dust_mat.albedo_color = Color(0.95, 0.90, 0.78, 0.25)
 		dust_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		dust_mat.billboard_keep_scale = true
 		dust_mat.render_priority = 10
 		dust_particles.material_override = dust_mat
 
-		var sphere_mesh = SphereMesh.new()
-		sphere_mesh.radius = 0.02
-		sphere_mesh.height = 0.04
-		dust_particles.mesh = sphere_mesh
+		var quad_mesh = QuadMesh.new()
+		quad_mesh.size = Vector2(0.04, 0.04)
+		dust_particles.mesh = quad_mesh
 		add_child(dust_particles)
+
+	var rain_tex = load("res://assets/textures/weather/rain_drop.png") as Texture2D
+	if not rain_particles:
+		rain_particles = CPUParticles3D.new()
+		rain_particles.name = "VolumetricRainParticles"
+		rain_particles.amount = 12000
+		rain_particles.lifetime = 1.0
+		rain_particles.preprocess = 0.5
+		rain_particles.local_coords = false
+		rain_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		rain_particles.emission_box_extents = Vector3(20.0, 7.0, 20.0)
+		rain_particles.direction = Vector3(0, -1, 0)
+		rain_particles.spread = 3.0
+		rain_particles.initial_velocity_min = 14.0
+		rain_particles.initial_velocity_max = 18.0
+		rain_particles.gravity = Vector3.ZERO
+
+		var rain_p_mat = StandardMaterial3D.new()
+		rain_p_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		rain_p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		rain_p_mat.albedo_texture = rain_tex
+		rain_p_mat.albedo_color = Color(0.9, 0.95, 1.0, 0.75)
+		rain_p_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		rain_p_mat.billboard_keep_scale = true
+		rain_p_mat.render_priority = 9
+		rain_particles.material_override = rain_p_mat
+
+		var rain_quad = QuadMesh.new()
+		rain_quad.size = Vector2(0.06, 0.18) # 1:3 aspect ratio dark blue smear
+		rain_particles.mesh = rain_quad
+		add_child(rain_particles)
+
+	var snow_tex = load("res://assets/textures/weather/snow_flake.png") as Texture2D
+	if not snow_particles:
+		snow_particles = CPUParticles3D.new()
+		snow_particles.name = "VolumetricSnowParticles"
+		snow_particles.amount = 8000
+		snow_particles.lifetime = 4.2
+		snow_particles.preprocess = 1.5
+		snow_particles.local_coords = false
+		snow_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		snow_particles.emission_box_extents = Vector3(22.0, 8.0, 22.0)
+		snow_particles.direction = Vector3(0, -1, 0)
+		snow_particles.spread = 14.0
+		snow_particles.initial_velocity_min = 0.9
+		snow_particles.initial_velocity_max = 1.6
+		snow_particles.angular_velocity_min = -35.0
+		snow_particles.angular_velocity_max = 35.0
+		snow_particles.scale_amount_min = 0.6
+		snow_particles.scale_amount_max = 1.3
+		snow_particles.gravity = Vector3.ZERO
+
+		var snow_p_mat = StandardMaterial3D.new()
+		snow_p_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		snow_p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		snow_p_mat.albedo_texture = snow_tex
+		snow_p_mat.albedo_color = Color(1.0, 1.0, 1.0, 0.90)
+		snow_p_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		snow_p_mat.billboard_keep_scale = true
+		snow_p_mat.render_priority = 9
+		snow_particles.material_override = snow_p_mat
+
+		var snow_quad = QuadMesh.new()
+		snow_quad.size = Vector2(0.09, 0.09) # 1:1 aspect ratio crystalline snowflake
+		snow_particles.mesh = snow_quad
+		add_child(snow_particles)
 
 	_update_precipitation_emitter()
 	_update_dust_emitter()
+
+var _last_rain_uv_scale: Vector2 = Vector2.ZERO
+var _last_rain_lut_tex = null
+var _last_rain_light_int: float = -1.0
+
+const MIN_RAIN_CLOUD_THICKNESS_M: float = 350.0
+
+func get_effective_precipitation_rate() -> float:
+	if cloud_thickness_m < 300.0:
+		return 0.0
+	# Smooth precipitation transition threshold from 300m to 350m
+	var thickness_gate = clampf((cloud_thickness_m - 300.0) / 50.0, 0.0, 1.0)
+	return precipitation_rate_mmh * thickness_gate
 
 func _update_precipitation_emitter(effective_dt: float = 0.0) -> void:
 	var emitter = get_tree().get_first_node_in_group("particle_emitter") as CylinderParticleEmitter if is_inside_tree() else null
 	if emitter:
 		emitter.rain_stream_enabled = false
 
-	if not rain_sheets_root or not rain_sheet_material:
+	var effective_precip = get_effective_precipitation_rate()
+	if effective_precip <= 0.05:
+		if rain_sheets_root:
+			rain_sheets_root.visible = false
+		if rain_particles:
+			rain_particles.emitting = false
+		if snow_particles:
+			snow_particles.emitting = false
 		return
 
-	if precipitation_rate_mmh <= 0.05:
-		rain_sheets_root.visible = false
-		return
+	if rain_sheet_material:
+		var tier = _get_density_tier(effective_precip)
+		if tier != current_rendered_density_tier or is_snow_mode != current_rendered_snow_state:
+			current_rendered_density_tier = tier
+			current_rendered_snow_state = is_snow_mode
+			var tex = _get_or_render_rain_texture(tier, is_snow_mode)
+			rain_sheet_material.set_shader_parameter("rain_texture", tex)
 
-	var tier = _get_density_tier(precipitation_rate_mmh)
-	if tier != current_rendered_density_tier or is_snow_mode != current_rendered_snow_state:
-		current_rendered_density_tier = tier
-		current_rendered_snow_state = is_snow_mode
-		var tex = _get_or_render_rain_texture(tier, is_snow_mode)
-		rain_sheet_material.set_shader_parameter("rain_texture", tex)
-
-	var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
-	# Snow terminal velocity is ~0.6 to 1.2 m/s vs Rain at ~10.0 to 18.0 m/s
+	var intensity_norm = clampf(effective_precip / 40.0, 0.05, 1.0)
 	var fall_speed = lerpf(0.6, 1.2, intensity_norm) if is_snow_mode else lerpf(10.0, 18.0, intensity_norm)
 	var spin_sign = float(spin_direction)
 	var coriolis_drift = -2.0 * coriolis_omega_rad_s * fall_speed * spin_sign
@@ -803,13 +961,10 @@ func _update_precipitation_emitter(effective_dt: float = 0.0) -> void:
 		var uv_scroll_y: float
 		var uv_scroll_x: float
 		if is_snow_mode:
-			# Snowfall: In metric coordinates (1 UV = 1 meter), 0.6 to 1.2 m/s fall speed
 			uv_scroll_y = fall_speed
-			# Gentle swaying flutter in the cylinder air currents
 			var sway = sin(rain_scroll_offset.y * 1.6) * 0.35
 			uv_scroll_x = (coriolis_drift * 0.1) + (wind_velocity.x * 0.4) + sway
 		else:
-			# Rain: Fast, energetic downpour in meters/s
 			uv_scroll_y = fall_speed
 			uv_scroll_x = coriolis_drift
 
@@ -821,34 +976,54 @@ func _update_precipitation_emitter(effective_dt: float = 0.0) -> void:
 	var lut_tex = light_bar.lut_texture if light_bar else null
 	var light_int = light_bar.global_intensity_multiplier if light_bar else 3.5
 
-	# Set 1:1 isotropic metric scale for snow (0.22, 0.22), stretched metric scale for rain streaks (0.28, 0.08)
-	var uv_scale_val = Vector2(0.22, 0.22) if is_snow_mode else Vector2(0.28, 0.08)
-	rain_sheet_material.set_shader_parameter("uv_scale", uv_scale_val)
+	if rain_sheet_material:
+		var uv_scale_val = Vector2(0.22, 0.22) if is_snow_mode else Vector2(0.28, 0.08)
+		if not uv_scale_val.is_equal_approx(_last_rain_uv_scale):
+			_last_rain_uv_scale = uv_scale_val
+			rain_sheet_material.set_shader_parameter("uv_scale", uv_scale_val)
 
-	if lut_tex:
-		rain_sheet_material.set_shader_parameter("axial_light_lut", lut_tex)
-		rain_sheet_material.set_shader_parameter("axial_light_enabled", 1.0)
-	rain_sheet_material.set_shader_parameter("global_light_intensity", light_int)
-	rain_sheet_material.set_shader_parameter("cylinder_length", cylinder_length)
-	rain_sheet_material.set_shader_parameter("uv_scroll_offset", rain_scroll_offset)
-	rain_sheet_material.set_shader_parameter("rain_tint", Color(1.0, 1.0, 1.0, 1.0))
+		if lut_tex and (lut_tex != _last_rain_lut_tex or not is_equal_approx(light_int, _last_rain_light_int)):
+			_last_rain_lut_tex = lut_tex
+			_last_rain_light_int = light_int
+			rain_sheet_material.set_shader_parameter("axial_light_lut", lut_tex)
+			rain_sheet_material.set_shader_parameter("axial_light_enabled", 1.0)
+			rain_sheet_material.set_shader_parameter("global_light_intensity", light_int)
+
+		rain_sheet_material.set_shader_parameter("cloud_thickness", cloud_thickness_m)
+		rain_sheet_material.set_shader_parameter("uv_scroll_offset", rain_scroll_offset)
 
 func _update_dust_emitter() -> void:
 	if not dust_particles:
 		return
 
-	if dust_density <= 0.02:
-		dust_particles.emitting = false
-		return
+	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
+	var avg_int = light_bar.current_avg_intensity if light_bar else 3.5
+	var master_mult = light_bar.global_intensity_multiplier if light_bar else 3.5
+	var effective_light = clampf((avg_int / 3.5) * (master_mult / 3.5), 0.0, 1.25)
 
-	dust_particles.emitting = true
-	dust_particles.amount = int(lerpf(40.0, 350.0, dust_density))
+	# Non-illuminated dust is invisible at night - only emit when there is light and density
+	var should_emit = (dust_density > 0.02) and (effective_light > 0.01)
+	if dust_particles.emitting != should_emit:
+		dust_particles.emitting = should_emit
+
 	var dust_mat = dust_particles.material_override as StandardMaterial3D
 	if dust_mat:
-		var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
-		var light_mult = clampf((light_bar.global_intensity_multiplier if light_bar else 3.5) / 3.5, 0.05, 1.25)
-		var dust_col = Color(0.95, 0.98, 1.0) if is_snow_mode else Color(0.95, 0.90, 0.78)
-		dust_mat.albedo_color = Color(dust_col.r * light_mult, dust_col.g * light_mult, dust_col.b * light_mult, clampf(dust_density * 0.45 * light_mult, 0.04, 0.6))
+		if not should_emit or effective_light <= 0.01:
+			var black_transparent = Color(0.0, 0.0, 0.0, 0.0)
+			if not dust_mat.albedo_color.is_equal_approx(black_transparent):
+				dust_mat.albedo_color = black_transparent
+			return
+
+		var light_col = light_bar.current_avg_color if light_bar else Color.WHITE
+		var base_dust = Color(0.95, 0.98, 1.0) if is_snow_mode else Color(0.95, 0.90, 0.78)
+		var lit_r = base_dust.r * light_col.r * effective_light
+		var lit_g = base_dust.g * light_col.g * effective_light
+		var lit_b = base_dust.b * light_col.b * effective_light
+		var lit_a = clampf(dust_density * 0.35 * effective_light, 0.0, 0.5)
+
+		var target_col = Color(lit_r, lit_g, lit_b, lit_a)
+		if not dust_mat.albedo_color.is_equal_approx(target_col):
+			dust_mat.albedo_color = target_col
 
 func _update_particle_positions() -> void:
 	if not is_inside_tree():
@@ -875,25 +1050,84 @@ func _update_particle_positions() -> void:
 	var fade_end = cloud_altitude_m + 40.0
 	var altitude_rain_factor = clampf(1.0 - (player_altitude - fade_start) / maxf(fade_end - fade_start, 1.0), 0.0, 1.0)
 
+	var is_player_submerged: bool = false
+	if target_player and target_player.has_method("is_submerged_in_water"):
+		is_player_submerged = target_player.is_submerged_in_water()
+	elif target_player and "is_in_water" in target_player:
+		is_player_submerged = bool(target_player.is_in_water)
+	elif player_radius > (cylinder_radius - 20.0):
+		var cyl_world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
+		if cyl_world and cyl_world.has_method("get_elevation_at"):
+			var theta = atan2(p_pos.y, p_pos.x)
+			var elev = cyl_world.get_elevation_at(theta, p_pos.z)
+			if elev < cyl_world.water_level:
+				is_player_submerged = true
+
+	var effective_precip = get_effective_precipitation_rate()
+	var is_precip_active = (effective_precip > 0.05 and altitude_rain_factor > 0.001 and is_weather_ready and not is_player_submerged)
+
+	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
+	var avg_int = light_bar.current_avg_intensity if light_bar else 3.5
+	var master_mult = light_bar.global_intensity_multiplier if light_bar else 3.5
+	var effective_light = clampf((avg_int / 3.5) * (master_mult / 3.5), 0.15, 1.25)
+	var light_col = light_bar.current_avg_color if light_bar else Color.WHITE
+
+	var fall_speed = lerpf(0.9, 1.6, clampf(effective_precip / 30.0, 0.0, 1.0)) if is_snow_mode else lerpf(14.0, 18.0, clampf(effective_precip / 35.0, 0.0, 1.0))
+	var coriolis_drift = -2.0 * coriolis_omega_rad_s * fall_speed * spin_sign
+
+	# 1. Update 3D Volumetric Rain Particles
+	if rain_particles and rain_particles.is_inside_tree():
+		var should_rain = is_precip_active and not is_snow_mode
+		if rain_particles.emitting != should_rain:
+			rain_particles.emitting = should_rain
+
+		var rain_mat = rain_particles.material_override as StandardMaterial3D
+		if rain_mat:
+			if should_rain:
+				rain_particles.global_position = p_pos + up_sky_3d * 9.0
+				rain_particles.direction = (down_3d * 16.0 + tangent_3d * coriolis_drift).normalized()
+				var target_rain_amount = clampi(int(12000.0 * clampf(effective_precip / 25.0, 0.15, 1.0)), 600, 12000)
+				if rain_particles.amount != target_rain_amount:
+					rain_particles.amount = target_rain_amount
+
+				var base_col = Color(0.90, 0.95, 1.0, 0.75)
+				rain_mat.albedo_color = Color(
+					base_col.r * light_col.r * effective_light,
+					base_col.g * light_col.g * effective_light,
+					base_col.b * light_col.b * effective_light,
+					0.75 * altitude_rain_factor
+				)
+			else:
+				rain_mat.albedo_color = Color(0.0, 0.0, 0.0, 0.0)
+
+	# 2. Update 3D Volumetric Snow Particles
+	if snow_particles and snow_particles.is_inside_tree():
+		var should_snow = is_precip_active and is_snow_mode
+		if snow_particles.emitting != should_snow:
+			snow_particles.emitting = should_snow
+
+		var snow_mat = snow_particles.material_override as StandardMaterial3D
+		if snow_mat:
+			if should_snow:
+				snow_particles.global_position = p_pos + up_sky_3d * 10.0
+				snow_particles.direction = (down_3d * 1.3 + tangent_3d * (coriolis_drift * 0.15) + Vector3(0, 0, wind_velocity.y * 0.25)).normalized()
+				var target_snow_amount = clampi(int(8000.0 * clampf(effective_precip / 20.0, 0.15, 1.0)), 400, 8000)
+				if snow_particles.amount != target_snow_amount:
+					snow_particles.amount = target_snow_amount
+
+				var base_col = Color(1.0, 1.0, 1.0, 0.90)
+				snow_mat.albedo_color = Color(
+					base_col.r * light_col.r * effective_light,
+					base_col.g * light_col.g * effective_light,
+					base_col.b * light_col.b * effective_light,
+					0.90 * altitude_rain_factor
+				)
+			else:
+				snow_mat.albedo_color = Color(0.0, 0.0, 0.0, 0.0)
+
+	# 3. Update Rain Sheets Root visibility for simulation state
 	if rain_sheets_root and rain_sheets_root.is_inside_tree():
-		if precipitation_rate_mmh <= 0.05 or altitude_rain_factor <= 0.001:
-			rain_sheets_root.visible = false
-		else:
-			rain_sheets_root.visible = true
-			rain_sheets_root.global_position = p_pos
-			var local_up = up_sky_3d
-			var local_forward = Vector3(0, 0, 1)
-			var local_right = tangent_3d * spin_sign
-
-			var tilt_rad = deg_to_rad(coriolis_rain_tilt_deg)
-			var basis_rain = Basis(local_right, local_up, local_forward)
-			basis_rain = basis_rain.rotated(local_forward, tilt_rad)
-			rain_sheets_root.global_basis = basis_rain
-
-			if rain_sheet_material:
-				var intensity_norm = clampf(precipitation_rate_mmh / 40.0, 0.05, 1.0)
-				var base_alpha = lerpf(0.75, 1.25, intensity_norm)
-				rain_sheet_material.set_shader_parameter("rain_alpha_multiplier", base_alpha * altitude_rain_factor)
+		rain_sheets_root.visible = is_precip_active
 
 	if dust_particles and dust_particles.is_inside_tree() and dust_particles.emitting:
 		dust_particles.global_position = p_pos + up_sky_3d * 20.0
@@ -920,6 +1154,20 @@ func _update_cloud_deck_coriolis_motion(effective_dt: float) -> void:
 		cloud_deck_rotation_theta += cloud_deck_angular_velocity * effective_dt
 		cloud_deck_translation_z += cloud_deck_axial_velocity * effective_dt
 
+var _last_cloud_offset: Vector2 = Vector2(-9999, -9999)
+var _last_cloud_coverage: float = -1.0
+var _last_cloud_thickness: float = -1.0
+var _last_cloud_altitude: float = -1.0
+var _last_humidity_density: float = -1.0
+var _last_dust_density: float = -1.0
+var _last_spin_direction: int = -999
+var _last_wind_velocity: Vector2 = Vector2(-999, -999)
+var _last_light_int: float = -1.0
+var _last_lut_tex = null
+var _last_terrain_cloud_cov: float = -1.0
+
+var _last_terrain_cloud_thick: float = -1.0
+
 func _update_shader_parameters() -> void:
 	var materials: Array[ShaderMaterial] = []
 	if far_cloud_material:
@@ -935,36 +1183,116 @@ func _update_shader_parameters() -> void:
 	var light_int = light_bar.global_intensity_multiplier if light_bar else 3.5
 
 	# Convert continuous rotation angle (radians) to UV offset (0.0 to 1.0 per full circumference)
-	var u_offset = cloud_deck_rotation_theta / TAU
+	var u_offset = fposmod(cloud_deck_rotation_theta / TAU, 1.0)
 	# Convert axial translation (meters) to UV offset (0.0 to 1.0 per cylinder length)
-	var v_offset = cloud_deck_translation_z / cylinder_length
+	var v_offset = fposmod(cloud_deck_translation_z / cylinder_length, 1.0)
+	var current_offset = Vector2(u_offset, v_offset)
+
+	var offset_changed = (_last_cloud_offset != current_offset)
+	var cov_changed = absf(cloud_coverage - _last_cloud_coverage) >= 0.002
+	var thick_changed = absf(cloud_thickness_m - _last_cloud_thickness) >= 0.5
+	var alt_changed = absf(cloud_altitude_m - _last_cloud_altitude) >= 0.5
+	var hum_changed = absf(humidity_density_gm3 - _last_humidity_density) >= 0.05
+	var dust_changed = absf(dust_density - _last_dust_density) >= 0.005
+	var spin_changed = (spin_direction != _last_spin_direction)
+	var wind_changed = (_last_wind_velocity.distance_squared_to(wind_velocity) >= 0.0001)
+	var light_changed = absf(light_int - _last_light_int) >= 0.005 or (lut_tex != _last_lut_tex)
 
 	for mat in materials:
-		mat.set_shader_parameter("cylinder_radius", cylinder_radius)
-		mat.set_shader_parameter("cylinder_length", cylinder_length)
-		mat.set_shader_parameter("cloud_altitude", cloud_altitude_m)
-		mat.set_shader_parameter("cloud_thickness", cloud_thickness_m)
-		mat.set_shader_parameter("humidity_density", humidity_density_gm3)
-		mat.set_shader_parameter("cloud_coverage", cloud_coverage)
-		mat.set_shader_parameter("dust_density", dust_density)
-		mat.set_shader_parameter("coriolis_spin_direction", float(spin_direction))
-		mat.set_shader_parameter("wind_velocity", wind_velocity)
-		mat.set_shader_parameter("cloud_deck_offset", Vector2(u_offset, v_offset))
-
-		if lut_tex:
+		if offset_changed:
+			mat.set_shader_parameter("cloud_deck_offset", current_offset)
+		if cov_changed:
+			mat.set_shader_parameter("cloud_coverage", cloud_coverage)
+		if thick_changed:
+			mat.set_shader_parameter("cloud_thickness", cloud_thickness_m)
+		if alt_changed:
+			mat.set_shader_parameter("cloud_altitude", cloud_altitude_m)
+		if hum_changed:
+			mat.set_shader_parameter("humidity_density", humidity_density_gm3)
+		if dust_changed:
+			mat.set_shader_parameter("dust_density", dust_density)
+		if spin_changed:
+			mat.set_shader_parameter("coriolis_spin_direction", float(spin_direction))
+		if wind_changed:
+			mat.set_shader_parameter("wind_velocity", wind_velocity)
+		if light_changed and lut_tex:
 			mat.set_shader_parameter("axial_light_lut", lut_tex)
 			mat.set_shader_parameter("axial_light_enabled", 1.0)
 			mat.set_shader_parameter("global_light_intensity", light_int)
 
+	if offset_changed:
+		_last_cloud_offset = current_offset
+	if cov_changed:
+		_last_cloud_coverage = cloud_coverage
+	if thick_changed:
+		_last_cloud_thickness = cloud_thickness_m
+	if alt_changed:
+		_last_cloud_altitude = cloud_altitude_m
+	if hum_changed:
+		_last_humidity_density = humidity_density_gm3
+	if dust_changed:
+		_last_dust_density = dust_density
+	if spin_changed:
+		_last_spin_direction = spin_direction
+	if wind_changed:
+		_last_wind_velocity = wind_velocity
+	if light_changed:
+		_last_light_int = light_int
+		_last_lut_tex = lut_tex
+
 	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
 	if cylinder_world:
+		var eff_p = get_effective_precipitation_rate()
 		if cylinder_world.surface_material is ShaderMaterial:
 			cylinder_world.surface_material.set_shader_parameter("cloud_coverage", cloud_coverage)
+			cylinder_world.surface_material.set_shader_parameter("cloud_thickness", cloud_thickness_m)
+			cylinder_world.surface_material.set_shader_parameter("precipitation_rate", eff_p)
+			cylinder_world.surface_material.set_shader_parameter("is_snow_mode", 1.0 if is_snow_mode else 0.0)
 		if cylinder_world.water_material is ShaderMaterial:
 			cylinder_world.water_material.set_shader_parameter("cloud_coverage", cloud_coverage)
+			cylinder_world.water_material.set_shader_parameter("cloud_thickness", cloud_thickness_m)
+			cylinder_world.water_material.set_shader_parameter("precipitation_rate", eff_p)
+			cylinder_world.water_material.set_shader_parameter("is_snow_mode", 1.0 if is_snow_mode else 0.0)
 
 func _sync_with_scene_lighting() -> void:
 	_update_shader_parameters()
+	_update_concentric_render_priorities()
+
+func _update_concentric_render_priorities() -> void:
+	var vp = get_viewport()
+	var cam = vp.get_camera_3d() if (is_inside_tree() and vp) else null
+	if not cam:
+		return
+	var cam_pos = cam.global_position
+	var cam_r = Vector2(cam_pos.x, cam_pos.y).length()
+	var water_r = cylinder_radius - 20.0 # water surface radius
+
+	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
+	var water_mat = cylinder_world.water_material as ShaderMaterial if cylinder_world else null
+
+	var is_underwater = (cam_r >= water_r)
+
+	if is_underwater:
+		# Camera is submerged underwater:
+		# Overhead clouds are in the distant background -> render_priority 0
+		# Water surface underside is in the immediate foreground -> render_priority 1
+		if near_cloud_material and near_cloud_material.render_priority != 0:
+			near_cloud_material.render_priority = 0
+		if far_cloud_material and far_cloud_material.render_priority != 0:
+			far_cloud_material.render_priority = 0
+		if water_mat and water_mat.render_priority != 1:
+			water_mat.render_priority = 1
+	else:
+		# Camera is above water (flight, ground surface, mountains, air):
+		# All water surfaces (local and distant opposite-side water) are in the background relative to the cloud canopy.
+		# Water renders FIRST -> render_priority 0
+		# Cloud canopy renders ON TOP -> render_priority 1
+		if water_mat and water_mat.render_priority != 0:
+			water_mat.render_priority = 0
+		if near_cloud_material and near_cloud_material.render_priority != 1:
+			near_cloud_material.render_priority = 1
+		if far_cloud_material and far_cloud_material.render_priority != 1:
+			far_cloud_material.render_priority = 1
 
 func set_spin_direction(is_ccw: bool) -> void:
 	spin_direction = SpinDirection.COUNTER_CLOCKWISE if is_ccw else SpinDirection.CLOCKWISE
@@ -1047,5 +1375,11 @@ func get_telemetry() -> Dictionary:
 		"wind_speed_km_h": current_wind_speed_m_s * 3.6
 	}
 
-func _emit_weather_telemetry() -> void:
+var weather_telem_timer: float = 0.0
+
+func _emit_weather_telemetry(delta: float = 0.016) -> void:
+	weather_telem_timer += delta
+	if weather_telem_timer < 0.1:
+		return
+	weather_telem_timer = 0.0
 	weather_updated.emit(get_telemetry())

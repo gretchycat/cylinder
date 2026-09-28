@@ -24,7 +24,6 @@ var last_look_pos: Vector2 = Vector2.ZERO
 @onready var jump_btn: Button = $ActionButtons/JumpButton
 @onready var fly_btn: Button = $ActionButtons/FlyButton
 @onready var sprint_btn: Button = $ActionButtons/SprintButton
-@onready var wobble_btn: Button = get_node_or_null("ActionButtons/WobbleButton")
 @onready var fly_up_btn: Button = get_node_or_null("ActionButtons/FlyUpButton")
 @onready var fly_down_btn: Button = get_node_or_null("ActionButtons/FlyDownButton")
 
@@ -39,9 +38,8 @@ func _ready() -> void:
 	if fly_btn:
 		fly_btn.pressed.connect(_on_fly_pressed)
 	if sprint_btn:
+		sprint_btn.text = "SPRINT: ON" if (player and player.mobile_sprint_active) else "SPRINT: OFF"
 		sprint_btn.pressed.connect(_on_sprint_pressed)
-	if wobble_btn:
-		wobble_btn.pressed.connect(_on_wobble_pressed)
 
 	if fly_up_btn:
 		fly_up_btn.button_down.connect(func(): if player: player.fly_vertical_axis = 1.0)
@@ -105,8 +103,16 @@ func _is_pos_inside_ui(pos: Vector2) -> bool:
 	if ctrl_panel and ctrl_panel.visible and ctrl_panel.get_global_rect().has_point(pos):
 		return true
 
+	var telem_panel = get_tree().root.find_child("TelemetryPanel", true, false) as Control
+	if telem_panel and telem_panel.visible and telem_panel.get_global_rect().has_point(pos):
+		return true
+
 	var toggle_btn = get_tree().root.find_child("ToggleControlsButton", true, false) as Control
 	if toggle_btn and toggle_btn.get_global_rect().has_point(pos):
+		return true
+
+	var toggle_telem_btn = get_tree().root.find_child("ToggleTelemetryButton", true, false) as Control
+	if toggle_telem_btn and toggle_telem_btn.get_global_rect().has_point(pos):
 		return true
 
 	return false
@@ -323,10 +329,6 @@ func _on_sprint_pressed() -> void:
 		player.is_sprinting = player.mobile_sprint_active
 		if sprint_btn:
 			sprint_btn.text = "SPRINT: ON" if player.mobile_sprint_active else "SPRINT: OFF"
-
-func _on_wobble_pressed() -> void:
-	if player:
-		player.wobble_impulse(25.0)
 
 func _update_fly_buttons_visibility() -> void:
 	var flying = player.is_flying if player else false

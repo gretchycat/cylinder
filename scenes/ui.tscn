@@ -1,8 +1,7 @@
-[gd_scene load_steps=7 format=3 uid="uid://b0y3t4u1e5r2w"]
+[gd_scene load_steps=6 format=3 uid="uid://b0y3t4u1e5r2w"]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/mobile_touch_controls.gd" id="2_touch"]
-[ext_resource type="Script" path="res://scripts/artificial_horizon.gd" id="3_horizon"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 bg_color = Color(0.08, 0.09, 0.12, 0.78)
@@ -64,133 +63,228 @@ color = Color(1, 1, 1, 0.7)
 
 [node name="UIRoot" type="Control" parent="."]
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
 mouse_filter = 2
 
-[node name="TelemetryPanel" type="PanelContainer" parent="UIRoot"]
+[node name="FPSLabel" type="Label" parent="UIRoot"]
 layout_mode = 0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = 400.0
-offset_bottom = 180.0
+offset_left = 15.0
+offset_top = 15.0
+offset_right = 200.0
+offset_bottom = 45.0
+theme_override_colors/font_color = Color(1, 0.95, 0.15, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 16
+text = "-- FPS"
+
+[node name="TelemetryPanel" type="PanelContainer" parent="UIRoot"]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 15.0
+offset_top = 58.0
+offset_right = -15.0
+grow_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UIRoot/TelemetryPanel"]
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
 
-[node name="TitleLabel" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer"]
+[node name="TelemetryVBox" type="VBoxContainer" parent="UIRoot/TelemetryPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 3
+
+[node name="TitleLabel" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer/TelemetryVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 14
-text = "O'NEILL CYLINDER TELEMETRY"
+theme_override_font_sizes/font_size = 12
+text = "O'NEILL CYLINDER TELEMETRY & HABITAT STATUS"
 
-[node name="ModeBadge" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer"]
+[node name="ModeBadge" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer/TelemetryVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 1, 0.4, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "MODE: [SURFACE WALKING]"
 
-[node name="HorizonStatusLabel" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer"]
+[node name="HorizonStatusLabel" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer/TelemetryVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 1, 0.5, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 11
 text = "HORIZON: [PERPENDICULAR - LOCKED]"
 
-[node name="HSeparator" type="HSeparator" parent="UIRoot/TelemetryPanel/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="UIRoot/TelemetryPanel/VBoxContainer/TelemetryVBox"]
 layout_mode = 2
 
-[node name="TelemetryLabel" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer"]
+[node name="TelemetryLabel" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer/TelemetryVBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 11
 text = "GRAVITY: 1.00 G
 DISTANCE TO AXIS: 4000.0 m
 ALTITUDE: 0.0 m
 VELOCITY: 0.0 m/s"
 
-[node name="HorizonContainer" type="PanelContainer" parent="UIRoot"]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 195.0
-offset_right = 190.0
-offset_bottom = 360.0
+[node name="HSeparator2" type="HSeparator" parent="UIRoot/TelemetryPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="LookingAtVBox" type="VBoxContainer" parent="UIRoot/TelemetryPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 3
+
+[node name="LookingAtTitle" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer/LookingAtVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "👁️ TARGET INSPECTOR (AIM VECTOR)"
+
+[node name="TerrainTypeLabel" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer/LookingAtVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 1, 0.45, 1)
+theme_override_font_sizes/font_size = 11
+text = "Terrain: Initializing..."
+
+[node name="ObjectLabel" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer/LookingAtVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.3, 1)
+theme_override_font_sizes/font_size = 11
+text = "Object:  Initializing..."
+
+[node name="CoordsLabel" type="Label" parent="UIRoot/TelemetryPanel/VBoxContainer/LookingAtVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 10
+text = "Distance: -- m | Coordinates: --"
+
+[node name="EventLogPanel" type="PanelContainer" parent="UIRoot"]
+visible = false
+clip_contents = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+anchor_bottom = 0.58
+offset_left = 15.0
+offset_top = 58.0
+offset_right = -15.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="UIRoot/HorizonContainer"]
+[node name="EventLogVBox" type="VBoxContainer" parent="UIRoot/EventLogPanel"]
 layout_mode = 2
-alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 4
 
-[node name="HorizonTitle" type="Label" parent="UIRoot/HorizonContainer/VBoxContainer"]
+[node name="LogHeader" type="HBoxContainer" parent="UIRoot/EventLogPanel/EventLogVBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+size_flags_horizontal = 3
+
+[node name="LogTitleLabel" type="Label" parent="UIRoot/EventLogPanel/EventLogVBox/LogHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.78, 0.25, 1)
 theme_override_font_sizes/font_size = 11
-text = "HORIZON ATTITUDE"
-horizontal_alignment = 1
+text = "> SYSTEM EVENT LOG [CONSOLE]"
+clip_text = true
 
-[node name="ArtificialHorizon" type="Control" parent="UIRoot/HorizonContainer/VBoxContainer"]
-custom_minimum_size = Vector2(146, 100)
+[node name="CopyLogButton" type="Button" parent="UIRoot/EventLogPanel/EventLogVBox/LogHeader"]
 layout_mode = 2
-script = ExtResource("3_horizon")
-
-[node name="HorizonAngleLabel" type="Label" parent="UIRoot/HorizonContainer/VBoxContainer"]
-layout_mode = 2
+focus_mode = 0
 theme_override_font_sizes/font_size = 10
-text = "ROLL: +0.0°
-RATE: 16.0/s"
-horizontal_alignment = 1
+text = "📋 COPY"
 
-[node name="HelpLabel" type="Label" parent="UIRoot"]
+[node name="ClearLogButton" type="Button" parent="UIRoot/EventLogPanel/EventLogVBox/LogHeader"]
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 10
+text = "CLEAR"
+
+[node name="EventLogRichText" type="RichTextLabel" parent="UIRoot/EventLogPanel/EventLogVBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+focus_mode = 0
+theme_override_colors/default_color = Color(0.85, 0.92, 1, 0.9)
+theme_override_font_sizes/normal_font_size = 11
+bbcode_enabled = true
+scroll_following = true
+autowrap_mode = 2
+text = "[color=#55ffff][00:00:00][/color] [color=#88ff88]O'Neill Habitat Systems Initialized.[/color]
+[color=#55ffff][00:00:00][/color] [color=#ffdd55]Centrifugal Gravity nominal at 9.5 m/s² (1.00 G).[/color]"
+
+[node name="ToggleTelemetryButton" type="Button" parent="UIRoot"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -340.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = 162.0
+offset_left = -345.0
+offset_top = 15.0
+offset_right = -260.0
+offset_bottom = 48.0
 grow_horizontal = 0
-theme_override_colors/font_color = Color(0.8, 0.85, 0.9, 0.75)
-theme_override_font_sizes/font_size = 11
-text = "CONTROLS:
-Left Joystick / WASD : Move (No camera turn)
-Drag Anywhere Else : Rotate camera view
-Space : Jump / Ascend | Shift : Sprint
-F : Toggle 3D Fly Mode (Microgravity exploration)
-Q/E : Fly Down / Up
-T / Wobble Button : Perturb Horizon Roll
-R : Reset to Spawn"
-horizontal_alignment = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 12
+text = "Info ℹ"
+
+[node name="ToggleLogButton" type="Button" parent="UIRoot"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -250.0
+offset_top = 15.0
+offset_right = -180.0
+offset_bottom = 48.0
+grow_horizontal = 0
+focus_mode = 0
+theme_override_font_sizes/font_size = 12
+text = "Log 📜"
 
 [node name="ToggleControlsButton" type="Button" parent="UIRoot"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -160.0
-offset_top = 165.0
-offset_right = -20.0
-offset_bottom = 200.0
+offset_left = -170.0
+offset_top = 15.0
+offset_right = -70.0
+offset_bottom = 48.0
 grow_horizontal = 0
 focus_mode = 0
 theme_override_font_sizes/font_size = 12
-text = "Tuning Settings ⚙"
+text = "Settings ⚙"
+
+[node name="ToggleKeyboardButton" type="Button" parent="UIRoot"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -60.0
+offset_top = 15.0
+offset_right = -15.0
+offset_bottom = 48.0
+grow_horizontal = 0
+focus_mode = 0
+theme_override_font_sizes/font_size = 12
+text = "⌨"
 
 [node name="ControlPanel" type="PanelContainer" parent="UIRoot"]
 visible = false
 layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
+anchors_preset = 10
 anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -365.0
-offset_top = 180.0
+offset_left = 15.0
+offset_top = 58.0
 offset_right = -15.0
-offset_bottom = -15.0
-grow_horizontal = 0
-grow_vertical = 2
+offset_bottom = 448.0
+grow_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="TabContainer" type="TabContainer" parent="UIRoot/ControlPanel"]
@@ -201,6 +295,8 @@ current_tab = 0
 
 [node name="Climate" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
 [node name="VBoxClimate" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/Climate"]
@@ -211,6 +307,8 @@ theme_override_constants/separation = 7
 [node name="Weather" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
 visible = false
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
 [node name="VBoxWeather" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/Weather"]
@@ -221,6 +319,8 @@ theme_override_constants/separation = 7
 [node name="Lighting" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
 visible = false
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
 [node name="VBoxLighting" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/Lighting"]
@@ -231,6 +331,8 @@ theme_override_constants/separation = 7
 [node name="Time" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
 visible = false
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
 [node name="VBoxTime" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/Time"]
@@ -241,6 +343,8 @@ theme_override_constants/separation = 7
 [node name="Physics" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
 visible = false
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
 [node name="VBoxPhysics" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/Physics"]
@@ -248,9 +352,23 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 7
 
+[node name="Performance" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="VBoxPerformance" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/Performance"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
 [node name="System" type="ScrollContainer" parent="UIRoot/ControlPanel/TabContainer"]
 visible = false
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
 [node name="VBoxSystem" type="VBoxContainer" parent="UIRoot/ControlPanel/TabContainer/System"]
@@ -387,7 +505,9 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -90.0
-offset_top = -90.0
+offset_top = -80.0
+offset_right = 0.0
+offset_bottom = 0.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_font_sizes/font_size = 15
@@ -401,8 +521,9 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -190.0
-offset_top = -90.0
-offset_right = -105.0
+offset_top = -80.0
+offset_right = -100.0
+offset_bottom = 0.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_font_sizes/font_size = 13
@@ -416,27 +537,13 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -90.0
-offset_top = -160.0
+offset_top = -170.0
+offset_right = 0.0
+offset_bottom = -90.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_font_sizes/font_size = 13
-text = "SPRINT"
-
-[node name="WobbleButton" type="Button" parent="UIRoot/TouchControls/ActionButtons"]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -190.0
-offset_top = -160.0
-offset_right = -105.0
-offset_bottom = -105.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_override_font_sizes/font_size = 11
-text = "WOBBLE"
+text = "SPRINT: ON"
 
 [node name="FlyUpButton" type="Button" parent="UIRoot/TouchControls/ActionButtons"]
 visible = false
@@ -447,9 +554,9 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -285.0
-offset_top = -160.0
+offset_top = -170.0
 offset_right = -205.0
-offset_bottom = -105.0
+offset_bottom = -90.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_font_sizes/font_size = 12
@@ -464,8 +571,9 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -285.0
-offset_top = -90.0
+offset_top = -80.0
 offset_right = -205.0
+offset_bottom = 0.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_font_sizes/font_size = 12

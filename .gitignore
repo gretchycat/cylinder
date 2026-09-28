@@ -8,3 +8,4 @@ android/
 *.aab
 __pycache__/
 *.pyc
+Screenshot_*.png*

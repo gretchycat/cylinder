@@ -10,13 +10,14 @@ signal telemetry_updated(data: Dictionary)
 @export var cylinder_length: float = 18000.0
 
 @export_category("Movement & Gravity")
-@export var walk_speed: float = 8.0
-@export var sprint_speed: float = 20.0
-@export var fly_speed: float = 80.0
-@export var acceleration: float = 16.0
+@export var walk_speed: float = 3.2
+@export var sprint_speed: float = 7.2
+@export var fly_speed: float = 75.0
+@export var acceleration: float = 18.0
 @export var air_control: float = 5.0
 @export var base_gravity: float = 9.5
-@export var jump_velocity: float = 8.5
+@export var jump_velocity: float = 6.2
+@export var max_walkable_slope_deg: float = 45.0
 @export var horizon_alignment_speed: float = 20.0
 @export var attitude_flatten_speed: float = 3.0
 
@@ -36,8 +37,12 @@ signal telemetry_updated(data: Dictionary)
 @export var min_elevation_above_sea: float = 2.0
 
 var is_flying: bool = false
-var is_sprinting: bool = false
-var mobile_sprint_active: bool = false
+var is_sprinting: bool = true
+var mobile_sprint_active: bool = true
+
+# Jump and vertical kinematics
+var vertical_velocity: float = 0.0
+var jump_cooldown_timer: float = 0.0
 
 # Virtual input state (for keyboard or mobile touch controls)
 var input_axis: Vector2 = Vector2.ZERO
@@ -65,18 +70,19 @@ func _ready() -> void:
 	# and dragging the virtual joystick moves only
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
-	# Ensure camera far distance covers the 18 km cylinder and end caps (26 km total)
+	# Ensure camera far distance covers the 18 km cylinder and end caps (30 km total)
 	if camera:
+		camera.near = 0.2
 		camera.far = 40000.0
 
-	# Ultra-forgiving collision recovery across terrain seams and 26 km end cap dishes
-	safe_margin = 0.15
-	max_slides = 8
-	floor_snap_length = 1.5
-	floor_max_angle = deg_to_rad(89.5)
+	# Collision recovery across terrain seams and 26 km end cap dishes
+	safe_margin = 0.08
+	max_slides = 6
+	floor_snap_length = 0.15
+	floor_max_angle = deg_to_rad(max_walkable_slope_deg)
 	floor_constant_speed = true
-	floor_stop_on_slope = false
-	floor_block_on_wall = false
+	floor_stop_on_slope = true
+	floor_block_on_wall = true
 	wall_min_slide_angle = 0.0
 
 	# Spawn accurately onto inner cylinder terrain
@@ -102,10 +108,14 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("reset_position"):
 		reset_to_spawn()
 
-	# Hotkeys: T (wobble test), C (deploy campfire), L (deploy lamp post), P (launch particle), G (vertical toss)
+	# Hotkeys: T (wobble test), C (deploy campfire), L (deploy lamp post), P (launch particle), G (vertical toss), I (toggle target inspector)
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_T:
 			wobble_impulse(22.0)
+		elif event.keycode == KEY_I:
+			var hud = get_tree().get_first_node_in_group("hud") if is_inside_tree() else null
+			if hud and hud.has_method("toggle_looking_at"):
+				hud.toggle_looking_at()
 		elif event.keycode == KEY_C and not is_flying:
 			deploy_campfire()
 		elif event.keycode == KEY_L:
@@ -141,7 +151,7 @@ func wobble_impulse(amount_deg: float = 20.0) -> void:
 func get_locomotion_state() -> String:
 	if is_flying:
 		return "FLYING"
-	if not is_on_floor():
+	if not is_on_floor() or jump_cooldown_timer > 0.0:
 		var v_up = velocity.dot(global_basis.y)
 		return "JUMPING" if v_up > 0.3 else "FALLING"
 	if is_sprinting and velocity.length() > 0.5:
@@ -161,10 +171,60 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
-	if not is_flying and is_on_floor():
-		_perform_step_glide(delta)
+	if not is_flying and is_on_floor() and jump_cooldown_timer <= 0.0:
+		if input_axis.length_squared() < 0.01:
+			velocity = -global_basis.y * 0.5
+		else:
+			_perform_step_glide(delta)
 
-	_emit_telemetry()
+	_enforce_surface_and_habitat_bounds()
+
+	_emit_telemetry(delta)
+
+func _enforce_surface_and_habitat_bounds() -> void:
+	var cyl_world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
+	if not cyl_world and get_parent():
+		cyl_world = get_parent().get_node_or_null("CylinderWorld")
+
+	var theta = atan2(global_position.y, global_position.x)
+	var z = global_position.z
+	var elev = 0.0
+	if cyl_world and cyl_world.has_method("get_elevation_at"):
+		elev = cyl_world.get_elevation_at(theta, z)
+
+	var surface_r = cylinder_radius - elev
+	var player_xy = Vector2(global_position.x, global_position.y)
+	var current_r = player_xy.length()
+	var max_allowed_r = surface_r - 0.90 # Player half-height 0.925m (prevents floor penetration)
+
+	var half_len = cylinder_length * 0.5
+	var abs_z = absf(z)
+
+	# 1. End Cap Hemispherical Bulkhead containment (z < -half_len or z > half_len)
+	if abs_z > half_len:
+		var delta_z = abs_z - half_len
+		var dome_dist = sqrt(current_r * current_r + delta_z * delta_z)
+		var max_dome_r = cylinder_radius - 0.90
+		if dome_dist > max_dome_r and dome_dist > 0.01:
+			var scale_f = max_dome_r / dome_dist
+			var clamped_xy = player_xy * scale_f
+			global_position.x = clamped_xy.x
+			global_position.y = clamped_xy.y
+			global_position.z = (half_len + delta_z * scale_f) * (1.0 if z > 0.0 else -1.0)
+			return
+
+	# 2. Cylindrical terrain floor containment (failsafe: only if player has fallen deep through collision mesh or is flying)
+	if not is_on_floor() or is_flying:
+		var max_failsafe_r = surface_r - 0.70
+		if current_r > max_failsafe_r:
+			if current_r > 0.01:
+				var clamped_xy = player_xy.normalized() * max_failsafe_r
+				global_position.x = clamped_xy.x
+				global_position.y = clamped_xy.y
+				var inward_up = -Vector3(player_xy.x, player_xy.y, 0.0).normalized()
+				var outward_vel = -velocity.dot(inward_up)
+				if outward_vel > 0.0:
+					velocity += inward_up * outward_vel
 
 func _update_input() -> void:
 	# Keyboard input
@@ -177,7 +237,7 @@ func _update_input() -> void:
 	if kb_axis.length_squared() > 0.01:
 		input_axis = kb_axis.normalized()
 
-	# Combine keyboard Shift sprint with mobile toggle
+	# Sprint: Shift key on keyboard, or mobile sprint toggle
 	is_sprinting = Input.is_action_pressed("sprint") or mobile_sprint_active
 
 	var up_str = Input.get_action_strength("fly_up")
@@ -235,23 +295,11 @@ func _update_horizon_and_gravity(delta: float) -> void:
 	wobble_roll += wobble_velocity * delta
 	wobble_roll = clampf(wobble_roll, -deg_to_rad(45.0), deg_to_rad(45.0))
 
-	# --- Attitude Auto-Flattening When Taking Steps ---
+	# --- Look and Wobble Damping ---
 	if look_control_timer > 0.0:
 		look_control_timer = maxf(0.0, look_control_timer - delta)
 
-	var is_actively_controlling = look_control_timer > 0.0
-	var is_taking_steps = is_on_floor() and not is_flying and (input_axis.length_squared() > 0.01 or velocity.length() > 0.3)
-
-	if is_taking_steps and not is_actively_controlling:
-		# Smoothly flatten pitch attitude towards horizontal level (0.0) as steps are taken
-		pitch = lerpf(pitch, 0.0, clampf(attitude_flatten_speed * delta, 0.0, 1.0))
-		head.rotation.x = pitch
-
-		# Settle any residual roll wobble to flat
-		wobble_roll = lerpf(wobble_roll, 0.0, clampf(attitude_flatten_speed * 2.0 * delta, 0.0, 1.0))
-		wobble_velocity = lerpf(wobble_velocity, 0.0, clampf(attitude_flatten_speed * 2.0 * delta, 0.0, 1.0))
-
-	# Apply roll wobble / attitude to camera head
+	# Apply roll wobble / attitude to camera head (pitch is strictly controlled by player look input)
 	head.rotation.z = wobble_roll
 
 func _process_ground_movement(delta: float) -> void:
@@ -261,10 +309,32 @@ func _process_ground_movement(delta: float) -> void:
 	var gravity_factor = clampf(dist_from_axis / cylinder_radius, 0.0, 1.0)
 	var current_gravity = base_gravity * gravity_factor
 
-	var move_speed = sprint_speed if is_sprinting else walk_speed
+	if jump_cooldown_timer > 0.0:
+		jump_cooldown_timer = maxf(0.0, jump_cooldown_timer - delta)
+
+	var is_grounded = is_on_floor() and jump_cooldown_timer <= 0.0
 	var input_len = input_axis.length()
 
-	# Base movement direction in player's local horizontal frame (tangent to cylinder surface)
+	# 1. Handle Jump Initiation (standing still or moving)
+	if jump_requested and (is_on_floor() or jump_cooldown_timer > 0.0):
+		jump_requested = false
+		vertical_velocity = jump_velocity
+		jump_cooldown_timer = 0.20 # 200ms upward liftoff window
+		floor_snap_length = 0.0
+		var cur_v_up = velocity.dot(current_up)
+		var cur_v_h = velocity - current_up * cur_v_up
+		velocity = cur_v_h + current_up * vertical_velocity
+		return
+
+	# 2. Rock-solid motionless stop when grounded with no input (zero slope/downhill drift)
+	if is_grounded and input_len < 0.01:
+		vertical_velocity = -0.5
+		velocity = -current_up * 0.5
+		floor_snap_length = 0.15
+		jump_requested = false
+		return
+
+	# 3. Base movement direction in player's local horizontal frame (tangent to cylinder surface)
 	var flat_move_dir = (global_basis.x * input_axis.x + global_basis.z * input_axis.y)
 	flat_move_dir = (flat_move_dir - current_up * flat_move_dir.dot(current_up))
 	if flat_move_dir.length_squared() > 1e-5:
@@ -273,12 +343,12 @@ func _process_ground_movement(delta: float) -> void:
 		flat_move_dir = Vector3.ZERO
 
 	# Grade / Slope steepness speed scaling
-	var floor_norm = get_floor_normal() if is_on_floor() and get_floor_normal().length_squared() > 0.5 else current_up
+	var floor_norm = get_floor_normal() if is_grounded and get_floor_normal().length_squared() > 0.5 else current_up
 	var slope_angle = current_up.angle_to(floor_norm)
 	var uphill_component = -flat_move_dir.dot(floor_norm)
 
 	var grade_speed_mult = 1.0
-	if is_on_floor() and flat_move_dir != Vector3.ZERO:
+	if is_grounded and flat_move_dir != Vector3.ZERO:
 		if uphill_component > 0.01:
 			# Uphill: forward progress relates to steepness of the grade (steeper = slower, never trapped)
 			var sin_slope = sin(slope_angle)
@@ -288,33 +358,42 @@ func _process_ground_movement(delta: float) -> void:
 			var sin_slope = sin(slope_angle)
 			grade_speed_mult = clampf(1.0 + (sin_slope * (-uphill_component) * 0.15), 1.0, 1.20)
 
+	var move_speed = sprint_speed if is_sprinting else walk_speed
 	var target_speed = move_speed * grade_speed_mult
 	var target_h_vel = flat_move_dir * (target_speed * input_len)
 
 	# Decompose current velocity into vertical (along current_up) and planar (horizontal)
-	var v_up_scalar = velocity.dot(current_up)
-	var v_h = velocity - current_up * v_up_scalar
+	var cur_v_up = velocity.dot(current_up)
+	var cur_v_h = velocity - current_up * cur_v_up
 
-	var accel = acceleration if is_on_floor() else air_control
-	v_h = v_h.lerp(target_h_vel, accel * delta)
+	var accel = acceleration if is_grounded else air_control
+	var new_v_h = cur_v_h.lerp(target_h_vel, clampf(accel * delta, 0.0, 1.0))
 
-	# Apply gravity along current_up
-	if not is_on_floor():
-		v_up_scalar -= current_gravity * delta
-	else:
-		# On floor: maintain continuous floor contact without accumulating unbounded downward velocity
-		v_up_scalar = -maxf(2.0, current_gravity * 0.1)
-
-	# Jump handling
-	if jump_requested:
+	if is_grounded:
+		# Maintain ground contact on walkable slopes (<= 45°) without downward slope drift
+		vertical_velocity = -0.5
+		floor_snap_length = 0.15
 		jump_requested = false
-		if is_on_floor():
-			v_up_scalar = jump_velocity
+	else:
+		# Airborne or on steep non-walkable slope (> 45°): apply gravity toward floor
+		vertical_velocity -= current_gravity * delta
+		floor_snap_length = 0.0
 
-	velocity = v_h + current_up * v_up_scalar
+		# If contacting a steep slope (> 45°), accelerate downhill along the slope surface
+		if is_on_wall():
+			var wall_norm = get_wall_normal()
+			var wall_slope_angle = current_up.angle_to(wall_norm)
+			if wall_slope_angle > deg_to_rad(max_walkable_slope_deg):
+				var downhill_dir = (-current_up - wall_norm * (-current_up.dot(wall_norm)))
+				if downhill_dir.length_squared() > 1e-4:
+					downhill_dir = downhill_dir.normalized()
+					var slide_accel = current_gravity * sin(wall_slope_angle) * 1.5
+					new_v_h += downhill_dir * (slide_accel * delta)
+
+	velocity = new_v_h + current_up * vertical_velocity
 
 func _perform_step_glide(delta: float) -> void:
-	if not is_on_floor() or is_flying or input_axis.length_squared() < 0.01:
+	if not is_on_floor() or is_flying or input_axis.length_squared() < 0.01 or not is_on_wall() or jump_cooldown_timer > 0.0:
 		return
 
 	var current_up = global_basis.y
@@ -362,7 +441,37 @@ func toggle_fly_mode() -> void:
 		if v_up < 0.0:
 			velocity -= global_basis.y * v_up
 
+func get_spawn_points() -> Array:
+	var target_path = "res://assets/maps/default/object_map.json"
+	if not FileAccess.file_exists(target_path):
+		target_path = "res://assets/maps/object_map.json"
+	if not FileAccess.file_exists(target_path):
+		return []
+	var f = FileAccess.open(target_path, FileAccess.READ)
+	if not f:
+		return []
+	var json = JSON.new()
+	if json.parse(f.get_as_text()) != OK:
+		return []
+	var data = json.data
+	if data is Dictionary and data.has("spawn_points"):
+		return data["spawn_points"] as Array
+	return []
+
 func reset_to_spawn() -> void:
+	var spawn_pts = get_spawn_points()
+	var default_pt = null
+	for pt in spawn_pts:
+		if pt is Dictionary and pt.get("is_default", false):
+			default_pt = pt
+			break
+	if not default_pt and spawn_pts.size() > 0:
+		default_pt = spawn_pts[0]
+
+	if default_pt:
+		teleport_to_spawn_data(default_pt)
+		return
+
 	var cyl_world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
 	if not cyl_world and get_parent():
 		cyl_world = get_parent().get_node_or_null("CylinderWorld")
@@ -379,7 +488,7 @@ func reset_to_spawn() -> void:
 		elif cyl_world and cyl_world.has_method("get_elevation_at"):
 			surface_r = cylinder_radius - cyl_world.get_elevation_at(preferred_spawn_theta, preferred_spawn_z)
 
-		var spawn_r = surface_r - 0.95
+		var spawn_r = surface_r - 1.80
 		global_position = Vector3(spawn_r * cos(preferred_spawn_theta), spawn_r * sin(preferred_spawn_theta), preferred_spawn_z)
 		var up = Vector3(-cos(preferred_spawn_theta), -sin(preferred_spawn_theta), 0.0)
 		var back = Vector3(0.0, 0.0, 1.0)
@@ -391,6 +500,42 @@ func reset_to_spawn() -> void:
 	wobble_velocity = 0.0
 	head.rotation = Vector3.ZERO
 	velocity = Vector3.ZERO
+	vertical_velocity = 0.0
+	jump_cooldown_timer = 0.0
+	is_sprinting = mobile_sprint_active
+
+func teleport_to_spawn_data(spawn_dict: Dictionary) -> void:
+	var theta: float = float(spawn_dict.get("theta", preferred_spawn_theta))
+	var z: float = float(spawn_dict.get("z", preferred_spawn_z))
+	var facing_yaw: float = float(spawn_dict.get("facing_yaw_rad", 0.0))
+	var elev: float = float(spawn_dict.get("elevation", 0.0))
+
+	var cyl_world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
+	if cyl_world and cyl_world.has_method("get_elevation_at"):
+		var actual_elev = cyl_world.get_elevation_at(theta, z)
+		if actual_elev > 0.0:
+			elev = actual_elev
+
+	var spawn_r = cylinder_radius - elev - 1.80
+	global_position = Vector3(spawn_r * cos(theta), spawn_r * sin(theta), z)
+
+	var up = Vector3(-cos(theta), -sin(theta), 0.0)
+	var forward = Vector3(0.0, 0.0, 1.0) # Look +Z towards village center/fire
+	var back = -forward
+	var right = up.cross(back).normalized()
+	var base_basis = Basis(right, up, back).orthonormalized()
+	if not is_zero_approx(facing_yaw):
+		base_basis = base_basis.rotated(up, facing_yaw)
+
+	global_basis = base_basis
+	pitch = 0.0
+	wobble_roll = 0.0
+	wobble_velocity = 0.0
+	head.rotation = Vector3.ZERO
+	velocity = Vector3.ZERO
+	vertical_velocity = 0.0
+	jump_cooldown_timer = 0.0
+	is_sprinting = mobile_sprint_active
 
 func teleport_to_z(target_z: float, face_cap: bool = true) -> void:
 	var cyl_world = get_tree().get_first_node_in_group("cylinder_world")
@@ -398,7 +543,7 @@ func teleport_to_z(target_z: float, face_cap: bool = true) -> void:
 	var surface_r = cylinder_radius
 	if cyl_world and cyl_world.has_method("get_elevation_at"):
 		surface_r = cylinder_radius - cyl_world.get_elevation_at(theta, target_z)
-	var spawn_r = surface_r - 0.95
+	var spawn_r = surface_r - 1.80
 	global_position = Vector3(spawn_r * cos(theta), spawn_r * sin(theta), target_z)
 	var up = Vector3(-cos(theta), -sin(theta), 0.0)
 	var forward = Vector3(0.0, 0.0, -1.0 if target_z < 0.0 else 1.0) if face_cap else Vector3(0.0, 0.0, -1.0)
@@ -410,6 +555,9 @@ func teleport_to_z(target_z: float, face_cap: bool = true) -> void:
 	wobble_velocity = 0.0
 	head.rotation = Vector3.ZERO
 	velocity = Vector3.ZERO
+	vertical_velocity = 0.0
+	jump_cooldown_timer = 0.0
+	is_sprinting = mobile_sprint_active
 
 func deploy_campfire() -> void:
 	var ref_obj = get_tree().get_first_node_in_group("reference_objects")
@@ -424,6 +572,7 @@ func deploy_campfire() -> void:
 		var theta = atan2(target_pos.y, target_pos.x)
 		var z = target_pos.z
 		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.CAMPFIRE, theta, z)
+		HUD.log_event("Habitat Object -> Campfire deployed at surface position", "#ffaa44")
 
 func deploy_lamp_post() -> void:
 	var ref_obj = get_tree().get_first_node_in_group("reference_objects")
@@ -438,13 +587,18 @@ func deploy_lamp_post() -> void:
 		var theta = atan2(target_pos.y, target_pos.x)
 		var z = target_pos.z
 		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.LAMP_POST, theta, z)
+		HUD.log_event("Habitat Object -> Light Post / Beacon deployed at surface position", "#ffcc44")
 
 var last_telemetry: Dictionary = {}
 
-func get_telemetry() -> Dictionary:
-	return last_telemetry
+var telemetry_emit_timer: float = 0.0
 
-func _emit_telemetry() -> void:
+func _emit_telemetry(delta: float = 0.016) -> void:
+	telemetry_emit_timer += delta
+	if telemetry_emit_timer < 0.066:
+		return
+	telemetry_emit_timer = 0.0
+
 	var radial = Vector3(global_position.x, global_position.y, 0.0)
 	var dist_axis = radial.length()
 	var dist_surface = max(cylinder_radius - dist_axis, 0.0)

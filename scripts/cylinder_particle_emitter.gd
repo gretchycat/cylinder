@@ -106,6 +106,8 @@ func _setup_visual_nodes() -> void:
 	var sphere_mesh = SphereMesh.new()
 	sphere_mesh.radius = 0.3
 	sphere_mesh.height = 0.6
+	sphere_mesh.radial_segments = 5
+	sphere_mesh.rings = 2
 	particle_multimesh.mesh = sphere_mesh
 
 	var p_mat = StandardMaterial3D.new()
@@ -365,30 +367,33 @@ func predict_trajectory(origin: Vector3, initial_vel: Vector3, steps: int = 160,
 
 	return points
 
+var last_rendered_count: int = 0
+
 func _update_visuals() -> void:
 	if not show_trajectories and not show_particles:
+		if last_rendered_count > 0:
+			for i in range(last_rendered_count):
+				particle_multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0, -99999, 0)))
+			last_rendered_count = 0
 		trail_mesh.clear_surfaces()
-		for i in range(max_particles):
-			particle_multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0, -99999, 0)))
 		return
 
-	# Update MultiMesh particles
+	# Update MultiMesh particles (only iterate up to max active or previously active count)
 	var num_p = particles.size()
-	for i in range(max_particles):
+	var update_limit = mini(maxi(num_p, last_rendered_count), max_particles)
+	for i in range(update_limit):
 		if i < num_p and show_particles:
 			var p = particles[i]
-			var t: Transform3D
-			var fade = 1.0
-
 			var scale_factor = p.size if p.is_active else p.size * 0.6
-			fade = clampf(1.0 - (p.age / trail_lifetime), 0.0, 1.0)
-			t = Transform3D(Basis().scaled(Vector3.ONE * scale_factor), p.position)
+			var fade = clampf(1.0 - (p.age / trail_lifetime), 0.0, 1.0)
+			var t = Transform3D(Basis().scaled(Vector3.ONE * scale_factor), p.position)
 
 			particle_multimesh.set_instance_transform(i, t)
 			particle_multimesh.set_instance_color(i, Color(p.color.r, p.color.g, p.color.b, p.color.a * fade))
 		else:
 			particle_multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0, -99999, 0)))
 			particle_multimesh.set_instance_color(i, Color(0, 0, 0, 0))
+	last_rendered_count = num_p
 
 	# Update Trajectory Lines & Splashes
 	trail_mesh.clear_surfaces()

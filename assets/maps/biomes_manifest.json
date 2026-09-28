@@ -1,0 +1,153 @@
+{
+  "0_water_central_sea": {
+    "name": "Central Circumferential Sea",
+    "description": "Deep oceanic belt circumnavigating the cylinder axis with bathymetric drop-offs",
+    "clutter_types": [
+      "abyssal_basalt_slabs",
+      "kelp_forests",
+      "deep_trench_pebbles",
+      "hydrothermal_vents",
+      "sunken_crystals"
+    ],
+    "clutter_density": 0.06,
+    "scale_range": [
+      0.8,
+      3.0
+    ]
+  },
+  "0_water_inland_lake": {
+    "name": "Inland Freshwater Lake",
+    "description": "Sheltered inland lake basin fed by highland river tributaries",
+    "clutter_types": [
+      "lakebed_quartz_pebbles",
+      "cattails",
+      "water_lilies",
+      "river_reeds",
+      "driftwood_logs"
+    ],
+    "clutter_density": 0.14,
+    "scale_range": [
+      0.4,
+      1.8
+    ]
+  },
+  "1_sand_beach": {
+    "name": "Shoreline & Alluvial Sands",
+    "description": "Coastal beaches, delta sandbars, and silica ripple dunes",
+    "clutter_types": [
+      "coastal_shells",
+      "driftwood_twigs",
+      "quartz_pebbles",
+      "dune_grass_shoots",
+      "sandstone_shards"
+    ],
+    "clutter_density": 0.12,
+    "scale_range": [
+      0.3,
+      1.2
+    ]
+  },
+  "2_dirt_paths": {
+    "name": "Dirt Paths & Loam Earth",
+    "description": "Inter-village trodden footpaths, forest humus, and foothill loam",
+    "clutter_types": [
+      "earth_clods",
+      "humus_leaves",
+      "pebbles",
+      "sprouting_roots",
+      "small_twigs",
+      "wild_mushrooms"
+    ],
+    "clutter_density": 0.2,
+    "scale_range": [
+      0.4,
+      1.4
+    ]
+  },
+  "3_grass_flower_field": {
+    "name": "Flower Fields & Wildflower Meadow",
+    "description": "Vibrant floral bloom pastures, pastoral clover turf, and fragrant herbs",
+    "clutter_types": [
+      "poppy_blooms",
+      "lavender_tufts",
+      "bluebell_clusters",
+      "lupine_stalks",
+      "golden_buttercups",
+      "dandelion_tufts",
+      "fluttering_petals"
+    ],
+    "clutter_density": 0.45,
+    "scale_range": [
+      0.4,
+      1.6
+    ]
+  },
+  "4_farmland_plots": {
+    "name": "Cultivated Farmland & Terraces",
+    "description": "Tilled agricultural crop furrows, grain beds, and seedling terraces",
+    "clutter_types": [
+      "furrow_stakes",
+      "golden_wheat_rows",
+      "crop_seedlings",
+      "hay_wisps",
+      "irrigation_markers",
+      "stone_boundary_walls"
+    ],
+    "clutter_density": 0.3,
+    "scale_range": [
+      0.5,
+      1.8
+    ]
+  },
+  "5_rocks_rocky_area": {
+    "name": "Rocky Alpine Crags & Massifs",
+    "description": "Super-high elevation mountain massifs, craggy slate pinnacles, and scree talus",
+    "clutter_types": [
+      "scree_boulders",
+      "basalt_columns",
+      "craggy_stone_pinnacles",
+      "mineral_crystal_veins",
+      "talus_rubble",
+      "slate_shards",
+      "alpine_lichen_patches"
+    ],
+    "clutter_density": 0.32,
+    "scale_range": [
+      0.6,
+      3.8
+    ]
+  },
+  "6_concrete_city_plaza": {
+    "name": "City Center Concrete Plaza",
+    "description": "Engineered urban square, structural foundation pads, and modular concourse",
+    "clutter_types": [
+      "modular_expansion_sealant",
+      "anchor_brackets",
+      "street_drains",
+      "utility_conduits",
+      "curb_reflectors",
+      "pedestrian_bollards"
+    ],
+    "clutter_density": 0.08,
+    "scale_range": [
+      0.4,
+      1.2
+    ]
+  },
+  "7_road_highway": {
+    "name": "Paved Regional Highway & Bridges",
+    "description": "Compacted asphalt roadbed connecting city center, bridges, and waystations",
+    "clutter_types": [
+      "aggregate_flecks",
+      "roadbed_reflectors",
+      "asphalt_gravel",
+      "roadside_mile_markers",
+      "drainage_culverts"
+    ],
+    "clutter_density": 0.04,
+    "scale_range": [
+      0.3,
+      0.9
+    ]
+  }
+}
