@@ -7,8 +7,14 @@ extends Node3D
 @export var cylinder_length: float = 18000.0
 @export var object_map_path: String = "res://assets/maps/default/object_map.json"
 
+const DebugConsole = preload("res://scripts/debug_console.gd")
+
 func _ready() -> void:
 	add_to_group("reference_objects")
+	# Ensure DebugConsole exists in the scene
+	if not get_node_or_null("DebugConsole"):
+		var console_node = DebugConsole.new()
+		add_child(console_node)
 	# Avoid spawning duplicate objects when running in tool mode repeatedly
 	for child in get_children():
 		child.queue_free()
@@ -26,19 +32,51 @@ func _get_terrain_elevation(theta: float, z: float) -> float:
 func spawn_all_markers() -> void:
 	var spawned_from_json = _load_and_spawn_from_json()
 	if not spawned_from_json:
+		DebugConsole.log("[ReferenceObjects] JSON load failed, using defaults")
 		_spawn_default_campfires()
 		_spawn_default_beacon_lanterns()
+	else:
+		print("[ReferenceObjects] Loaded objects, count after load: ", get_child_count())
+		if get_child_count() == 0:
+			print("[ReferenceObjects] No objects spawned, adding debug campfire")
+			_spawn_default_campfires()
+			_spawn_default_beacon_lanterns()
 
 func _load_and_spawn_from_json() -> bool:
 	var target_path = object_map_path
-	if not FileAccess.file_exists(target_path):
-		if FileAccess.file_exists("res://assets/maps/object_map.json"):
-			target_path = "res://assets/maps/object_map.json"
-		else:
-			return false
+	var cyl_world = get_parent().get_node_or_null("CylinderWorld") if get_parent() else null
+	if not cyl_world and is_inside_tree():
+		cyl_world = get_tree().get_first_node_in_group("cylinder_world")
+	if cyl_world and "map_package" in cyl_world and not str(cyl_world.map_package).is_empty():
+		var cfg = MapConfig.load_map_config(cyl_world.map_package)
+		if not cfg.is_empty():
+			var cfg_obj_path = MapConfig.get_object_map_path(cfg)
+			if not cfg_obj_path.is_empty():
+				target_path = cfg_obj_path
 
-	var f = FileAccess.open(target_path, FileAccess.READ)
+	var candidate_paths: Array[String] = [
+		target_path,
+		"res://assets/maps/default/object_map.json",
+		"res://assets/maps/object_map.json",
+		ProjectSettings.globalize_path(target_path),
+		ProjectSettings.globalize_path("res://assets/maps/default/object_map.json"),
+		ProjectSettings.globalize_path("res://assets/maps/object_map.json"),
+		"assets/maps/default/object_map.json",
+		"assets/maps/object_map.json"
+	]
+
+	var f: FileAccess = null
+	var resolved_path: String = ""
+	for p in candidate_paths:
+		if p.is_empty():
+			continue
+		f = FileAccess.open(p, FileAccess.READ)
+		if f != null:
+			resolved_path = p
+			break
+
 	if not f:
+		DebugConsole.log("[ReferenceObjects] Could not open object_map.json from any path!")
 		return false
 
 	var json_str = f.get_as_text()
@@ -47,7 +85,7 @@ func _load_and_spawn_from_json() -> bool:
 	var json_inst = JSON.new()
 	var err = json_inst.parse(json_str)
 	if err != OK:
-		push_warning("ReferenceObjects: Failed to parse object_map.json: %s" % json_inst.get_error_message())
+		push_warning("ReferenceObjects: Failed to parse object_map.json (%s): %s" % [resolved_path, json_inst.get_error_message()])
 		return false
 
 	var data = json_inst.data
@@ -58,6 +96,7 @@ func _load_and_spawn_from_json() -> bool:
 	if objects_arr.is_empty():
 		return false
 
+	var spawned_count: int = 0
 	for obj in objects_arr:
 		if not (obj is Dictionary):
 			continue
@@ -77,6 +116,8 @@ func _load_and_spawn_from_json() -> bool:
 			obj_type = SurfaceLightObject.ObjectType.TREE
 		elif obj_type_int == 7:
 			obj_type = SurfaceLightObject.ObjectType.WINDMILL
+		elif obj_type_int == 8:
+			obj_type = SurfaceLightObject.ObjectType.FOREST
 
 		var theta: float = float(obj.get("theta", 0.0))
 		var z: float = float(obj.get("z", 0.0))
@@ -90,9 +131,11 @@ func _load_and_spawn_from_json() -> bool:
 		var light_range: float = float(obj.get("light_range", 45.0))
 		var light_energy: float = float(obj.get("light_energy", 5.5))
 		var yaw_angle: float = float(obj.get("yaw_rad", 0.0))
+		var tree_variant_idx: int = int(obj.get("tree_variant", -1))
 
 		var custom_pos = Vector3.ZERO
-		var cyl_world = get_parent().get_node_or_null("CylinderWorld") if get_parent() else null
+		if not cyl_world:
+			cyl_world = get_parent().get_node_or_null("CylinderWorld") if get_parent() else null
 		if not cyl_world:
 			cyl_world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
 		if cyl_world and cyl_world.has_method("get_surface_mesh_point_and_normal"):
@@ -101,22 +144,55 @@ func _load_and_spawn_from_json() -> bool:
 				custom_pos = pt_info.get("position", Vector3.ZERO)
 				elev = pt_info.get("elevation", elev)
 
-		var inst = SurfaceLightObject.create_on_cylinder(
-			obj_type,
-			theta,
-			z,
-			cylinder_radius,
-			elev,
-			col,
-			light_range,
-			yaw_angle,
-			Vector3.ZERO,
-			custom_pos
-		)
-		inst.light_energy = light_energy
-		inst.name = str(obj.get("name", "SurfaceLightObject"))
-		add_child(inst)
+		if obj_type == SurfaceLightObject.ObjectType.FOREST:
+			# Expected JSON fields: forest_radius (float), tree_count (int), optional tree_variants (array of ints)
+			var forest_radius = float(obj.get("forest_radius", 30.0))
+			var tree_count = int(obj.get("tree_count", 20))
+			var variant_list = obj.get("tree_variants", [])
+			for i in range(tree_count):
+				var angle_offset = randf_range(-PI, PI) * (forest_radius / cylinder_radius)
+				var dz = randf_range(-forest_radius, forest_radius)
+				var t_theta = theta + angle_offset
+				var t_z = z + dz
+				var t_variant_idx = -1
+				if variant_list.size() > 0:
+					t_variant_idx = int(variant_list[i % variant_list.size()])
+				else:
+					t_variant_idx = randi() % 6
+				var tree_inst = SurfaceLightObject.create_on_cylinder(
+					SurfaceLightObject.ObjectType.TREE,
+					t_theta,
+					t_z,
+					cylinder_radius,
+					_get_terrain_elevation(t_theta, t_z),
+					Color.WHITE,
+					45.0,
+					0.0,
+					Vector3.ZERO,
+					Vector3.ZERO,
+					t_variant_idx
+				)
+				add_child(tree_inst)
+		else:
+			var inst = SurfaceLightObject.create_on_cylinder(
+				obj_type,
+				theta,
+				z,
+				cylinder_radius,
+				elev,
+				col,
+				light_range,
+				yaw_angle,
+				Vector3.ZERO,
+				custom_pos,
+				tree_variant_idx
+			)
+			inst.light_energy = light_energy
+			inst.name = str(obj.get("name", "SurfaceLightObject"))
+			add_child(inst)
+			spawned_count += 1
 
+	DebugConsole.log("[ReferenceObjects] Successfully spawned %d objects from %s" % [spawned_count, resolved_path])
 	return true
 
 func _spawn_default_campfires() -> void:

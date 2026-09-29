@@ -442,12 +442,19 @@ func toggle_fly_mode() -> void:
 			velocity -= global_basis.y * v_up
 
 func get_spawn_points() -> Array:
-	var target_path = "res://assets/maps/default/object_map.json"
-	if not FileAccess.file_exists(target_path):
-		target_path = "res://assets/maps/object_map.json"
-	if not FileAccess.file_exists(target_path):
-		return []
-	var f = FileAccess.open(target_path, FileAccess.READ)
+	var candidate_paths = [
+		"res://assets/maps/default/object_map.json",
+		"res://assets/maps/object_map.json",
+		ProjectSettings.globalize_path("res://assets/maps/default/object_map.json"),
+		ProjectSettings.globalize_path("res://assets/maps/object_map.json"),
+		"assets/maps/default/object_map.json",
+		"assets/maps/object_map.json"
+	]
+	var f: FileAccess = null
+	for p in candidate_paths:
+		f = FileAccess.open(p, FileAccess.READ)
+		if f != null:
+			break
 	if not f:
 		return []
 	var json = JSON.new()

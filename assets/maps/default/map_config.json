@@ -551,7 +551,15 @@
       "bridges": 46,
       "houses": 23,
       "trees": 90,
-      "windmills": 3
+      "windmills": 3,
+      "tree_variants": {
+        "oak": 31,
+        "pine": 20,
+        "birch": 11,
+        "willow": 15,
+        "cherry_blossom": 8,
+        "dead_tree": 5
+      }
     },
     "settlements": [
       {

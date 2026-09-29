@@ -549,7 +549,7 @@ def generate_tileable_maps(
     CYLINDER_RADIUS = 4000.0
     CYLINDER_LENGTH = 18000.0
 
-    def add_object(obj_type_enum, u_coord, v_coord, name, color_rgb, light_range, energy, settlement_id, role, yaw_rad=0.0):
+    def add_object(obj_type_enum, u_coord, v_coord, name, color_rgb, light_range, energy, settlement_id, role, yaw_rad=0.0, tree_variant=None):
         theta = (u_coord * math.tau) - math.pi
         z = (v_coord - 0.5) * CYLINDER_LENGTH
         px = int(round(u_coord * (width - 1))) % width
@@ -572,6 +572,9 @@ def generate_tileable_maps(
             "settlement_id": settlement_id,
             "role": role
         }
+        if obj_type_enum == 6 and tree_variant is not None:
+            entry["tree_variant"] = tree_variant
+            entry["tree_variant_name"] = ["OAK", "PINE", "BIRCH", "WILLOW", "CHERRY_BLOSSOM", "DEAD_TREE"][tree_variant]
         object_entries.append(entry)
 
         # Draw on preview
@@ -598,10 +601,10 @@ def generate_tileable_maps(
         e_chk = elev_grid[py_chk][px_chk]
         return e_chk >= water_level + 0.5 and t_chk not in (0, 7) # not water and not road
 
-    # Player Spawn Welcoming Campfire & Spawn Cabin (u=0.75, v=0.50 -> theta = -PI*0.5, z = 0.0)
+    # Player Spawn Welcoming Campfire & Spawn Cabin (u=0.25, v=0.50 -> theta = -PI*0.5, z = 0.0)
     add_object(
         obj_type_enum=0, # CAMPFIRE
-        u_coord=0.75, v_coord=0.50,
+        u_coord=0.25, v_coord=0.50,
         name="Spawn_Welcoming_Campfire",
         color_rgb=[1.0, 0.58, 0.20],
         light_range=45.0, energy=6.0,
@@ -609,7 +612,7 @@ def generate_tileable_maps(
     )
     add_object(
         obj_type_enum=5, # HOUSE
-        u_coord=0.748, v_coord=0.504,
+        u_coord=0.248, v_coord=0.504,
         name="Spawn_Ranger_Cabin",
         color_rgb=[1.0, 0.85, 0.55],
         light_range=14.0, energy=2.4,
@@ -778,6 +781,37 @@ def generate_tileable_maps(
 
         # Place trees on grass and dirt hillsides, away from water and roads
         if t_type in (2, 3) and e_type >= water_level + 1.2:
+            near_settlement = False
+            for s in placed_settlements:
+                d = distance_toroidal(u_t, v_t, s["u"], s["v"], tile_u=tile_horizontal)
+                if d < 0.035:
+                    near_settlement = True
+                    break
+
+            near_water = e_type < water_level + 12.0
+            high_elev = e_type > max_elevation * 0.50
+
+            if (tree_count + 1) % 15 == 0:
+                variant = 4  # Cherry Blossom (forced variety)
+            elif (tree_count + 1) % 13 == 0:
+                variant = 3  # Willow (forced variety)
+            elif near_settlement and tree_rng.random() < 0.55:
+                variant = 4  # Cherry Blossom near settlements
+            elif near_water and tree_rng.random() < 0.55:
+                variant = 3  # Willow near water
+            elif high_elev and tree_rng.random() < 0.55:
+                variant = 1  # Pine at high elevations
+            elif tree_rng.random() < 0.08:
+                variant = 5  # Dead tree (rare, anywhere)
+            else:
+                roll = tree_rng.random()
+                if roll < 0.50:
+                    variant = 0  # Oak
+                elif roll < 0.75:
+                    variant = 1  # Pine
+                else:
+                    variant = 2  # Birch
+
             add_object(
                 obj_type_enum=6, # TREE
                 u_coord=u_t, v_coord=v_t,
@@ -785,7 +819,8 @@ def generate_tileable_maps(
                 color_rgb=[0.0, 0.0, 0.0],
                 light_range=0.0, energy=0.0,
                 settlement_id="Wildland_Forest", role="forest_tree",
-                yaw_rad=tree_rng.uniform(0.0, math.tau)
+                yaw_rad=tree_rng.uniform(0.0, math.tau),
+                tree_variant=variant
             )
             tree_count += 1
 
@@ -944,7 +979,15 @@ def generate_tileable_maps(
             "bridges": sum(1 for o in object_entries if o["object_type"] == 3),
             "houses": sum(1 for o in object_entries if o["object_type"] == 5),
             "trees": sum(1 for o in object_entries if o["object_type"] == 6),
-            "windmills": sum(1 for o in object_entries if o["object_type"] == 7)
+            "windmills": sum(1 for o in object_entries if o["object_type"] == 7),
+            "tree_variants": {
+                "oak": sum(1 for o in object_entries if o.get("tree_variant") == 0),
+                "pine": sum(1 for o in object_entries if o.get("tree_variant") == 1),
+                "birch": sum(1 for o in object_entries if o.get("tree_variant") == 2),
+                "willow": sum(1 for o in object_entries if o.get("tree_variant") == 3),
+                "cherry_blossom": sum(1 for o in object_entries if o.get("tree_variant") == 4),
+                "dead_tree": sum(1 for o in object_entries if o.get("tree_variant") == 5)
+            }
         },
         "settlements": placed_settlements,
         "spawn_points": spawn_points,

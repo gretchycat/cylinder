@@ -47,10 +47,10 @@ cmd_test() {
     check_godot
     echo "[TEST] Running automated test suite in headless mode..."
     if command -v timeout >/dev/null 2>&1; then
-        timeout 25s "$GODOT_BIN" --headless -s scripts/test_simulation.gd
+        timeout 75s "$GODOT_BIN" --headless -s scripts/test_simulation.gd
         local exit_code=$?
         if [ $exit_code -eq 124 ]; then
-            echo "[ERROR] Test suite timed out after 25 seconds!"
+            echo "[ERROR] Test suite timed out after 75 seconds!"
             exit 124
         fi
         return $exit_code

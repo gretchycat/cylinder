@@ -1,40 +1,10 @@
-[gd_scene format=3 uid="uid://d0beac0n0bj"]
+[gd_scene load_steps=2 format=3 uid="uid://d0beac0n0bj"]
 
-[sub_resource type="StandardMaterial3D" id="MetalMat"]
-albedo_color = Color(0.18, 0.2, 0.24, 1)
-metallic = 0.8
-roughness = 0.3
-
-[sub_resource type="CylinderMesh" id="PostMesh"]
-material = SubResource("MetalMat")
-top_radius = 0.15
-bottom_radius = 0.25
-height = 2.2
-radial_segments = 5
-rings = 1
-
-[sub_resource type="StandardMaterial3D" id="BeaconMat"]
-albedo_color = Color(0.3, 0.9, 1, 1)
-emission_enabled = true
-emission = Color(0.2, 0.88, 1, 1)
-emission_energy_multiplier = 4.0
-
-[sub_resource type="SphereMesh" id="BeaconMesh"]
-material = SubResource("BeaconMat")
-radius = 0.32
-height = 0.64
-radial_segments = 6
-rings = 3
+[ext_resource type="PackedScene" path="res://assets/models/beacon_lantern.glb" id="1_model"]
 
 [node name="BeaconLantern" type="Node3D"]
 
-[node name="Post" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
-mesh = SubResource("PostMesh")
-
-[node name="Beacon" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
-mesh = SubResource("BeaconMesh")
+[node name="Model" parent="." instance=ExtResource("1_model")]
 
 [node name="BeaconLight" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 0)

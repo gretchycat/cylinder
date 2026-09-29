@@ -10,7 +10,17 @@ enum ObjectType {
 	BONFIRE,
 	HOUSE,
 	TREE,
+	FOREST,
 	WINDMILL
+}
+
+enum TreeVariant {
+	OAK,
+	PINE,
+	BIRCH,
+	WILLOW,
+	CHERRY_BLOSSOM,
+	DEAD_TREE
 }
 
 const CAMPFIRE_SCENE: PackedScene = preload("res://assets/objects/campfire.tscn")
@@ -22,10 +32,28 @@ const HOUSE_SCENE: PackedScene = preload("res://assets/objects/house.tscn")
 const TREE_SCENE: PackedScene = preload("res://assets/objects/tree.tscn")
 const WINDMILL_SCENE: PackedScene = preload("res://assets/objects/windmill.tscn")
 
+# Tree variant scenes
+const TREE_OAK_SCENE: PackedScene = preload("res://assets/objects/tree_oak.tscn")
+const TREE_PINE_SCENE: PackedScene = preload("res://assets/objects/tree_pine.tscn")
+const TREE_BIRCH_SCENE: PackedScene = preload("res://assets/objects/tree_birch.tscn")
+const TREE_WILLOW_SCENE: PackedScene = preload("res://assets/objects/tree_willow.tscn")
+const TREE_CHERRY_BLOSSOM_SCENE: PackedScene = preload("res://assets/objects/tree_cherry_blossom.tscn")
+const TREE_DEAD_SCENE: PackedScene = preload("res://assets/objects/tree_dead.tscn")
+
+const TREE_VARIANT_SCENES: Array[PackedScene] = [
+	null, null, null, null, null, null  # Populated by _get_tree_variant_scene()
+]
+
 @export var object_type: ObjectType = ObjectType.CAMPFIRE:
 	set(val):
 		object_type = val
 		if is_inside_tree():
+			rebuild_object()
+
+@export var tree_variant: TreeVariant = TreeVariant.OAK:
+	set(val):
+		tree_variant = val
+		if is_inside_tree() and object_type == ObjectType.TREE:
 			rebuild_object()
 
 @export var light_color: Color = Color(1.0, 0.58, 0.22):
@@ -63,6 +91,22 @@ func _ready() -> void:
 	flicker_time = rng_offset
 	rebuild_object()
 
+func _get_tree_variant_scene() -> PackedScene:
+	match tree_variant:
+		TreeVariant.OAK:
+			return TREE_OAK_SCENE if TREE_OAK_SCENE else TREE_SCENE
+		TreeVariant.PINE:
+			return TREE_PINE_SCENE if TREE_PINE_SCENE else TREE_SCENE
+		TreeVariant.BIRCH:
+			return TREE_BIRCH_SCENE if TREE_BIRCH_SCENE else TREE_SCENE
+		TreeVariant.WILLOW:
+			return TREE_WILLOW_SCENE if TREE_WILLOW_SCENE else TREE_SCENE
+		TreeVariant.CHERRY_BLOSSOM:
+			return TREE_CHERRY_BLOSSOM_SCENE if TREE_CHERRY_BLOSSOM_SCENE else TREE_SCENE
+		TreeVariant.DEAD_TREE:
+			return TREE_DEAD_SCENE if TREE_DEAD_SCENE else TREE_SCENE
+	return TREE_SCENE
+
 func rebuild_object() -> void:
 	for child in get_children():
 		child.queue_free()
@@ -93,8 +137,7 @@ func rebuild_object() -> void:
 			if HOUSE_SCENE:
 				instance = HOUSE_SCENE.instantiate()
 		ObjectType.TREE:
-			if TREE_SCENE:
-				instance = TREE_SCENE.instantiate()
+			instance = _get_tree_variant_scene().instantiate()
 		ObjectType.WINDMILL:
 			if WINDMILL_SCENE:
 				instance = WINDMILL_SCENE.instantiate()
@@ -106,19 +149,28 @@ func rebuild_object() -> void:
 	_setup_instance_bindings(instance)
 
 func _setup_instance_bindings(instance: Node3D) -> void:
+	# Helper to find nodes by name at any depth in the instance hierarchy.
+	# Needed because .glb model nodes are nested under "Model/" while
+	# Godot-specific nodes (lights, particles) are direct children.
+	var _find = func(node_name: String) -> Node:
+		var found = instance.get_node_or_null(node_name)
+		if found:
+			return found
+		return instance.find_child(node_name, true, false)
+
 	match object_type:
 		ObjectType.CAMPFIRE:
 			if light_color == Color(1.0, 0.92, 0.78) or light_color == Color.WHITE:
 				light_color = Color(1.0, 0.55, 0.18)
 
-			omni_light = instance.get_node_or_null("CampfireLight") as OmniLight3D
-			var coals = instance.get_node_or_null("Coals") as MeshInstance3D
-			var flame_core = instance.get_node_or_null("FlameCore") as MeshInstance3D
-			var flame_outer = instance.get_node_or_null("FlameOuter") as MeshInstance3D
-			var flame_card0 = instance.get_node_or_null("FlameCard0") as MeshInstance3D
-			var flame_card1 = instance.get_node_or_null("FlameCard1") as MeshInstance3D
-			var flame_card2 = instance.get_node_or_null("FlameCard2") as MeshInstance3D
-			var flame_card3 = instance.get_node_or_null("FlameCard3") as MeshInstance3D
+			omni_light = _find.call("CampfireLight") as OmniLight3D
+			var coals = _find.call("Coals") as MeshInstance3D
+			var flame_core = _find.call("FlameCore") as MeshInstance3D
+			var flame_outer = _find.call("FlameOuter") as MeshInstance3D
+			var flame_card0 = _find.call("FlameCard0") as MeshInstance3D
+			var flame_card1 = _find.call("FlameCard1") as MeshInstance3D
+			var flame_card2 = _find.call("FlameCard2") as MeshInstance3D
+			var flame_card3 = _find.call("FlameCard3") as MeshInstance3D
 
 			if flame_core:
 				flame_nodes.append(flame_core)
@@ -144,20 +196,26 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 			if flame_outer and flame_outer.mesh and flame_outer.mesh.material:
 				var m = flame_outer.mesh.material.duplicate() as StandardMaterial3D
 				flame_outer.material_override = m
+				flame_mats.append(m)
+			if flame_mats.is_empty():
+				var m = StandardMaterial3D.new()
+				m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+				m.emission_enabled = true
+				m.emission = light_color
 				flame_mats.append(m)
 
 		ObjectType.BONFIRE:
 			if light_color == Color(1.0, 0.92, 0.78) or light_color == Color.WHITE:
 				light_color = Color(1.0, 0.48, 0.12)
 
-			omni_light = instance.get_node_or_null("BonfireLight") as OmniLight3D
-			var coals = instance.get_node_or_null("Coals") as MeshInstance3D
-			var flame_core = instance.get_node_or_null("FlameCore") as MeshInstance3D
-			var flame_outer = instance.get_node_or_null("FlameOuter") as MeshInstance3D
-			var flame_card0 = instance.get_node_or_null("FlameCard0") as MeshInstance3D
-			var flame_card1 = instance.get_node_or_null("FlameCard1") as MeshInstance3D
-			var flame_card2 = instance.get_node_or_null("FlameCard2") as MeshInstance3D
-			var flame_card3 = instance.get_node_or_null("FlameCard3") as MeshInstance3D
+			omni_light = _find.call("BonfireLight") as OmniLight3D
+			var coals = _find.call("Coals") as MeshInstance3D
+			var flame_core = _find.call("FlameCore") as MeshInstance3D
+			var flame_outer = _find.call("FlameOuter") as MeshInstance3D
+			var flame_card0 = _find.call("FlameCard0") as MeshInstance3D
+			var flame_card1 = _find.call("FlameCard1") as MeshInstance3D
+			var flame_card2 = _find.call("FlameCard2") as MeshInstance3D
+			var flame_card3 = _find.call("FlameCard3") as MeshInstance3D
 
 			if flame_core:
 				flame_nodes.append(flame_core)
@@ -184,13 +242,19 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 				var m = flame_outer.mesh.material.duplicate() as StandardMaterial3D
 				flame_outer.material_override = m
 				flame_mats.append(m)
+			if flame_mats.is_empty():
+				var m = StandardMaterial3D.new()
+				m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+				m.emission_enabled = true
+				m.emission = light_color
+				flame_mats.append(m)
 
 		ObjectType.LAMP_POST:
 			if light_color == Color(1.0, 0.58, 0.22) or light_color == Color.WHITE:
 				light_color = Color(1.0, 0.92, 0.78)
 
-			omni_light = instance.get_node_or_null("LampLight") as OmniLight3D
-			var lantern_head = instance.get_node_or_null("LanternHead") as MeshInstance3D
+			omni_light = _find.call("LampLight") as OmniLight3D
+			var lantern_head = _find.call("LanternHead") as MeshInstance3D
 			if lantern_head and lantern_head.mesh and lantern_head.mesh.material:
 				var m = lantern_head.mesh.material.duplicate() as StandardMaterial3D
 				lantern_head.material_override = m
@@ -200,25 +264,25 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 			if light_color == Color(1.0, 0.58, 0.22) or light_color == Color.WHITE:
 				light_color = Color(0.20, 0.88, 1.0)
 
-			omni_light = instance.get_node_or_null("BeaconLight") as OmniLight3D
-			var beacon = instance.get_node_or_null("Beacon") as MeshInstance3D
+			omni_light = _find.call("BeaconLight") as OmniLight3D
+			var beacon = _find.call("Beacon") as MeshInstance3D
 			if beacon and beacon.mesh and beacon.mesh.material:
 				var m = beacon.mesh.material.duplicate() as StandardMaterial3D
 				beacon.material_override = m
 				flame_mats.append(m)
 
 		ObjectType.BRIDGE:
-			var l_n = instance.get_node_or_null("BridgeLightNorth") as OmniLight3D
-			var l_s = instance.get_node_or_null("BridgeLightSouth") as OmniLight3D
+			var l_n = _find.call("BridgeLightNorth") as OmniLight3D
+			var l_s = _find.call("BridgeLightSouth") as OmniLight3D
 			if l_n: bridge_lights.append(l_n)
 			if l_s: bridge_lights.append(l_s)
 			if l_n: omni_light = l_n
 
 		ObjectType.HOUSE:
-			omni_light = instance.get_node_or_null("WindowLight") as OmniLight3D
+			omni_light = _find.call("WindowLight") as OmniLight3D
 
 		ObjectType.WINDMILL:
-			omni_light = instance.get_node_or_null("LanternLight") as OmniLight3D
+			omni_light = _find.call("LanternLight") as OmniLight3D
 
 		ObjectType.TREE:
 			enable_flicker = false
@@ -326,10 +390,14 @@ static func create_on_cylinder(
 	custom_range: float = -1.0,
 	yaw_angle_rad: float = 0.0,
 	custom_normal: Vector3 = Vector3.ZERO,
-	custom_pos: Vector3 = Vector3.ZERO
+	custom_pos: Vector3 = Vector3.ZERO,
+	tree_variant_idx: int = -1
 ) -> SurfaceLightObject:
 	var obj = SurfaceLightObject.new()
 	obj.object_type = type
+
+	if type == ObjectType.TREE and tree_variant_idx >= 0 and tree_variant_idx < TreeVariant.size():
+		obj.tree_variant = tree_variant_idx as TreeVariant
 
 	if custom_color != Color.WHITE:
 		obj.light_color = custom_color
