@@ -203,7 +203,7 @@
         "type": "procedural_mesh",
         "category": "foliage",
         "mesh_generator": "generate_grass_mesh",
-        "scene_path": "",
+        "scene_path": "models/ground_clutter/grass_tuft.tscn",
         "base_color": [
           0.24,
           0.52,
@@ -224,7 +224,7 @@
         "type": "procedural_mesh",
         "category": "foliage",
         "mesh_generator": "generate_flower_mesh",
-        "scene_path": "",
+        "scene_path": "models/ground_clutter/wildflowers.tscn",
         "base_color": [
           0.22,
           0.5,
@@ -239,13 +239,21 @@
         ],
         "wind_speed": 2.6,
         "wind_strength": 0.18,
-        "fade_distance_m": 45.0
+        "fade_distance_m": 45.0,
+        "instance_colors": [
+          [0.95, 0.22, 0.18, 0.9],
+          [0.98, 0.85, 0.15, 0.9],
+          [0.35, 0.55, 0.95, 0.9],
+          [0.72, 0.38, 0.92, 0.9],
+          [0.96, 0.96, 0.92, 0.85],
+          [0.98, 0.52, 0.25, 0.9]
+        ]
       },
       "pebbles": {
         "type": "procedural_mesh",
         "category": "rock_debris",
         "mesh_generator": "generate_stone_mesh",
-        "scene_path": "",
+        "scene_path": "models/ground_clutter/pebbles.tscn",
         "base_color": [
           0.42,
           0.44,
@@ -265,7 +273,7 @@
         "type": "procedural_mesh",
         "category": "crops",
         "mesh_generator": "generate_crop_mesh",
-        "scene_path": "",
+        "scene_path": "models/ground_clutter/crops.tscn",
         "base_color": [
           0.65,
           0.52,
@@ -286,7 +294,7 @@
         "type": "procedural_mesh",
         "category": "foliage",
         "mesh_generator": "generate_shrub_mesh",
-        "scene_path": "",
+        "scene_path": "models/ground_clutter/shrubs.tscn",
         "base_color": [
           0.18,
           0.42,
@@ -302,6 +310,20 @@
         "wind_speed": 1.5,
         "wind_strength": 0.12,
         "fade_distance_m": 45.0
+      },
+      "mushrooms": {
+        "type": "procedural_mesh",
+        "category": "foliage",
+        "mesh_generator": "generate_mushroom_mesh",
+        "scene_path": "models/ground_clutter/mushrooms.tscn",
+        "base_color": [0.84, 0.76, 0.63, 1.0],
+        "tip_color": [0.44, 0.27, 0.16, 1.0],
+        "fade_distance_m": 45.0,
+        "instance_colors": [
+          [0.62, 0.24, 0.21, 1.0],
+          [0.44, 0.31, 0.22, 1.0],
+          [0.82, 0.72, 0.50, 1.0]
+        ]
       }
     },
     "biomes": {
@@ -462,7 +484,7 @@
     "model_catalog": {
       "0": {
         "name": "Campfire",
-        "scene_path": "res://assets/objects/campfire.tscn",
+        "scene_path": "models/objects/campfire.tscn",
         "has_light": true,
         "light_energy": 5.5,
         "light_range_m": 55.0,
@@ -475,7 +497,7 @@
       },
       "1": {
         "name": "Lamp Post",
-        "scene_path": "res://assets/objects/lamp_post.tscn",
+        "scene_path": "models/objects/lamp_post.tscn",
         "has_light": true,
         "light_energy": 4.0,
         "light_range_m": 45.0,
@@ -488,7 +510,7 @@
       },
       "2": {
         "name": "Beacon Lantern",
-        "scene_path": "res://assets/objects/beacon_lantern.tscn",
+        "scene_path": "models/objects/beacon_lantern.tscn",
         "has_light": true,
         "light_energy": 12.0,
         "light_range_m": 120.0,
@@ -501,7 +523,7 @@
       },
       "3": {
         "name": "Arched Bridge",
-        "scene_path": "res://assets/objects/bridge.tscn",
+        "scene_path": "models/objects/bridge.tscn",
         "has_light": true,
         "light_energy": 4.5,
         "light_range_m": 50.0,
@@ -514,7 +536,7 @@
       },
       "4": {
         "name": "Bonfire",
-        "scene_path": "res://assets/objects/bonfire.tscn",
+        "scene_path": "models/objects/bonfire.tscn",
         "has_light": true,
         "light_energy": 8.5,
         "light_range_m": 85.0,
@@ -527,18 +549,26 @@
       },
       "5": {
         "name": "Colony House",
-        "scene_path": "res://assets/objects/house.tscn",
+        "scene_path": "models/objects/house.tscn",
         "has_light": false
       },
       "6": {
         "name": "Foliage Tree",
-        "scene_path": "res://assets/objects/tree.tscn",
+        "scene_path": "models/objects/tree.tscn",
         "has_light": false
       },
       "7": {
         "name": "Windmill",
-        "scene_path": "res://assets/objects/windmill.tscn",
+        "scene_path": "models/objects/windmill.tscn",
         "has_light": false
+      },
+      "tree_variants": {
+        "0": {"name": "Oak", "scene_path": "models/objects/tree_oak.tscn"},
+        "1": {"name": "Pine", "scene_path": "models/objects/tree_pine.tscn"},
+        "2": {"name": "Birch", "scene_path": "models/objects/tree_birch.tscn"},
+        "3": {"name": "Willow", "scene_path": "models/objects/tree_willow.tscn"},
+        "4": {"name": "Cherry Blossom", "scene_path": "models/objects/tree_cherry_blossom.tscn"},
+        "5": {"name": "Dead Tree", "scene_path": "models/objects/tree_dead.tscn"}
       }
     },
     "statistics": {

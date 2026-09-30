@@ -23,26 +23,7 @@ enum TreeVariant {
 	DEAD_TREE
 }
 
-const CAMPFIRE_SCENE: PackedScene = preload("res://assets/objects/campfire.tscn")
-const LAMP_POST_SCENE: PackedScene = preload("res://assets/objects/lamp_post.tscn")
-const BEACON_SCENE: PackedScene = preload("res://assets/objects/beacon_lantern.tscn")
-const BRIDGE_SCENE: PackedScene = preload("res://assets/objects/bridge.tscn")
-const BONFIRE_SCENE: PackedScene = preload("res://assets/objects/bonfire.tscn")
-const HOUSE_SCENE: PackedScene = preload("res://assets/objects/house.tscn")
-const TREE_SCENE: PackedScene = preload("res://assets/objects/tree.tscn")
-const WINDMILL_SCENE: PackedScene = preload("res://assets/objects/windmill.tscn")
-
-# Tree variant scenes
-const TREE_OAK_SCENE: PackedScene = preload("res://assets/objects/tree_oak.tscn")
-const TREE_PINE_SCENE: PackedScene = preload("res://assets/objects/tree_pine.tscn")
-const TREE_BIRCH_SCENE: PackedScene = preload("res://assets/objects/tree_birch.tscn")
-const TREE_WILLOW_SCENE: PackedScene = preload("res://assets/objects/tree_willow.tscn")
-const TREE_CHERRY_BLOSSOM_SCENE: PackedScene = preload("res://assets/objects/tree_cherry_blossom.tscn")
-const TREE_DEAD_SCENE: PackedScene = preload("res://assets/objects/tree_dead.tscn")
-
-const TREE_VARIANT_SCENES: Array[PackedScene] = [
-	null, null, null, null, null, null  # Populated by _get_tree_variant_scene()
-]
+const MapConfigClass = preload("res://scripts/map_config.gd")
 
 @export var object_type: ObjectType = ObjectType.CAMPFIRE:
 	set(val):
@@ -55,6 +36,8 @@ const TREE_VARIANT_SCENES: Array[PackedScene] = [
 		tree_variant = val
 		if is_inside_tree() and object_type == ObjectType.TREE:
 			rebuild_object()
+
+@export_file("*.tscn") var model_scene_path: String = ""
 
 @export var light_color: Color = Color(1.0, 0.58, 0.22):
 	set(val):
@@ -91,21 +74,19 @@ func _ready() -> void:
 	flicker_time = rng_offset
 	rebuild_object()
 
-func _get_tree_variant_scene() -> PackedScene:
-	match tree_variant:
-		TreeVariant.OAK:
-			return TREE_OAK_SCENE if TREE_OAK_SCENE else TREE_SCENE
-		TreeVariant.PINE:
-			return TREE_PINE_SCENE if TREE_PINE_SCENE else TREE_SCENE
-		TreeVariant.BIRCH:
-			return TREE_BIRCH_SCENE if TREE_BIRCH_SCENE else TREE_SCENE
-		TreeVariant.WILLOW:
-			return TREE_WILLOW_SCENE if TREE_WILLOW_SCENE else TREE_SCENE
-		TreeVariant.CHERRY_BLOSSOM:
-			return TREE_CHERRY_BLOSSOM_SCENE if TREE_CHERRY_BLOSSOM_SCENE else TREE_SCENE
-		TreeVariant.DEAD_TREE:
-			return TREE_DEAD_SCENE if TREE_DEAD_SCENE else TREE_SCENE
-	return TREE_SCENE
+func _get_model_scene() -> PackedScene:
+	var scene_path = model_scene_path
+	if scene_path.is_empty():
+		var reference_objects = get_tree().get_first_node_in_group("reference_objects") if is_inside_tree() else null
+		if reference_objects and reference_objects.has_method("_get_model_path"):
+			scene_path = reference_objects.call("_get_model_path", object_type, int(tree_variant))
+		else:
+			var map_config = MapConfigClass.load_map_config("default")
+			scene_path = MapConfigClass.get_object_model_path(map_config, int(object_type), int(tree_variant))
+	if scene_path.is_empty():
+		return null
+	var resource = ResourceLoader.load(scene_path)
+	return resource as PackedScene
 
 func rebuild_object() -> void:
 	for child in get_children():
@@ -117,30 +98,9 @@ func rebuild_object() -> void:
 	omni_light = null
 
 	var instance: Node3D = null
-	match object_type:
-		ObjectType.CAMPFIRE:
-			if CAMPFIRE_SCENE:
-				instance = CAMPFIRE_SCENE.instantiate()
-		ObjectType.LAMP_POST:
-			if LAMP_POST_SCENE:
-				instance = LAMP_POST_SCENE.instantiate()
-		ObjectType.BEACON_LANTERN:
-			if BEACON_SCENE:
-				instance = BEACON_SCENE.instantiate()
-		ObjectType.BRIDGE:
-			if BRIDGE_SCENE:
-				instance = BRIDGE_SCENE.instantiate()
-		ObjectType.BONFIRE:
-			if BONFIRE_SCENE:
-				instance = BONFIRE_SCENE.instantiate()
-		ObjectType.HOUSE:
-			if HOUSE_SCENE:
-				instance = HOUSE_SCENE.instantiate()
-		ObjectType.TREE:
-			instance = _get_tree_variant_scene().instantiate()
-		ObjectType.WINDMILL:
-			if WINDMILL_SCENE:
-				instance = WINDMILL_SCENE.instantiate()
+	var model_scene = _get_model_scene()
+	if model_scene:
+		instance = model_scene.instantiate() as Node3D
 
 	if not instance:
 		return
@@ -391,10 +351,12 @@ static func create_on_cylinder(
 	yaw_angle_rad: float = 0.0,
 	custom_normal: Vector3 = Vector3.ZERO,
 	custom_pos: Vector3 = Vector3.ZERO,
-	tree_variant_idx: int = -1
+	tree_variant_idx: int = -1,
+	model_path: String = ""
 ) -> SurfaceLightObject:
 	var obj = SurfaceLightObject.new()
 	obj.object_type = type
+	obj.model_scene_path = model_path
 
 	if type == ObjectType.TREE and tree_variant_idx >= 0 and tree_variant_idx < TreeVariant.size():
 		obj.tree_variant = tree_variant_idx as TreeVariant

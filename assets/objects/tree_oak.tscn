@@ -1,5 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://c0tr33_0ak01"]
-
-[ext_resource type="PackedScene" path="res://assets/models/trees/oak.glb" id="1_tree_model"]
-
-[node name="TreeOak" instance=ExtResource("1_tree_model")]

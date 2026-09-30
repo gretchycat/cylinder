@@ -202,6 +202,30 @@ static func get_object_map_path(config: Dictionary) -> String:
 static func get_biomes_manifest_path(config: Dictionary) -> String:
 	return str(config.get("files", {}).get("biomes_manifest", DEFAULT_MAP_DIRECTORY.path_join("biomes_manifest.json")))
 
+## Resolve a package-relative asset path while preserving explicit resource paths.
+static func resolve_map_asset_path(config: Dictionary, asset_path: String) -> String:
+	var path = asset_path.strip_edges()
+	if path.is_empty() or path.begins_with("res://") or path.begins_with("user://") or path.begins_with("/"):
+		return path
+	return str(config.get("map_directory", DEFAULT_MAP_DIRECTORY)).path_join(path)
+
+static func get_object_model_path(config: Dictionary, object_type: int, tree_variant: int = -1) -> String:
+	var objects: Dictionary = config.get("objects", {}) as Dictionary
+	var catalog: Dictionary = objects.get("model_catalog", {}) as Dictionary
+	var entry: Dictionary = {}
+	if object_type == 6 and tree_variant >= 0:
+		var variants: Dictionary = catalog.get("tree_variants", {}) as Dictionary
+		entry = variants.get(str(tree_variant), {}) as Dictionary
+	if entry.is_empty():
+		entry = catalog.get(str(object_type), {}) as Dictionary
+	return resolve_map_asset_path(config, str(entry.get("scene_path", "")))
+
+static func get_clutter_model_path(config: Dictionary, model_id: String) -> String:
+	var clutter: Dictionary = config.get("ground_clutter", {}) as Dictionary
+	var models: Dictionary = clutter.get("models", {}) as Dictionary
+	var model: Dictionary = models.get(model_id, {}) as Dictionary
+	return resolve_map_asset_path(config, str(model.get("scene_path", "")))
+
 static func get_clutter_config(config: Dictionary) -> Dictionary:
 	return config.get("ground_clutter", {}) as Dictionary
 

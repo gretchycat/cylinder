@@ -28,6 +28,9 @@ import math
 import json
 import random
 import argparse
+import re
+import shutil
+from pathlib import Path
 from PIL import Image, ImageDraw
 
 # 2D RPG Palette (Pure terrain types for multi-splat shader)
@@ -146,6 +149,37 @@ def rasterize_path_segments(grid, x0, y0, x1, y1, val, width_cells=1, width_map=
                     points.append((px, py, t, dx, dy))
     return points
 
+def ensure_map_model_package(output_dir):
+    """Give each generated map its own editable copy of the default models."""
+    project_root = Path(__file__).resolve().parent.parent
+    package_dir = Path(output_dir).resolve()
+    model_dir = package_dir / "models"
+    if model_dir.exists():
+        return
+
+    default_models = project_root / "assets" / "maps" / "default" / "models"
+    if not default_models.is_dir():
+        return
+    shutil.copytree(default_models, model_dir)
+
+    map_name = package_dir.name
+    new_resource_prefix = f"res://assets/maps/{map_name}/models"
+    old_resource_prefix = "res://assets/maps/default/models"
+    for asset_path in model_dir.rglob("*"):
+        if not asset_path.is_file():
+            continue
+        if asset_path.suffix == ".import" or asset_path.suffix == ".uid":
+            asset_path.unlink()
+        elif asset_path.suffix == ".tscn":
+            source = asset_path.read_text(encoding="utf-8")
+            source = source.replace(old_resource_prefix, new_resource_prefix)
+            source = re.sub(r' uid="uid://[^"]+"', "", source)
+            asset_path.write_text(source, encoding="utf-8")
+        elif asset_path.suffix == ".gd":
+            source = asset_path.read_text(encoding="utf-8")
+            source = source.replace(old_resource_prefix, new_resource_prefix)
+            asset_path.write_text(source, encoding="utf-8")
+
 def generate_tileable_maps(
     width: int = 512,
     height: int = 256,
@@ -167,6 +201,7 @@ def generate_tileable_maps(
 ):
     rng = random.Random(seed)
     os.makedirs(output_dir, exist_ok=True)
+    ensure_map_model_package(output_dir)
 
     elevation_img = Image.new("L", (width, height))
     terrain_img = Image.new("RGBA", (width, height))
@@ -1094,7 +1129,7 @@ def generate_tileable_maps(
                     "type": "procedural_mesh",
                     "category": "foliage",
                     "mesh_generator": "generate_grass_mesh",
-                    "scene_path": "",
+                    "scene_path": "models/ground_clutter/grass_tuft.tscn",
                     "base_color": [0.24, 0.52, 0.16, 1.0],
                     "tip_color": [0.48, 0.78, 0.25, 1.0],
                     "wind_speed": 2.2,
@@ -1105,18 +1140,23 @@ def generate_tileable_maps(
                     "type": "procedural_mesh",
                     "category": "foliage",
                     "mesh_generator": "generate_flower_mesh",
-                    "scene_path": "",
+                    "scene_path": "models/ground_clutter/wildflowers.tscn",
                     "base_color": [0.22, 0.50, 0.18, 1.0],
                     "tip_color": [0.95, 0.30, 0.20, 1.0],
                     "wind_speed": 2.6,
                     "wind_strength": 0.18,
-                    "fade_distance_m": 45.0
+                    "fade_distance_m": 45.0,
+                    "instance_colors": [
+                        [0.95, 0.22, 0.18, 0.9], [0.98, 0.85, 0.15, 0.9],
+                        [0.35, 0.55, 0.95, 0.9], [0.72, 0.38, 0.92, 0.9],
+                        [0.96, 0.96, 0.92, 0.85], [0.98, 0.52, 0.25, 0.9]
+                    ]
                 },
                 "pebbles": {
                     "type": "procedural_mesh",
                     "category": "rock_debris",
                     "mesh_generator": "generate_stone_mesh",
-                    "scene_path": "",
+                    "scene_path": "models/ground_clutter/pebbles.tscn",
                     "base_color": [0.42, 0.44, 0.46, 1.0],
                     "tip_color": [0.55, 0.56, 0.58, 1.0],
                     "roughness": 0.94,
@@ -1126,7 +1166,7 @@ def generate_tileable_maps(
                     "type": "procedural_mesh",
                     "category": "crops",
                     "mesh_generator": "generate_crop_mesh",
-                    "scene_path": "",
+                    "scene_path": "models/ground_clutter/crops.tscn",
                     "base_color": [0.65, 0.52, 0.22, 1.0],
                     "tip_color": [0.88, 0.74, 0.32, 1.0],
                     "wind_speed": 1.8,
@@ -1137,26 +1177,47 @@ def generate_tileable_maps(
                     "type": "procedural_mesh",
                     "category": "foliage",
                     "mesh_generator": "generate_shrub_mesh",
-                    "scene_path": "",
+                    "scene_path": "models/ground_clutter/shrubs.tscn",
                     "base_color": [0.18, 0.42, 0.14, 1.0],
                     "tip_color": [0.35, 0.65, 0.22, 1.0],
                     "wind_speed": 1.5,
                     "wind_strength": 0.12,
                     "fade_distance_m": 45.0
+                },
+                "mushrooms": {
+                    "type": "procedural_mesh",
+                    "category": "foliage",
+                    "mesh_generator": "generate_mushroom_mesh",
+                    "scene_path": "models/ground_clutter/mushrooms.tscn",
+                    "base_color": [0.84, 0.76, 0.63, 1.0],
+                    "tip_color": [0.44, 0.27, 0.16, 1.0],
+                    "fade_distance_m": 45.0,
+                    "instance_colors": [
+                        [0.62, 0.24, 0.21, 1.0], [0.44, 0.31, 0.22, 1.0],
+                        [0.82, 0.72, 0.50, 1.0]
+                    ]
                 }
             },
             "biomes": BIOMES_MANIFEST
         },
         "objects": {
             "model_catalog": {
-                "0": {"name": "Campfire", "scene_path": "res://assets/objects/campfire.tscn", "has_light": True, "light_energy": 5.5, "light_range_m": 55.0, "light_color": [1.0, 0.58, 0.22], "flicker": True},
-                "1": {"name": "Lamp Post", "scene_path": "res://assets/objects/lamp_post.tscn", "has_light": True, "light_energy": 4.0, "light_range_m": 45.0, "light_color": [1.0, 0.92, 0.70], "flicker": True},
-                "2": {"name": "Beacon Lantern", "scene_path": "res://assets/objects/beacon_lantern.tscn", "has_light": True, "light_energy": 12.0, "light_range_m": 120.0, "light_color": [0.45, 0.75, 1.0], "flicker": True},
-                "3": {"name": "Arched Bridge", "scene_path": "res://assets/objects/bridge.tscn", "has_light": True, "light_energy": 4.5, "light_range_m": 50.0, "light_color": [1.0, 0.82, 0.45], "flicker": True},
-                "4": {"name": "Bonfire", "scene_path": "res://assets/objects/bonfire.tscn", "has_light": True, "light_energy": 8.5, "light_range_m": 85.0, "light_color": [1.0, 0.50, 0.15], "flicker": True},
-                "5": {"name": "Colony House", "scene_path": "res://assets/objects/house.tscn", "has_light": False},
-                "6": {"name": "Foliage Tree", "scene_path": "res://assets/objects/tree.tscn", "has_light": False},
-                "7": {"name": "Windmill", "scene_path": "res://assets/objects/windmill.tscn", "has_light": False}
+                "0": {"name": "Campfire", "scene_path": "models/objects/campfire.tscn", "has_light": True, "light_energy": 5.5, "light_range_m": 55.0, "light_color": [1.0, 0.58, 0.22], "flicker": True},
+                "1": {"name": "Lamp Post", "scene_path": "models/objects/lamp_post.tscn", "has_light": True, "light_energy": 4.0, "light_range_m": 45.0, "light_color": [1.0, 0.92, 0.70], "flicker": True},
+                "2": {"name": "Beacon Lantern", "scene_path": "models/objects/beacon_lantern.tscn", "has_light": True, "light_energy": 12.0, "light_range_m": 120.0, "light_color": [0.45, 0.75, 1.0], "flicker": True},
+                "3": {"name": "Arched Bridge", "scene_path": "models/objects/bridge.tscn", "has_light": True, "light_energy": 4.5, "light_range_m": 50.0, "light_color": [1.0, 0.82, 0.45], "flicker": True},
+                "4": {"name": "Bonfire", "scene_path": "models/objects/bonfire.tscn", "has_light": True, "light_energy": 8.5, "light_range_m": 85.0, "light_color": [1.0, 0.50, 0.15], "flicker": True},
+                "5": {"name": "Colony House", "scene_path": "models/objects/house.tscn", "has_light": False},
+                "6": {"name": "Foliage Tree", "scene_path": "models/objects/tree.tscn", "has_light": False},
+                "7": {"name": "Windmill", "scene_path": "models/objects/windmill.tscn", "has_light": False},
+                "tree_variants": {
+                    "0": {"name": "Oak", "scene_path": "models/objects/tree_oak.tscn"},
+                    "1": {"name": "Pine", "scene_path": "models/objects/tree_pine.tscn"},
+                    "2": {"name": "Birch", "scene_path": "models/objects/tree_birch.tscn"},
+                    "3": {"name": "Willow", "scene_path": "models/objects/tree_willow.tscn"},
+                    "4": {"name": "Cherry Blossom", "scene_path": "models/objects/tree_cherry_blossom.tscn"},
+                    "5": {"name": "Dead Tree", "scene_path": "models/objects/tree_dead.tscn"}
+                }
             },
             "statistics": obj_data["statistics"],
             "settlements": placed_settlements,

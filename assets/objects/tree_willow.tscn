@@ -1,5 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://c0tr33_w1l01"]
-
-[ext_resource type="PackedScene" path="res://assets/models/trees/willow.glb" id="1_tree_model"]
-
-[node name="TreeWillow" instance=ExtResource("1_tree_model")]

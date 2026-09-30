@@ -90,14 +90,17 @@ All shaders developed for the O'Neill Cylinder Simulation Engine and released un
 
 ## 5. 3D Prefabs, Meshes & Objects
 
-Located in `assets/objects/` and `scripts/`:
+Located in `assets/maps/<mapname>/models/`:
 
 * **`campfire.tscn`**: Cylindrical interior settlement campfire assembly with animated flame shader and dynamic point lighting.
 * **`bonfire.tscn`**: Large village assembly with 16-stone ring, glowing coal bed, 10 timber logs, animated flame cards, ember/smoke particles, and 80m omni light.
 * **`lamp_post.tscn`**: Structural perimeter pathway lantern post.
 * **`beacon_lantern.tscn`**: High-visibility navigation lantern.
 * **`bridge.tscn`**: Walkable stone and steel roadway river bridge with support piers, protective railings, and dual post lantern illumination.
-* **`scripts/clutter_manager.gd`**: Procedural mesh generation suite and chunked GPU instancing manager for grass tufts, wildflower blossom heads, mountain stones/scree, agricultural wheat crops, and low-poly shrubs.
+* **`models/ground_clutter/*.tscn`**: Separate map-owned grass, wildflower, stone, crop, shrub, and mushroom models. Their mesh processing scripts are stored alongside them.
+* **`models/source/generators/`**: Blender and OpenSCAD source generators for the map's model assets.
+
+The shared runtime loaders remain in `scripts/`; model scene paths are resolved from each map's `map_config.json` so each map can provide its own model package.
 
 ### Recommended Free / CC0 3D Model Repositories
 The simulation engine's object pipeline and glTF/OBJ importer support assets from the following public domain (CC0) and permissive open-source collections:
@@ -123,4 +126,3 @@ Directory structures initialized for ambient environmental audio and footstep ph
 
 * **Godot Engine**: Copyright (c) 2014-present Juan Linietsky, Ariel Manzur, Godot Engine contributors. Released under the **MIT License**.
 * **Engine Icon (`icon.svg`)**: Copyright (c) Godot Engine contributors, released under the **CC-BY 4.0** license.
-

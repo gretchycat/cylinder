@@ -8,9 +8,13 @@ extends Node3D
 @export var object_map_path: String = "res://assets/maps/default/object_map.json"
 
 const DebugConsole = preload("res://scripts/debug_console.gd")
+const MapConfigClass = preload("res://scripts/map_config.gd")
+
+var active_map_config: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("reference_objects")
+	active_map_config = MapConfigClass.load_map_config("default")
 	# Ensure DebugConsole exists in the scene
 	if not get_node_or_null("DebugConsole"):
 		var console_node = DebugConsole.new()
@@ -28,6 +32,9 @@ func _get_terrain_elevation(theta: float, z: float) -> float:
 	if cyl_world and cyl_world.has_method("get_elevation_at"):
 		return cyl_world.get_elevation_at(theta, z)
 	return 0.0
+
+func _get_model_path(type: SurfaceLightObject.ObjectType, tree_variant_idx: int = -1) -> String:
+	return MapConfigClass.get_object_model_path(active_map_config, int(type), tree_variant_idx)
 
 func spawn_all_markers() -> void:
 	var spawned_from_json = _load_and_spawn_from_json()
@@ -50,6 +57,7 @@ func _load_and_spawn_from_json() -> bool:
 	if cyl_world and "map_package" in cyl_world and not str(cyl_world.map_package).is_empty():
 		var cfg = MapConfig.load_map_config(cyl_world.map_package)
 		if not cfg.is_empty():
+			active_map_config = cfg
 			var cfg_obj_path = MapConfig.get_object_map_path(cfg)
 			if not cfg_obj_path.is_empty():
 				target_path = cfg_obj_path
@@ -170,7 +178,8 @@ func _load_and_spawn_from_json() -> bool:
 					0.0,
 					Vector3.ZERO,
 					Vector3.ZERO,
-					t_variant_idx
+					t_variant_idx,
+					_get_model_path(SurfaceLightObject.ObjectType.TREE, t_variant_idx)
 				)
 				add_child(tree_inst)
 		else:
@@ -185,7 +194,8 @@ func _load_and_spawn_from_json() -> bool:
 				yaw_angle,
 				Vector3.ZERO,
 				custom_pos,
-				tree_variant_idx
+				tree_variant_idx,
+				_get_model_path(obj_type, tree_variant_idx)
 			)
 			inst.light_energy = light_energy
 			inst.name = str(obj.get("name", "SurfaceLightObject"))
@@ -241,7 +251,9 @@ func _spawn_default_campfires() -> void:
 			loc["range"],
 			0.0,
 			Vector3.ZERO,
-			custom_pos
+			custom_pos,
+			-1,
+			_get_model_path(SurfaceLightObject.ObjectType.CAMPFIRE)
 		)
 		fire.name = loc["name"]
 		add_child(fire)
@@ -278,7 +290,9 @@ func _spawn_default_beacon_lanterns() -> void:
 				40.0,
 				0.0,
 				Vector3.ZERO,
-				custom_pos
+				custom_pos,
+				-1,
+				_get_model_path(SurfaceLightObject.ObjectType.BEACON_LANTERN)
 			)
 			beacon.name = "EndCapBeacon_Z%d_%d" % [int(z_cap), k]
 			add_child(beacon)
@@ -301,6 +315,6 @@ func spawn_light_emitter(
 			custom_pos = pt_info.get("position", Vector3.ZERO)
 			elev = pt_info.get("elevation", elev)
 
-	var obj = SurfaceLightObject.create_on_cylinder(type, theta, z, cylinder_radius, elev, custom_col, custom_range, 0.0, Vector3.ZERO, custom_pos)
+	var obj = SurfaceLightObject.create_on_cylinder(type, theta, z, cylinder_radius, elev, custom_col, custom_range, 0.0, Vector3.ZERO, custom_pos, -1, _get_model_path(type))
 	add_child(obj)
 	return obj
