@@ -2,6 +2,8 @@ class_name HUD
 extends CanvasLayer
 
 const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
+const INTERFACE_PANEL_SIDE_MARGIN: float = 15.0
+const LANDSCAPE_TOUCH_CONTROL_MAX_SCALE: float = 1.25
 const CylinderParticleEmitter = preload("res://scripts/cylinder_particle_emitter.gd")
 const SurfaceLightObject = preload("res://scripts/surface_light_object.gd")
 
@@ -263,7 +265,10 @@ func _ready() -> void:
 		weather_badge_label = Label.new()
 		weather_badge_label.name = "WeatherBadgeLabel"
 		weather_badge_label.add_theme_font_size_override("font_size", 11)
-		weather_badge_label.text = "WEATHER: Initializing atmospheric thermodynamics..."
+		weather_badge_label.text = "WEATHER: Initializing..."
+		weather_badge_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		weather_badge_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		weather_badge_label.custom_minimum_size.x = 0.0
 		telem_vbox.add_child(weather_badge_label)
 		telem_vbox.move_child(weather_badge_label, 4)
 
@@ -275,6 +280,8 @@ func _ready() -> void:
 
 	if tab_container and not tab_container.tab_changed.is_connected(_on_tab_changed):
 		tab_container.tab_changed.connect(_on_tab_changed)
+	if tab_container and not tab_container.resized.is_connected(_on_tab_container_resized):
+		tab_container.resized.connect(_on_tab_container_resized)
 
 	if toggle_controls_btn and not toggle_controls_btn.pressed.is_connected(_on_toggle_controls_pressed):
 		toggle_controls_btn.focus_mode = Control.FOCUS_NONE
@@ -530,6 +537,7 @@ func _dispatch_virtual_key(keycode: Key, unicode: int = 0) -> void:
 	)
 
 func _update_panel_constraints() -> void:
+	_reflow_settings_rows()
 	if not ui_root:
 		return
 
@@ -560,29 +568,23 @@ func _update_panel_constraints() -> void:
 
 	# 1. Info / TelemetryPanel: Exact width of screen minus margins (offset_left = 15.0, offset_right = -15.0)
 	if telemetry_panel:
-		telemetry_panel.clip_contents = false
-		telemetry_panel.anchors_preset = Control.PRESET_TOP_WIDE
-		telemetry_panel.anchor_left = 0.0
-		telemetry_panel.anchor_right = 1.0
+		telemetry_panel.clip_contents = true
 		telemetry_panel.anchor_top = 0.0
 		telemetry_panel.anchor_bottom = 0.0
-		telemetry_panel.offset_left = 15.0
-		telemetry_panel.offset_right = -15.0
 		telemetry_panel.offset_top = 58.0 if not (is_kb_open and kb_offset > 10.0) else 15.0
 		telemetry_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 		telemetry_panel.grow_vertical = Control.GROW_DIRECTION_END
+		_fit_interface_panel_width(telemetry_panel)
+		_fit_info_panel_height()
 
 	# 2. Debug configuration window (ControlPanel): Same width configuration as info box (screen width minus margins),
 	# and minimum height to comfortably fit all tabs without excessive empty bottom space.
 	if control_panel:
 		control_panel.clip_contents = true
-		control_panel.anchors_preset = Control.PRESET_TOP_WIDE
-		control_panel.anchor_left = 0.0
-		control_panel.anchor_right = 1.0
 		control_panel.anchor_top = 0.0
 		control_panel.anchor_bottom = 0.0
-		control_panel.offset_left = 15.0
-		control_panel.offset_right = -15.0
+		control_panel.offset_left = INTERFACE_PANEL_SIDE_MARGIN
+		control_panel.offset_right = -INTERFACE_PANEL_SIDE_MARGIN
 		var top_offset = 58.0 if not (is_kb_open and kb_offset > 10.0) else 15.0
 		control_panel.offset_top = top_offset
 
@@ -592,19 +594,66 @@ func _update_panel_constraints() -> void:
 		control_panel.offset_bottom = top_offset + target_min_h
 		control_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 		control_panel.grow_vertical = Control.GROW_DIRECTION_END
+		_fit_interface_panel_width(control_panel)
 
-	# 3. LogPanel: Screen width minus margins, keeping existing height (58% anchor)
+	# 3. LogPanel: Fill the viewport between the screen margins.
 	if log_panel:
 		log_panel.clip_contents = true
 		log_panel.anchors_preset = Control.PRESET_TOP_WIDE
 		log_panel.anchor_left = 0.0
 		log_panel.anchor_right = 1.0
 		log_panel.anchor_top = 0.0
-		log_panel.anchor_bottom = 0.58 if not (is_kb_open and kb_offset > 10.0) else 1.0
-		log_panel.offset_left = 15.0
-		log_panel.offset_right = -15.0
-		log_panel.offset_top = 58.0 if not (is_kb_open and kb_offset > 10.0) else 15.0
-		log_panel.offset_bottom = 0.0 if not (is_kb_open and kb_offset > 10.0) else (-kb_offset - 55.0)
+		log_panel.anchor_bottom = 1.0
+		var screen_margin = INTERFACE_PANEL_SIDE_MARGIN / maxf(current_ui_scale, 0.01)
+		log_panel.offset_left = screen_margin
+		log_panel.offset_right = -screen_margin
+		log_panel.offset_top = screen_margin
+		log_panel.offset_bottom = -screen_margin - kb_offset if (is_kb_open and kb_offset > 10.0) else -screen_margin
+
+	_update_touch_controls_visibility()
+
+func _update_touch_controls_visibility() -> void:
+	if not touch_controls:
+		return
+	var overlay_is_open = (control_panel and control_panel.visible) or (log_panel and log_panel.visible)
+	touch_controls.visible = not overlay_is_open
+
+func _fit_interface_panel_width(panel: PanelContainer) -> void:
+	if not ui_root or not panel:
+		return
+	if panel == telemetry_panel:
+		for node in panel.find_children("*", "Label", true, false):
+			var label := node as Label
+			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			label.custom_minimum_size.x = 0.0
+	var scaled_margin = INTERFACE_PANEL_SIDE_MARGIN / maxf(current_ui_scale, 0.01)
+	var max_width = maxf(ui_root.size.x - scaled_margin * 2.0, 1.0)
+	panel.custom_minimum_size.x = 0.0
+	var layout_width = max_width
+	if panel == control_panel:
+		layout_width = maxf(max_width, panel.get_combined_minimum_size().x)
+	# Center on UIRoot and convert the screen margins into its scaled coordinates.
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.offset_left = -layout_width * 0.5
+	panel.offset_right = layout_width * 0.5
+	panel.size.x = layout_width
+	panel.clip_contents = true
+	panel.pivot_offset = Vector2(layout_width * 0.5, 0.0)
+	var fit_scale_x = minf(1.0, max_width / layout_width)
+	panel.scale = Vector2(fit_scale_x, 1.0)
+
+func _fit_info_panel_height() -> void:
+	if not telemetry_panel:
+		return
+	telemetry_panel.custom_minimum_size.y = 0.0
+	telemetry_panel.size.y = telemetry_panel.get_combined_minimum_size().y
+	telemetry_panel.offset_bottom = telemetry_panel.offset_top + telemetry_panel.size.y
+
+func _on_tab_container_resized() -> void:
+	if tab_container:
+		tab_container.pivot_offset = tab_container.size * 0.5
 
 func _update_scale_slider_ui() -> void:
 	if scale_slider and not is_equal_approx(scale_slider.value, current_ui_scale):
@@ -645,9 +694,12 @@ func _setup_touch_controls_layout() -> void:
 	touch_controls.anchor_right = 0.0
 	touch_controls.anchor_bottom = 0.0
 	touch_controls.position = Vector2.ZERO
-	var scale_value = maxf(current_ui_scale, 1.0)
+	var viewport_size = get_viewport().get_visible_rect().size
+	var is_portrait = viewport_size.y > viewport_size.x
+	var base_scale = maxf(current_ui_scale, 1.0)
+	var scale_value = base_scale * 0.80 if is_portrait else minf(base_scale, LANDSCAPE_TOUCH_CONTROL_MAX_SCALE)
 	touch_controls.scale = Vector2.ONE * scale_value
-	touch_controls.size = get_viewport().get_visible_rect().size / scale_value
+	touch_controls.size = viewport_size / scale_value
 	touch_controls.ui_scale = scale_value
 
 static func slider_pos_to_intensity(s: float) -> float:
@@ -663,17 +715,55 @@ static func intensity_to_slider_pos(intensity: float) -> float:
 		return 0.0
 	return clampf(log(intensity / MIN_INTENSITY) / log(MAX_INTENSITY / MIN_INTENSITY), 0.0, 1.0)
 
+func _is_narrow_interface() -> bool:
+	return get_viewport().get_visible_rect().size.x < 560.0
+
+func _new_settings_row() -> BoxContainer:
+	var row: BoxContainer = VBoxContainer.new() if _is_narrow_interface() else HBoxContainer.new()
+	row.add_to_group("responsive_settings_rows")
+	row.add_theme_constant_override("separation", 4)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return row
+
+func _reflow_settings_rows() -> void:
+	var use_vertical_rows = _is_narrow_interface()
+	for node in get_tree().get_nodes_in_group("responsive_settings_rows"):
+		if not is_instance_valid(node) or not node is BoxContainer:
+			continue
+		var old_row := node as BoxContainer
+		if (old_row is VBoxContainer) == use_vertical_rows:
+			continue
+		var parent := old_row.get_parent()
+		if not parent:
+			continue
+		var old_index = old_row.get_index()
+		var new_row: BoxContainer = VBoxContainer.new() if use_vertical_rows else HBoxContainer.new()
+		new_row.name = old_row.name
+		new_row.add_to_group("responsive_settings_rows")
+		new_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		new_row.add_theme_constant_override("separation", 4)
+		parent.add_child(new_row)
+		parent.move_child(new_row, old_index)
+		for child in old_row.get_children():
+			old_row.remove_child(child)
+			new_row.add_child(child)
+		old_row.remove_from_group("responsive_settings_rows")
+		old_row.queue_free()
+
 func _create_slider_row(parent: VBoxContainer, label_text: String, min_val: float, max_val: float, step_val: float, init_val: float, callback: Callable) -> Array:
 	var box = VBoxContainer.new()
-	var header = HBoxContainer.new()
+	var header: BoxContainer = _new_settings_row()
 
 	var lbl = Label.new()
 	lbl.text = label_text
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	lbl.add_theme_font_size_override("font_size", 11)
 	header.add_child(lbl)
 
 	var vlbl = Label.new()
 	vlbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vlbl.custom_minimum_size.x = 0.0
 	vlbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	vlbl.add_theme_font_size_override("font_size", 11)
 	header.add_child(vlbl)
@@ -693,13 +783,24 @@ func _create_slider_row(parent: VBoxContainer, label_text: String, min_val: floa
 
 func _setup_control_panel() -> void:
 	if tab_container:
-		tab_container.set_tab_title(0, "🌍 Climate")
-		tab_container.set_tab_title(1, "☁️ Weather")
-		tab_container.set_tab_title(2, "☀️ Lighting")
-		tab_container.set_tab_title(3, "⏳ Time")
-		tab_container.set_tab_title(4, "🌐 Physics")
-		tab_container.set_tab_title(5, "⚡ Performance")
-		tab_container.set_tab_title(6, "⚙️ System")
+		if _is_narrow_interface():
+			tab_container.add_theme_font_size_override("font_size", 9)
+			tab_container.set_tab_title(0, "Clim")
+			tab_container.set_tab_title(1, "Weath")
+			tab_container.set_tab_title(2, "Light")
+			tab_container.set_tab_title(3, "Time")
+			tab_container.set_tab_title(4, "Phys")
+			tab_container.set_tab_title(5, "Perf")
+			tab_container.set_tab_title(6, "Sys")
+		else:
+			tab_container.add_theme_font_size_override("font_size", 11)
+			tab_container.set_tab_title(0, "🌍 Climate")
+			tab_container.set_tab_title(1, "☁️ Weather")
+			tab_container.set_tab_title(2, "☀️ Lighting")
+			tab_container.set_tab_title(3, "⏳ Time")
+			tab_container.set_tab_title(4, "🌐 Physics")
+			tab_container.set_tab_title(5, "⚡ Performance")
+			tab_container.set_tab_title(6, "⚙️ System")
 
 	var vbox_climate = get_node_or_null("UIRoot/ControlPanel/TabContainer/Climate/VBoxClimate") as VBoxContainer
 	if vbox_climate:
@@ -785,7 +886,7 @@ func _setup_climate_tab(vbox: VBoxContainer) -> void:
 	preset_label.add_theme_font_size_override("font_size", 10)
 	vbox.add_child(preset_label)
 
-	var hbox_presets = HBoxContainer.new()
+	var hbox_presets = _new_settings_row()
 	climate_preset_option = OptionButton.new()
 	climate_preset_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	climate_preset_option.focus_mode = Control.FOCUS_NONE
@@ -810,7 +911,7 @@ func _setup_climate_tab(vbox: VBoxContainer) -> void:
 	hbox_presets.add_child(apply_climate_preset_btn)
 	vbox.add_child(hbox_presets)
 
-	var hbox_triggers = HBoxContainer.new()
+	var hbox_triggers = _new_settings_row()
 	vbox.add_child(hbox_triggers)
 
 	gen_weather_state_btn = Button.new()
@@ -844,6 +945,9 @@ func _setup_weather_tab(vbox: VBoxContainer) -> void:
 	trajectory_status_label.add_theme_font_size_override("font_size", 11)
 	trajectory_status_label.text = "Forecast: Initializing Trajectory..."
 	trajectory_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	trajectory_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	trajectory_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	trajectory_status_label.custom_minimum_size.x = 0.0
 	vbox.add_child(trajectory_status_label)
 
 	queue_list_label = Label.new()
@@ -857,7 +961,7 @@ func _setup_weather_tab(vbox: VBoxContainer) -> void:
 	# 2. Queue Dispatch Controls
 	var queue_box = VBoxContainer.new()
 	
-	var hbox_preset_row = HBoxContainer.new()
+	var hbox_preset_row = _new_settings_row()
 	queue_box.add_child(hbox_preset_row)
 
 	preset_queue_option = OptionButton.new()
@@ -883,7 +987,7 @@ func _setup_weather_tab(vbox: VBoxContainer) -> void:
 	duration_queue_option.select(1) # Default 30s
 	hbox_preset_row.add_child(duration_queue_option)
 
-	var hbox_actions = HBoxContainer.new()
+	var hbox_actions = _new_settings_row()
 	queue_box.add_child(hbox_actions)
 
 	add_preset_to_queue_btn = Button.new()
@@ -902,7 +1006,7 @@ func _setup_weather_tab(vbox: VBoxContainer) -> void:
 	queue_current_sliders_btn.pressed.connect(_on_queue_current_sliders_pressed)
 	hbox_actions.add_child(queue_current_sliders_btn)
 
-	var hbox_q_mgmt = HBoxContainer.new()
+	var hbox_q_mgmt = _new_settings_row()
 	queue_box.add_child(hbox_q_mgmt)
 
 	skip_trajectory_btn = Button.new()
@@ -1169,7 +1273,7 @@ func _setup_physics_tab(vbox: VBoxContainer) -> void:
 	launch_up_btn.pressed.connect(_on_launch_up_pressed)
 	vbox.add_child(launch_up_btn)
 
-	var hbox_pro_ret = HBoxContainer.new()
+	var hbox_pro_ret = _new_settings_row()
 	vbox.add_child(hbox_pro_ret)
 
 	launch_prograde_btn = Button.new()
@@ -1203,7 +1307,7 @@ func _setup_physics_tab(vbox: VBoxContainer) -> void:
 	toggle_rain_stream_btn.pressed.connect(_on_toggle_rain_stream_pressed)
 	vbox.add_child(toggle_rain_stream_btn)
 
-	var hbox_traj = HBoxContainer.new()
+	var hbox_traj = _new_settings_row()
 	vbox.add_child(hbox_traj)
 
 	toggle_trajectories_btn = Button.new()
@@ -1258,6 +1362,7 @@ func _setup_performance_tab(vbox: VBoxContainer) -> void:
 		player.camera.far = cur_far
 	var r_cull = _create_slider_row(vbox, "Camera Culling Distance:", 500.0, 40000.0, 250.0, cur_far, _on_perf_culling_changed)
 	perf_culling_slider = r_cull[0]
+	_limit_performance_slider_width(perf_culling_slider)
 	perf_culling_val = r_cull[1]
 	_update_culling_label(cur_far)
 
@@ -1266,6 +1371,7 @@ func _setup_performance_tab(vbox: VBoxContainer) -> void:
 		get_viewport().scaling_3d_scale = cur_scale
 	var r_scale = _create_slider_row(vbox, "3D Render Resolution Scale:", 0.25, 1.0, 0.05, cur_scale, _on_perf_scale_changed)
 	perf_scale_slider = r_scale[0]
+	_limit_performance_slider_width(perf_scale_slider)
 	perf_scale_val = r_scale[1]
 	_update_perf_scale_label(cur_scale)
 
@@ -1301,6 +1407,7 @@ func _setup_performance_tab(vbox: VBoxContainer) -> void:
 	var cur_light_dist = SurfaceLightObject.global_active_light_distance
 	var r_light = _create_slider_row(vbox, "Surface Light Active Range:", 0.0, 8000.0, 50.0, cur_light_dist, _on_perf_light_dist_changed)
 	perf_light_dist_slider = r_light[0]
+	_limit_performance_slider_width(perf_light_dist_slider)
 	perf_light_dist_val = r_light[1]
 	_update_light_dist_label(cur_light_dist)
 
@@ -1308,16 +1415,21 @@ func _setup_performance_tab(vbox: VBoxContainer) -> void:
 	var cur_clutter_dist = clutter_mgr.view_radius if clutter_mgr else 500.0
 	var r_clutter = _create_slider_row(vbox, "Ground Clutter Draw Distance:", 0.0, 1000.0, 25.0, cur_clutter_dist, _on_perf_clutter_dist_changed)
 	perf_clutter_dist_slider = r_clutter[0]
+	_limit_performance_slider_width(perf_clutter_dist_slider)
 	perf_clutter_dist_val = r_clutter[1]
 	_update_clutter_dist_label(cur_clutter_dist)
 	var cur_clutter_density = clutter_mgr.density_multiplier if clutter_mgr else 1.0
 	var r_clutter_density = _create_slider_row(vbox, "Ground Clutter Density:", 0.0, 2.0, 0.1, cur_clutter_density, _on_perf_clutter_density_changed)
 	perf_clutter_density_slider = r_clutter_density[0]
+	_limit_performance_slider_width(perf_clutter_density_slider)
 	perf_clutter_density_val = r_clutter_density[1]
 	_update_clutter_density_label(cur_clutter_density)
 	perf_clutter_auto_label = Label.new()
 	perf_clutter_auto_label.name = "GroundClutterAutoTuneStatus"
 	perf_clutter_auto_label.add_theme_font_size_override("font_size", 10)
+	perf_clutter_auto_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	perf_clutter_auto_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	perf_clutter_auto_label.custom_minimum_size.x = 0.0
 	perf_clutter_auto_label.modulate = Color(0.72, 0.84, 0.92)
 	perf_clutter_auto_label.text = "Auto-tune activates when a target FPS is selected."
 	vbox.add_child(perf_clutter_auto_label)
@@ -1405,6 +1517,14 @@ func _setup_performance_tab(vbox: VBoxContainer) -> void:
 	var is_mobile = OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios")
 	var default_preset = 1 if is_mobile else 2
 	_on_perf_preset_selected(default_preset)
+
+func _limit_performance_slider_width(slider: HSlider) -> void:
+	if not slider:
+		return
+	var screen_width = get_viewport().get_visible_rect().size.x
+	var available_width = maxf((screen_width - INTERFACE_PANEL_SIDE_MARGIN * 2.0) / maxf(current_ui_scale, 0.01), 1.0)
+	slider.custom_minimum_size.x = available_width * 0.75
+	slider.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 func _setup_system_tab(vbox: VBoxContainer) -> void:
 	var r_scale = _create_slider_row(vbox, "UI Scaling Factor:", 0.75, 3.5, 0.05, current_ui_scale, _on_scale_slider_changed)
@@ -1651,7 +1771,7 @@ func _update_solar_ui() -> void:
 	var mode_tag = "Real-Time" if is_rt else ("Paused" if is_zero_approx(t_scale) else ("%.0fx" % t_scale))
 
 	if solar_badge_label and telemetry_panel and telemetry_panel.visible:
-		solar_badge_label.text = "SOLAR: %02d:%02d:%02d [%s] | Elev: %+.1f° (%s)" % [
+		solar_badge_label.text = "SOLAR TIME: %02d:%02d:%02d [%s]\nELEVATION: %+.1f° (%s)" % [
 			hours, mins, secs, mode_tag, elev, phase
 		]
 		if elev >= 20.0:
@@ -2038,11 +2158,11 @@ func _on_weather_updated(data: Dictionary) -> void:
 		if trajectory_status_label:
 			if is_trans:
 				var clock_tag = "⏱️ Clock Tied" if is_clock else "⏱️ Real-Time"
-				trajectory_status_label.text = "Active Target: %s [%d%% | %ds left] (%s)\nCloud Deck: Rot %.1f° | Wind: %.1f m/s (%.0f km/h)" % [
+				trajectory_status_label.text = "Active Target: %s [%d%% | %ds left] (%s)\nCloud rotation: %.1f°\nWind: %.1f m/s (%.0f km/h)" % [
 					traj_name, int(round(traj_prog * 100.0)), int(round(traj_rem)), clock_tag, cloud_rot_deg, wind_ms, wind_kmh
 				]
 			else:
-				trajectory_status_label.text = "Active Weather: %s\nCloud Deck: Rot %.1f° | Wind: %.1f m/s (%.0f km/h)" % [
+				trajectory_status_label.text = "Active Weather: %s\nCloud rotation: %.1f°\nWind: %.1f m/s (%.0f km/h)" % [
 					data.get("weather_state", "Fair Cumulus"), cloud_rot_deg, wind_ms, wind_kmh
 				]
 
@@ -2159,12 +2279,13 @@ func _on_weather_updated(data: Dictionary) -> void:
 		var precip_str = ""
 		if precip > 0.05:
 			var p_label = "Snow" if is_snow else "Rain"
-			precip_str = " | %s: %.1f mm/h (Tilt: %+.1f°)" % [p_label, precip, data.get("coriolis_rain_tilt_deg", 0.0)]
+			precip_str = "PRECIPITATION: %s %.1f mm/h\n" % [p_label, precip]
 
 		var queue_tag = "[Queue: %d]" % q_size if q_size > 0 else ("[Auto-Climate]" if is_auto else "[Manual]")
-		weather_badge_label.text = "WEATHER %s: [%s] | Wind: %.1f m/s (%.0f km/h)%s\nCLOUDS: Deck @ %.2f km AGL (Thick: %.0fm) | Rot: %.1f° | RH: %d%%" % [
+		weather_badge_label.text = "WEATHER %s: %s\nWIND: %.1f m/s (%.0f km/h)\n%sCLOUD DECK: %.2f km AGL\nTHICKNESS: %.0f m | ROTATION: %.1f°\nHUMIDITY: %d%%" % [
 			queue_tag, traj_name if is_trans else w_state.to_upper(), wind_ms, wind_kmh, precip_str, cloud_km, cloud_th, cloud_rot_deg, int(round(rh))
 		]
+		_fit_info_panel_height()
 		if is_snow:
 			weather_badge_label.modulate = Color(0.8, 0.95, 1.0)
 		else:
@@ -2278,6 +2399,7 @@ func _on_toggle_controls_pressed() -> void:
 				crosshair_node.visible = false
 		var cur_tab = tab_container.get_tab_title(tab_container.current_tab) if tab_container else "Overview"
 		var status_str = "SHOWN (Tab: %s)" % cur_tab if control_panel.visible else "HIDDEN"
+		_update_touch_controls_visibility()
 		log_event("UI Interface -> Tuning Settings Panel %s" % status_str, "#ffaa55")
 
 func _on_toggle_telemetry_pressed() -> void:
@@ -2314,6 +2436,7 @@ func _on_toggle_log_pressed() -> void:
 			if event_log_text and is_instance_valid(event_log_text):
 				event_log_text.text = "\n".join(event_log_history)
 		var status_str = "SHOWN" if log_panel.visible else "HIDDEN"
+		_update_touch_controls_visibility()
 		log_event("UI Interface -> System Event Log Console %s" % status_str, "#ffaa55")
 
 func _on_tab_changed(tab_idx: int) -> void:
@@ -2790,7 +2913,7 @@ func _update_clutter_auto_tuning(delta: float) -> void:
 
 	if perf_clutter_auto_label:
 		var effective_radius = clutter_mgr._effective_draw_distance()
-		perf_clutter_auto_label.text = "Auto-tune target %d FPS | current %.0f | clutter %.0fm / %.0f%% | density %.0f%% | rain %.0f%% | lights %.0f%%\nFPS effect: distance %s; density %s; rain %s; lights %s\nRender scale 100%%; camera range 40 km" % [
+		perf_clutter_auto_label.text = "Auto-tune target: %d FPS | Current: %.0f FPS\nClutter: %.0f m | Distance: %.0f%%\nDensity: %.0f%% | Rain: %.0f%% | Lights: %.0f%%\nFPS effect:\nDistance: %s | Density: %s\nRain: %s | Lights: %s\nRender scale: 100%% | Camera range: 40 km" % [
 			target_fps,
 			clutter_auto_fps_average,
 			effective_radius,
