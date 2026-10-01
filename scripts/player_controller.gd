@@ -64,6 +64,8 @@ var stride_phase: float = 0.0       # Phase for footstep roll sway
 
 # Internal look angles
 var pitch: float = 0.0
+var debug_flashlight: SpotLight3D = null
+var debug_flashlight_enabled: bool = false
 
 func _ready() -> void:
 	# Standard drag / touch controls: default mouse to visible so dragging anywhere on screen rotates
@@ -74,6 +76,7 @@ func _ready() -> void:
 	if camera:
 		camera.near = 0.2
 		camera.far = 40000.0
+		_setup_debug_flashlight()
 
 	# Collision recovery across terrain seams and 26 km end cap dishes
 	safe_margin = 0.08
@@ -108,9 +111,11 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("reset_position"):
 		reset_to_spawn()
 
-	# Hotkeys: T (wobble test), C (deploy campfire), L (deploy lamp post), P (launch particle), G (vertical toss), I (toggle target inspector)
+	# Hotkeys: F (debug flashlight), T (wobble test), C (deploy campfire), L (deploy lamp post), P (launch particle), G (vertical toss), I (toggle target inspector)
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_T:
+		if event.keycode == KEY_F:
+			toggle_debug_flashlight()
+		elif event.keycode == KEY_T:
 			wobble_impulse(22.0)
 		elif event.keycode == KEY_I:
 			var hud = get_tree().get_first_node_in_group("hud") if is_inside_tree() else null
@@ -130,6 +135,22 @@ func _input(event: InputEvent) -> void:
 		if not (Input.is_action_pressed("move_forward") or Input.is_action_pressed("move_backward") or Input.is_action_pressed("move_left") or Input.is_action_pressed("move_right")):
 			if not joystick_override:
 				input_axis = Vector2.ZERO
+
+func _setup_debug_flashlight() -> void:
+	debug_flashlight = SpotLight3D.new()
+	debug_flashlight.name = "DebugFlashlight"
+	debug_flashlight.light_color = Color(1.0, 0.96, 0.84)
+	debug_flashlight.light_energy = 128.0
+	debug_flashlight.spot_range = 600.0
+	debug_flashlight.spot_angle = 75.0
+	debug_flashlight.shadow_enabled = false
+	debug_flashlight.visible = false
+	camera.add_child(debug_flashlight)
+
+func toggle_debug_flashlight() -> void:
+	debug_flashlight_enabled = not debug_flashlight_enabled
+	if debug_flashlight:
+		debug_flashlight.visible = debug_flashlight_enabled
 
 func apply_look_input(delta_look: Vector2) -> void:
 	look_control_timer = 0.5 # Actively controlling look angles

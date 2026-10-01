@@ -545,6 +545,22 @@ grow_vertical = 0
 theme_override_font_sizes/font_size = 13
 text = "SPRINT: ON"
 
+[node name="FlashlightButton" type="Button" parent="UIRoot/TouchControls/ActionButtons"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -190.0
+offset_top = -170.0
+offset_right = -100.0
+offset_bottom = -90.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 12
+text = "LIGHT: OFF"
+
 [node name="FlyUpButton" type="Button" parent="UIRoot/TouchControls/ActionButtons"]
 visible = false
 layout_mode = 1

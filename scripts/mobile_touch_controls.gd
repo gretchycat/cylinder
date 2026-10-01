@@ -24,6 +24,7 @@ var last_look_pos: Vector2 = Vector2.ZERO
 @onready var jump_btn: Button = $ActionButtons/JumpButton
 @onready var fly_btn: Button = $ActionButtons/FlyButton
 @onready var sprint_btn: Button = $ActionButtons/SprintButton
+@onready var flashlight_btn: Button = get_node_or_null("ActionButtons/FlashlightButton")
 @onready var fly_up_btn: Button = get_node_or_null("ActionButtons/FlyUpButton")
 @onready var fly_down_btn: Button = get_node_or_null("ActionButtons/FlyDownButton")
 
@@ -40,6 +41,9 @@ func _ready() -> void:
 	if sprint_btn:
 		sprint_btn.text = "SPRINT: ON" if (player and player.mobile_sprint_active) else "SPRINT: OFF"
 		sprint_btn.pressed.connect(_on_sprint_pressed)
+	if flashlight_btn and player:
+		_update_flashlight_button()
+		flashlight_btn.pressed.connect(_on_flashlight_pressed)
 
 	if fly_up_btn:
 		fly_up_btn.button_down.connect(func(): if player: player.fly_vertical_axis = 1.0)
@@ -329,6 +333,15 @@ func _on_sprint_pressed() -> void:
 		player.is_sprinting = player.mobile_sprint_active
 		if sprint_btn:
 			sprint_btn.text = "SPRINT: ON" if player.mobile_sprint_active else "SPRINT: OFF"
+
+func _on_flashlight_pressed() -> void:
+	if player:
+		player.toggle_debug_flashlight()
+		_update_flashlight_button()
+
+func _update_flashlight_button() -> void:
+	if flashlight_btn and player:
+		flashlight_btn.text = "LIGHT: ON" if player.debug_flashlight_enabled else "LIGHT: OFF"
 
 func _update_fly_buttons_visibility() -> void:
 	var flying = player.is_flying if player else false
