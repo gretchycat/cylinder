@@ -8,9 +8,16 @@ GODOT_BIN="${GODOT_BIN:-$(which godot || echo "$HOME/.local/bin/godot")}"
 BUILD_DIR="$PROJECT_DIR/build"
 mkdir -p "$BUILD_DIR"
 
-# Ensure Android SDK paths
-export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
-export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}"
+# Android SDK defaults differ between desktop Android Studio and Termux.
+if [ -z "${ANDROID_HOME:-}" ] && [ -z "${ANDROID_SDK_ROOT:-}" ]; then
+    if [ -d "$HOME/android-sdk" ]; then
+        ANDROID_HOME="$HOME/android-sdk"
+    else
+        ANDROID_HOME="$HOME/Android/Sdk"
+    fi
+fi
+export ANDROID_HOME="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
 
 usage() {
     echo "=========================================================="
@@ -213,10 +220,26 @@ cmd_test() {
 
 cmd_android() {
     check_godot
-    local android_arch linux_arch
+    local android_arch
     android_arch="$(normalize_android_arch "${1:-${ANDROID_ARCH:-arm64-v8a}}")"
-    linux_arch="$(normalize_linux_arch "${LINUX_ARCH:-$(detect_linux_arch)}")"
-    generate_export_presets "$android_arch" "$linux_arch"
+    generate_export_presets "$android_arch" "x86_64"
+
+    if [ ! -d "$ANDROID_SDK_ROOT/platform-tools" ] || [ ! -d "$ANDROID_SDK_ROOT/build-tools" ]; then
+        echo "[ERROR] Android SDK is incomplete at '$ANDROID_SDK_ROOT'."
+        echo "        Set ANDROID_SDK_ROOT to a valid SDK containing platform-tools and build-tools."
+        exit 1
+    fi
+
+    local godot_version template_dir
+    godot_version="$("$GODOT_BIN" --version | cut -d'.' -f1-3)"
+    template_dir="$HOME/.local/share/godot/export_templates/${godot_version}.stable"
+    if [ ! -f "$template_dir/android_debug.apk" ]; then
+        echo "[ERROR] Android export templates for Godot $godot_version are missing."
+        echo "        Install them with: \"$GODOT_BIN\" --headless --install-android-build-template"
+        echo "        or through Editor -> Manage Export Templates."
+        exit 1
+    fi
+
     echo "[BUILD] Exporting Android APK..."
     "$GODOT_BIN" --headless --export-debug "Android" "$BUILD_DIR/cylinder.apk"
     echo "[SUCCESS] Exported Android APK to: $BUILD_DIR/cylinder.apk"
