@@ -18,8 +18,8 @@ func _ready() -> void:
 	panel.name = "DebugPanel"
 	panel.anchor_left = 0.0
 	panel.anchor_top = 0.0
-	panel.anchor_right = 0.5
-	panel.anchor_bottom = 0.5
+	panel.anchor_right = 0.75
+	panel.anchor_bottom = 0.32
 	panel.offset_left = 10
 	panel.offset_top = 10
 	panel.offset_right = -10
@@ -27,18 +27,40 @@ func _ready() -> void:
 	panel.modulate = Color(0, 0, 0, 0.6)
 	add_child(panel)
 
+	var content = VBoxContainer.new()
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_theme_constant_override("separation", 4)
+	panel.add_child(content)
+
+	var header = HBoxContainer.new()
+	content.add_child(header)
+	var title = Label.new()
+	title.text = "Mobile Diagnostics"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	var copy_button = Button.new()
+	copy_button.text = "Copy Logs"
+	copy_button.pressed.connect(_on_copy_pressed)
+	header.add_child(copy_button)
+
 	var label = RichTextLabel.new()
 	label.name = "LogLabel"
 	label.scroll_active = true
 	label.scroll_following = true
-	label.bbcode_enabled = true
-	label.fit_content = true
-	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.bbcode_enabled = false
+	label.fit_content = false
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_child(label)
+	content.add_child(label)
+	for line in _buffer:
+		label.append_text(line + "\n")
 
 	set_process(true)
+
+func _on_copy_pressed() -> void:
+	if DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD):
+		DisplayServer.clipboard_set("\n".join(_buffer))
 
 static func get_instance() -> DebugConsole:
 	return _instance

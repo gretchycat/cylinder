@@ -5,6 +5,7 @@ extends Node3D
 const CLUTTER_SHADER: Shader = preload("res://assets/shaders/ground_clutter.gdshader")
 const TerrainManagerClass = preload("res://scripts/terrain_manager.gd")
 const MapConfigClass = preload("res://scripts/map_config.gd")
+const DebugConsoleClass = preload("res://scripts/debug_console.gd")
 
 @export var enabled: bool = true:
 	set(val):
@@ -12,10 +13,15 @@ const MapConfigClass = preload("res://scripts/map_config.gd")
 		if not enabled:
 			_clear_all_chunks()
 
+## Periodically prints low-overhead clutter and renderer measurements for profiling.
+@export var performance_telemetry_enabled: bool = true
+@export_range(1.0, 30.0, 1.0) var performance_telemetry_interval: float = 5.0
+
 @export var view_radius: float = 500.0:
 	set(val):
 		view_radius = clampf(val, 50.0, 1000.0)
 		_update_material_world_parameters()
+		last_update_pos = Vector3(99999.0, 99999.0, 99999.0)
 
 @export var fade_distance: float = 120.0:
 	set(val):
@@ -28,7 +34,16 @@ const MapConfigClass = preload("res://scripts/map_config.gd")
 
 @export var density_multiplier: float = 1.0:
 	set(val):
-		density_multiplier = clampf(val, 0.1, 3.0)
+		var next_value = clampf(val, 0.0, 3.0)
+		var changed = not is_equal_approx(density_multiplier, next_value)
+		density_multiplier = next_value
+		if changed and is_inside_tree():
+			_clear_all_chunks()
+
+var grassland_density_multiplier: float = 1.0
+var farmland_density_multiplier: float = 1.0
+var adaptive_draw_distance_scale: float = 1.0
+var adaptive_density_scale: float = 1.0
 
 var cylinder_world: CylinderGenerator = null
 var map_config: Dictionary = {}
@@ -37,6 +52,17 @@ var active_chunks: Dictionary = {} # Vector2i -> Node3D (Chunk root)
 var last_cam_grid: Vector2i = Vector2i(-99999, -99999)
 var last_update_pos: Vector3 = Vector3(99999, 99999, 99999)
 var update_timer: float = 0.0
+
+# Rolling console telemetry. Work counters reset after each report interval.
+var _telemetry_elapsed: float = 0.0
+var _telemetry_frame_count: int = 0
+var _telemetry_frame_ms_total: float = 0.0
+var _telemetry_frame_ms_max: float = 0.0
+var _telemetry_chunk_builds: int = 0
+var _telemetry_chunk_build_ms_total: float = 0.0
+var _telemetry_chunk_build_ms_max: float = 0.0
+var _telemetry_terrain_samples: int = 0
+var _telemetry_surface_queries: int = 0
 
 # Shared materials & meshes
 var grass_mat: ShaderMaterial = null
@@ -75,17 +101,21 @@ func _load_map_clutter_config() -> void:
 	view_radius = float(clutter_config.get("view_radius_m", view_radius))
 	chunk_size = float(clutter_config.get("chunk_size_m", chunk_size))
 	density_multiplier = float(clutter_config.get("density_multiplier", density_multiplier))
+	grassland_density_multiplier = clampf(float(clutter_config.get("grassland_density_multiplier", grassland_density_multiplier)), 1.0, 10.0)
+	farmland_density_multiplier = clampf(float(clutter_config.get("farmland_density_multiplier", farmland_density_multiplier)), 1.0, 10.0)
 
 func _load_clutter_model_mesh(model_id: String) -> Mesh:
 	var scene_path = MapConfigClass.get_clutter_model_path(map_config, model_id)
 	if scene_path.is_empty():
 		push_warning("Map clutter model '%s' has no scene_path" % model_id)
 		return null
-	var packed = ResourceLoader.load(scene_path) as PackedScene
-	if not packed:
-		push_warning("Could not load map clutter model scene: %s" % scene_path)
+	var resource = ResourceLoader.load(scene_path)
+	if resource is Mesh:
+		return resource
+	if not resource is PackedScene:
+		push_warning("Could not load map clutter model scene or mesh: %s" % scene_path)
 		return null
-	var model_instance = packed.instantiate()
+	var model_instance = (resource as PackedScene).instantiate()
 	var generated_mesh: Mesh = null
 	if model_instance.has_method("build_mesh"):
 		generated_mesh = model_instance.call("build_mesh") as Mesh
@@ -112,6 +142,13 @@ func _configure_map_material(mat: ShaderMaterial, model_id: String) -> void:
 	for float_key in ["wind_speed", "wind_strength", "roughness"]:
 		if definition.has(float_key):
 			mat.set_shader_parameter(float_key, float(definition[float_key]))
+	if definition.has("gradient_mode"):
+		var gradient_modes := {"none": 0, "linear": 1, "radial": 2}
+		var mode_name = str(definition["gradient_mode"]).to_lower()
+		if gradient_modes.has(mode_name):
+			mat.set_shader_parameter("gradient_mode", gradient_modes[mode_name])
+	if definition.has("gradient_extent_m"):
+		mat.set_shader_parameter("gradient_extent", maxf(float(definition["gradient_extent_m"]), 0.001))
 	if definition.has("fade_distance_m"):
 		mat.set_shader_parameter("fade_distance", float(definition["fade_distance_m"]))
 
@@ -134,7 +171,7 @@ func _update_material_world_parameters() -> void:
 			mat.set_shader_parameter("water_level", w_lvl)
 			mat.set_shader_parameter("air_color", air_col)
 			mat.set_shader_parameter("air_density", air_d)
-			mat.set_shader_parameter("max_distance", view_radius)
+			mat.set_shader_parameter("max_distance", _effective_draw_distance())
 			mat.set_shader_parameter("fade_distance", fade_distance)
 
 func _init_resources() -> void:
@@ -146,6 +183,8 @@ func _init_resources() -> void:
 	grass_mat.shader = CLUTTER_SHADER
 	grass_mat.set_shader_parameter("base_color", Color(0.24, 0.52, 0.16, 1.0))
 	grass_mat.set_shader_parameter("tip_color", Color(0.48, 0.78, 0.25, 1.0))
+	grass_mat.set_shader_parameter("gradient_mode", 1)
+	grass_mat.set_shader_parameter("gradient_extent", 0.85)
 	grass_mat.set_shader_parameter("wind_speed", 2.2)
 	grass_mat.set_shader_parameter("wind_strength", 0.24)
 	grass_mat.set_shader_parameter("max_distance", view_radius)
@@ -156,6 +195,8 @@ func _init_resources() -> void:
 	flower_mat.set_shader_parameter("base_color", Color(0.22, 0.50, 0.18, 1.0))
 	flower_mat.set_shader_parameter("tip_color", Color(0.95, 0.30, 0.20, 1.0))
 	flower_mat.set_shader_parameter("is_flower", true)
+	flower_mat.set_shader_parameter("gradient_mode", 1)
+	flower_mat.set_shader_parameter("gradient_extent", 0.80)
 	flower_mat.set_shader_parameter("wind_speed", 2.6)
 	flower_mat.set_shader_parameter("wind_strength", 0.18)
 	flower_mat.set_shader_parameter("max_distance", view_radius)
@@ -167,6 +208,8 @@ func _init_resources() -> void:
 	stone_mat.set_shader_parameter("tip_color", Color(0.55, 0.56, 0.58, 1.0))
 	stone_mat.set_shader_parameter("roughness", 0.94)
 	stone_mat.set_shader_parameter("is_stone", true)
+	stone_mat.set_shader_parameter("gradient_mode", 2)
+	stone_mat.set_shader_parameter("gradient_extent", 0.40)
 	stone_mat.set_shader_parameter("max_distance", view_radius)
 	stone_mat.set_shader_parameter("fade_distance", fade_distance)
 
@@ -174,6 +217,8 @@ func _init_resources() -> void:
 	crop_mat.shader = CLUTTER_SHADER
 	crop_mat.set_shader_parameter("base_color", Color(0.65, 0.52, 0.22, 1.0))
 	crop_mat.set_shader_parameter("tip_color", Color(0.88, 0.74, 0.32, 1.0))
+	crop_mat.set_shader_parameter("gradient_mode", 1)
+	crop_mat.set_shader_parameter("gradient_extent", 1.15)
 	crop_mat.set_shader_parameter("wind_speed", 1.8)
 	crop_mat.set_shader_parameter("wind_strength", 0.28)
 	crop_mat.set_shader_parameter("max_distance", view_radius)
@@ -183,6 +228,8 @@ func _init_resources() -> void:
 	shrub_mat.shader = CLUTTER_SHADER
 	shrub_mat.set_shader_parameter("base_color", Color(0.18, 0.42, 0.14, 1.0))
 	shrub_mat.set_shader_parameter("tip_color", Color(0.32, 0.62, 0.22, 1.0))
+	shrub_mat.set_shader_parameter("gradient_mode", 2)
+	shrub_mat.set_shader_parameter("gradient_extent", 0.65)
 	shrub_mat.set_shader_parameter("wind_speed", 1.6)
 	shrub_mat.set_shader_parameter("wind_strength", 0.14)
 	shrub_mat.set_shader_parameter("max_distance", view_radius)
@@ -206,6 +253,9 @@ func _init_resources() -> void:
 	mushroom_mat.shader = CLUTTER_SHADER
 	mushroom_mat.set_shader_parameter("base_color", Color(0.84, 0.76, 0.63, 1.0))
 	mushroom_mat.set_shader_parameter("tip_color", Color(0.44, 0.27, 0.16, 1.0))
+	mushroom_mat.set_shader_parameter("is_mushroom", true)
+	mushroom_mat.set_shader_parameter("gradient_mode", 2)
+	mushroom_mat.set_shader_parameter("gradient_extent", 0.115)
 	mushroom_mat.set_shader_parameter("max_distance", view_radius)
 	mushroom_mat.set_shader_parameter("fade_distance", fade_distance)
 	_configure_map_material(mushroom_mat, "mushrooms")
@@ -223,6 +273,7 @@ func _get_model_instance_color(model_id: String, rng: RandomNumberGenerator, fal
 	return Color(float(values[0]), float(values[1]), float(values[2]), float(values[3]) if values.size() > 3 else 1.0)
 
 func _process(delta: float) -> void:
+	_record_performance_telemetry(delta)
 	if not enabled:
 		return
 
@@ -241,6 +292,45 @@ func _process(delta: float) -> void:
 
 	last_update_pos = cam_pos
 	_update_active_chunks(cam_pos)
+
+func _record_performance_telemetry(delta: float) -> void:
+	if not performance_telemetry_enabled:
+		return
+	_telemetry_elapsed += delta
+	_telemetry_frame_count += 1
+	var frame_ms = delta * 1000.0
+	_telemetry_frame_ms_total += frame_ms
+	_telemetry_frame_ms_max = maxf(_telemetry_frame_ms_max, frame_ms)
+	if _telemetry_elapsed < maxf(performance_telemetry_interval, 1.0):
+		return
+	var active_instances := 0
+	for chunk in active_chunks.values():
+		if is_instance_valid(chunk):
+			active_instances += int(floor(float(chunk.get_meta("clutter_placed_instances", 0)) * adaptive_density_scale))
+	var fps = float(_telemetry_frame_count) / maxf(_telemetry_elapsed, 0.001)
+	var avg_frame_ms = _telemetry_frame_ms_total / maxf(float(_telemetry_frame_count), 1.0)
+	var avg_build_ms = _telemetry_chunk_build_ms_total / maxf(float(_telemetry_chunk_builds), 1.0)
+	var draw_calls = int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+	var primitives = int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
+	var video_mem_mb = float(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED)) / (1024.0 * 1024.0)
+	var map_name = str(cylinder_world.map_package) if cylinder_world else "unknown"
+	var report = "[ClutterPerf] map=%s avg_fps=%.1f avg_frame_ms=%.2f max_frame_ms=%.2f chunks=%d visible_instances~%d density=%.2f range=%.0fm draw_calls=%d primitives=%d video_mem=%.1fMB chunk_builds=%d build_avg_ms=%.2f build_max_ms=%.2f terrain_samples=%d surface_queries=%d" % [
+		map_name, fps, avg_frame_ms, _telemetry_frame_ms_max, active_chunks.size(), active_instances,
+		adaptive_density_scale, _effective_draw_distance(), draw_calls, primitives, video_mem_mb,
+		_telemetry_chunk_builds, avg_build_ms, _telemetry_chunk_build_ms_max,
+		_telemetry_terrain_samples, _telemetry_surface_queries
+	]
+	HUD.log_event(report, "#66ddff")
+	DebugConsoleClass.log(report)
+	_telemetry_elapsed = fposmod(_telemetry_elapsed, maxf(performance_telemetry_interval, 1.0))
+	_telemetry_frame_count = 0
+	_telemetry_frame_ms_total = 0.0
+	_telemetry_frame_ms_max = 0.0
+	_telemetry_chunk_builds = 0
+	_telemetry_chunk_build_ms_total = 0.0
+	_telemetry_chunk_build_ms_max = 0.0
+	_telemetry_terrain_samples = 0
+	_telemetry_surface_queries = 0
 
 func _get_active_camera_position() -> Vector3:
 	var vp = get_viewport()
@@ -279,7 +369,11 @@ func _update_active_chunks(cam_pos: Vector3) -> void:
 	var num_chunks_x = int(ceil(circ / chunk_size))
 	var num_chunks_z = int(ceil(cyl_len / chunk_size))
 
-	var chunk_radius = int(ceil(view_radius / chunk_size))
+	var chunk_radius = int(ceil(_effective_draw_distance() / chunk_size))
+	var clutter_radius = _effective_draw_distance() + 3.0
+	var clutter_radius_squared = clutter_radius * clutter_radius
+	var camera_chunk_offset_x = fposmod(cam_u_m, chunk_size)
+	var camera_chunk_offset_z = fposmod(cam_z_m, chunk_size)
 	var needed_chunks: Dictionary = {}
 
 	for dz in range(-chunk_radius, chunk_radius + 1):
@@ -288,6 +382,15 @@ func _update_active_chunks(cam_pos: Vector3) -> void:
 			continue
 
 		for dx in range(-chunk_radius, chunk_radius + 1):
+			# The previous square window built and rendered corner chunks whose
+			# entire 40m footprint was beyond the radial shader cutoff. Keep only
+			# chunks whose footprint can intersect the clutter visibility circle.
+			var chunk_offset_x = float(dx) * chunk_size - camera_chunk_offset_x
+			var chunk_offset_z = float(dz) * chunk_size - camera_chunk_offset_z
+			var nearest_x = maxf(maxf(chunk_offset_x, -(chunk_offset_x + chunk_size)), 0.0)
+			var nearest_z = maxf(maxf(chunk_offset_z, -(chunk_offset_z + chunk_size)), 0.0)
+			if nearest_x * nearest_x + nearest_z * nearest_z > clutter_radius_squared:
+				continue
 			# Wrap circumferential chunks seamlessly around cylinder
 			var cx = posmod(center_chunk_x + dx, num_chunks_x)
 			var key = Vector2i(cx, cz)
@@ -315,8 +418,12 @@ func _update_active_chunks(cam_pos: Vector3) -> void:
 func _build_chunk(cx: int, cz: int, num_chunks_x: int, cyl_r: float, cyl_len: float) -> Node3D:
 	if not cylinder_world or not cylinder_world.terrain_manager:
 		return null
+	var build_started_usec = Time.get_ticks_usec()
 
 	var tm = cylinder_world.terrain_manager
+	var texture_cover_active := false
+	if cylinder_world.surface_material is ShaderMaterial:
+		texture_cover_active = bool((cylinder_world.surface_material as ShaderMaterial).get_shader_parameter("clutter_cover_enabled"))
 	var chunk_root = Node3D.new()
 	chunk_root.name = "ClutterChunk_%d_%d" % [cx, cz]
 
@@ -331,7 +438,8 @@ func _build_chunk(cx: int, cz: int, num_chunks_x: int, cyl_r: float, cyl_len: fl
 	rng.seed = seed_val
 
 	# Number of sample points per chunk
-	var base_samples = int(120 * density_multiplier)
+	var targeted_density = maxf(grassland_density_multiplier, farmland_density_multiplier)
+	var base_samples = int(120 * density_multiplier * targeted_density)
 	
 	# Instance buffers for each clutter category
 	var grass_transforms: Array[Transform3D] = []
@@ -339,6 +447,7 @@ func _build_chunk(cx: int, cz: int, num_chunks_x: int, cyl_r: float, cyl_len: fl
 
 	var flower_transforms: Array[Transform3D] = []
 	var flower_colors: Array[Color] = []
+	var flower_petal_angles: Array[Color] = []
 
 	var stone_transforms: Array[Transform3D] = []
 	var stone_colors: Array[Color] = []
@@ -353,6 +462,7 @@ func _build_chunk(cx: int, cz: int, num_chunks_x: int, cyl_r: float, cyl_len: fl
 	var mushroom_colors: Array[Color] = []
 
 	for s in range(base_samples):
+		_telemetry_terrain_samples += 1
 		var offset_u = rng.randf() * chunk_size
 		var offset_z = rng.randf() * chunk_size
 
@@ -363,6 +473,13 @@ func _build_chunk(cx: int, cz: int, num_chunks_x: int, cyl_r: float, cyl_len: fl
 
 		var theta = (u_m / cyl_r) - PI
 		var t_type = tm.get_terrain_type(theta, z, cyl_len)
+		var type_density = 1.0
+		if t_type == TerrainManagerClass.TerrainType.GRASS:
+			type_density = grassland_density_multiplier
+		elif t_type == TerrainManagerClass.TerrainType.FARMLAND:
+			type_density = farmland_density_multiplier
+		if rng.randf() >= type_density / targeted_density:
+			continue
 		var elev = tm.get_elevation(theta, z, cyl_len)
 
 		# Water level culling: don't spawn on submerged terrain or roads
@@ -371,11 +488,36 @@ func _build_chunk(cx: int, cz: int, num_chunks_x: int, cyl_r: float, cyl_len: fl
 		if t_type == TerrainManagerClass.TerrainType.WATER or t_type == TerrainManagerClass.TerrainType.ROAD or t_type == TerrainManagerClass.TerrainType.CONCRETE:
 			continue
 
+		# Decide whether this sample needs a unique model before doing the exact
+		# terrain-triangle query. Cached cover replaces most small clutter.
+		var scatter_roll := 0.0
+		var needs_model := true
+		match t_type:
+			TerrainManagerClass.TerrainType.GRASS:
+				scatter_roll = rng.randf()
+				var secondary_end = 0.88 + 0.10 / maxf(grassland_density_multiplier, 1.0)
+				needs_model = (scatter_roll < 0.28 or (scatter_roll >= 0.88 and scatter_roll < secondary_end)) if texture_cover_active else scatter_roll < secondary_end + 0.02 / maxf(grassland_density_multiplier, 1.0)
+			TerrainManagerClass.TerrainType.ROCKS:
+				scatter_roll = rng.randf()
+				needs_model = scatter_roll < 0.25 if texture_cover_active else true
+			TerrainManagerClass.TerrainType.FARMLAND:
+				scatter_roll = rng.randf()
+				needs_model = scatter_roll < 0.40 if texture_cover_active else true
+			TerrainManagerClass.TerrainType.DIRT:
+				scatter_roll = rng.randf()
+				needs_model = scatter_roll < 0.20 or scatter_roll >= 0.98 if texture_cover_active else true
+			TerrainManagerClass.TerrainType.SAND:
+				scatter_roll = rng.randf()
+				needs_model = scatter_roll < 0.15 if texture_cover_active else scatter_roll < 0.40
+		if not needs_model:
+			continue
+
 		# Query exact terrain mesh surface position and normal directly on triangle polygons
 		var pos: Vector3
 		var normal: Vector3
 		var mesh_info: Dictionary = {}
 		if cylinder_world and cylinder_world.has_method("get_surface_mesh_point_and_normal"):
+			_telemetry_surface_queries += 1
 			mesh_info = cylinder_world.get_surface_mesh_point_and_normal(theta, z)
 
 		if not mesh_info.is_empty():
@@ -403,79 +545,103 @@ func _build_chunk(cx: int, cz: int, num_chunks_x: int, cyl_r: float, cyl_len: fl
 		# Scatter logic per terrain type
 		match t_type:
 			TerrainManagerClass.TerrainType.GRASS:
-				var roll = rng.randf()
-				if roll < 0.88: # Very dense grass cover
+				var roll = scatter_roll
+				var grass_density = maxf(grassland_density_multiplier, 1.0)
+				# The atlas provides continuous cover; sparse meshes preserve clear,
+				# recognizable blades and flowers without restoring the old mesh load.
+				if texture_cover_active and roll < 0.28:
 					var scale_factor = rng.randf_range(0.75, 1.45)
 					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
 					grass_transforms.append(tf)
-					grass_colors.append(Color(
-						rng.randf_range(0.62, 1.32),
-						rng.randf_range(0.72, 1.28),
-						rng.randf_range(0.48, 1.38),
-						1.0
-					))
-				elif roll < 0.95: # Wildflowers
+					grass_colors.append(Color(rng.randf_range(0.62, 1.32), rng.randf_range(0.72, 1.28), rng.randf_range(0.48, 1.38), 1.0))
+				elif texture_cover_active and roll >= 0.88 and roll < 0.88 + 0.07 / grass_density:
 					var scale_factor = rng.randf_range(0.80, 1.35)
 					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
 					flower_transforms.append(tf)
 					var col_idx = rng.randi() % FLOWER_COLORS.size()
 					flower_colors.append(_get_model_instance_color("wildflowers", rng, FLOWER_COLORS[col_idx]))
-				elif roll < 0.98: # Shrubs
+					flower_petal_angles.append(Color(rng.randf() * TAU, 0.0, 0.0, 1.0))
+				elif texture_cover_active and roll >= 0.88 + 0.07 / grass_density and roll < 0.88 + 0.10 / grass_density:
 					var scale_factor = rng.randf_range(0.9, 1.6)
 					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
 					shrub_transforms.append(tf)
 					shrub_colors.append(Color(1, 1, 1, 1.0))
-				else: # Field pebbles
+				elif not texture_cover_active and roll < 0.88:
+					var scale_factor = rng.randf_range(0.75, 1.45)
+					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
+					grass_transforms.append(tf)
+					grass_colors.append(Color(rng.randf_range(0.62, 1.32), rng.randf_range(0.72, 1.28), rng.randf_range(0.48, 1.38), 1.0))
+				elif not texture_cover_active and roll < 0.88 + 0.07 / grass_density:
+					var scale_factor = rng.randf_range(0.80, 1.35)
+					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
+					flower_transforms.append(tf)
+					var col_idx = rng.randi() % FLOWER_COLORS.size()
+					flower_colors.append(_get_model_instance_color("wildflowers", rng, FLOWER_COLORS[col_idx]))
+					flower_petal_angles.append(Color(rng.randf() * TAU, 0.0, 0.0, 1.0))
+				elif not texture_cover_active and roll < 0.88 + 0.10 / grass_density:
+					var scale_factor = rng.randf_range(0.9, 1.6)
+					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
+					shrub_transforms.append(tf)
+					shrub_colors.append(Color(1, 1, 1, 1.0))
+				elif not texture_cover_active and roll < 0.88 + 0.12 / grass_density:
 					var scale_factor = rng.randf_range(0.6, 1.3)
 					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
 					stone_transforms.append(tf)
 					stone_colors.append(Color(0.9, 0.9, 0.85, 1.0))
 
 			TerrainManagerClass.TerrainType.ROCKS:
-				var scale_factor = rng.randf_range(0.6, 2.2)
-				var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
-				stone_transforms.append(tf)
-				var grey_var = rng.randf_range(0.7, 1.2)
-				stone_colors.append(Color(grey_var, grey_var, grey_var, 1.0))
+				if not texture_cover_active or scatter_roll < 0.25:
+					var scale_factor = rng.randf_range(0.6, 2.2)
+					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
+					stone_transforms.append(tf)
+					var grey_var = rng.randf_range(0.7, 1.2)
+					stone_colors.append(Color(grey_var, grey_var, grey_var, 1.0))
 
 			TerrainManagerClass.TerrainType.FARMLAND:
-				if rng.randf() < 0.75:
+				var farmland_roll = scatter_roll
+				# Keep occasional tall crop clumps for depth; the atlas fills the rows.
+				if texture_cover_active and farmland_roll < 0.40:
 					var scale_factor = rng.randf_range(0.85, 1.4)
 					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
 					crop_transforms.append(tf)
 					crop_colors.append(Color(1, 1, 1, 1.0))
-				else:
+				elif not texture_cover_active and farmland_roll < 0.75:
+					var scale_factor = rng.randf_range(0.85, 1.4)
+					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
+					crop_transforms.append(tf)
+					crop_colors.append(Color(1, 1, 1, 1.0))
+				elif not texture_cover_active:
 					var scale_factor = rng.randf_range(0.4, 0.9)
 					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
 					stone_transforms.append(tf)
 					stone_colors.append(Color(0.8, 0.75, 0.65, 1.0))
 
 			TerrainManagerClass.TerrainType.DIRT:
-				var dirt_roll = rng.randf()
-				if dirt_roll < 0.50: # 50% Earth clods / pebbles
+				if texture_cover_active and scatter_roll < 0.20:
 					var scale_factor = rng.randf_range(0.4, 1.1)
 					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
 					stone_transforms.append(tf)
 					stone_colors.append(Color(0.75, 0.68, 0.60, 1.0))
-				elif dirt_roll < 0.98: # 48% Sparse grass
-					var scale_factor = rng.randf_range(0.5, 0.9)
-					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
-					grass_transforms.append(tf)
-					grass_colors.append(Color(
-						rng.randf_range(0.55, 1.18),
-						rng.randf_range(0.64, 1.14),
-						rng.randf_range(0.42, 0.88),
-						1.0
-					))
-				else: # 20% Wild mushrooms
-					var scale_factor = rng.randf_range(0.5, 1.4)
-					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
-					mushroom_transforms.append(tf)
-					var cap_col = _get_model_instance_color("mushrooms", rng, Color(0.44, 0.27, 0.16, 1.0))
-					mushroom_colors.append(cap_col)
+				elif (texture_cover_active and scatter_roll >= 0.98) or not texture_cover_active:
+					if not texture_cover_active and scatter_roll < 0.50:
+						var scale_factor = rng.randf_range(0.4, 1.1)
+						var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
+						stone_transforms.append(tf)
+						stone_colors.append(Color(0.75, 0.68, 0.60, 1.0))
+					elif not texture_cover_active and scatter_roll < 0.98:
+						var scale_factor = rng.randf_range(0.5, 0.9)
+						var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
+						grass_transforms.append(tf)
+						grass_colors.append(Color(rng.randf_range(0.55, 1.18), rng.randf_range(0.64, 1.14), rng.randf_range(0.42, 0.88), 1.0))
+					else: # Distinctive mushrooms remain individual models.
+						var scale_factor = rng.randf_range(0.5, 1.4)
+						var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
+						mushroom_transforms.append(tf)
+						var cap_col = _get_model_instance_color("mushrooms", rng, Color(0.44, 0.27, 0.16, 1.0))
+						mushroom_colors.append(cap_col)
 
 			TerrainManagerClass.TerrainType.SAND:
-				if rng.randf() < 0.40:
+				if (not texture_cover_active and scatter_roll < 0.40) or (texture_cover_active and scatter_roll < 0.15):
 					var scale_factor = rng.randf_range(0.35, 0.85)
 					var tf = Transform3D(instance_basis.scaled(Vector3.ONE * scale_factor), pos)
 					stone_transforms.append(tf)
@@ -483,11 +649,17 @@ func _build_chunk(cx: int, cz: int, num_chunks_x: int, cyl_r: float, cyl_len: fl
 
 	# Populate MultiMeshes
 	_add_multimesh_to_chunk(chunk_root, "Grass", grass_mesh, grass_mat, grass_transforms, grass_colors)
-	_add_multimesh_to_chunk(chunk_root, "Flowers", flower_mesh, flower_mat, flower_transforms, flower_colors)
+	_add_multimesh_to_chunk(chunk_root, "Flowers", flower_mesh, flower_mat, flower_transforms, flower_colors, flower_petal_angles)
 	_add_multimesh_to_chunk(chunk_root, "Stones", stone_mesh, stone_mat, stone_transforms, stone_colors)
 	_add_multimesh_to_chunk(chunk_root, "Crops", crop_mesh, crop_mat, crop_transforms, crop_colors)
 	_add_multimesh_to_chunk(chunk_root, "Shrubs", shrub_mesh, shrub_mat, shrub_transforms, shrub_colors)
 	_add_multimesh_to_chunk(chunk_root, "Mushrooms", mushroom_mesh, mushroom_mat, mushroom_transforms, mushroom_colors)
+	var placed_instances = grass_transforms.size() + flower_transforms.size() + stone_transforms.size() + crop_transforms.size() + shrub_transforms.size() + mushroom_transforms.size()
+	chunk_root.set_meta("clutter_placed_instances", placed_instances)
+	var build_ms = float(Time.get_ticks_usec() - build_started_usec) / 1000.0
+	_telemetry_chunk_builds += 1
+	_telemetry_chunk_build_ms_total += build_ms
+	_telemetry_chunk_build_ms_max = maxf(_telemetry_chunk_build_ms_max, build_ms)
 
 	return chunk_root
 
@@ -497,7 +669,8 @@ func _add_multimesh_to_chunk(
 	mesh_res: Mesh,
 	mat: Material,
 	transforms: Array[Transform3D],
-	colors: Array[Color]
+	colors: Array[Color],
+	custom_data: Array[Color] = []
 ) -> void:
 	if transforms.is_empty() or not mesh_res:
 		return
@@ -509,8 +682,10 @@ func _add_multimesh_to_chunk(
 	var mm = MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
+	mm.use_custom_data = not custom_data.is_empty()
 	mm.mesh = mesh_res
 	mm.instance_count = transforms.size()
+	mm.visible_instance_count = int(floor(float(transforms.size()) * adaptive_density_scale))
 	var mesh_aabb = mesh_res.get_aabb()
 	var bounds_min = Vector3(INF, INF, INF)
 	var bounds_max = Vector3(-INF, -INF, -INF)
@@ -520,6 +695,8 @@ func _add_multimesh_to_chunk(
 		mm.set_instance_transform(i, instance_transform)
 		if i < colors.size():
 			mm.set_instance_color(i, colors[i])
+		if i < custom_data.size():
+			mm.set_instance_custom_data(i, custom_data[i])
 
 		# MultiMesh's automatically inferred bounds can miss procedural geometry,
 		# especially after per-instance scaling and shader wind displacement. Give
@@ -536,6 +713,30 @@ func _add_multimesh_to_chunk(
 
 	mmi.multimesh = mm
 	parent.add_child(mmi)
+
+func _effective_draw_distance() -> float:
+	return clampf(view_radius * adaptive_draw_distance_scale, chunk_size, 1000.0)
+
+## Apply temporary quality scales without changing the user's base slider values.
+## Instance visibility is adjusted in place; only draw-distance changes rebuild the chunk set.
+func set_adaptive_quality(draw_scale: float, density_scale: float) -> void:
+	var next_draw = clampf(draw_scale, 0.5, 1.5)
+	var next_density = clampf(density_scale, 0.5, 1.0)
+	var draw_changed = not is_equal_approx(adaptive_draw_distance_scale, next_draw)
+	var density_changed = not is_equal_approx(adaptive_density_scale, next_density)
+	adaptive_draw_distance_scale = next_draw
+	adaptive_density_scale = next_density
+	if density_changed:
+		for chunk in active_chunks.values():
+			if not is_instance_valid(chunk):
+				continue
+			for node in chunk.find_children("*", "MultiMeshInstance3D", true, false):
+				var mmi = node as MultiMeshInstance3D
+				if mmi.multimesh:
+					mmi.multimesh.visible_instance_count = int(floor(float(mmi.multimesh.instance_count) * adaptive_density_scale))
+	if draw_changed:
+		_update_material_world_parameters()
+		last_update_pos = Vector3(99999.0, 99999.0, 99999.0)
 
 func _clear_all_chunks() -> void:
 	for node in active_chunks.values():

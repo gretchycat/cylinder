@@ -58,29 +58,41 @@ static func flower(width_m: float = 0.45, height_m: float = 0.80) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	_add_cylinder(st, 0.035 * width_m / 0.45, height_m * 0.82, 7, Vector3.ZERO)
+	# Vertex alpha marks the flower part for the shared clutter shader:
+	# stem/leaves = 0.15, center = 0.48, petals = 1.0. RGB stays white so
+	# the per-instance hue only colors the petals.
+	st.set_color(Color(1.0, 1.0, 1.0, 0.15))
+	_add_cylinder(st, 0.01 * width_m / 0.45, height_m * 0.82, 7, Vector3.ZERO)
 
 	# Two leaves.
+	st.set_color(Color(1.0, 1.0, 1.0, 0.15))
 	var leaf_y := height_m * 0.40
-	_add_leaf(st, Vector3(0, leaf_y, 0), Vector3(1, 0.08, 0.15), width_m * 0.22, width_m * 0.075)
-	_add_leaf(st, Vector3(0, leaf_y * 1.12, 0), Vector3(-0.8, 0.06, 0.3), width_m * 0.20, width_m * 0.07)
+	_add_leaf(st, Vector3(0, leaf_y, 0), Vector3(1, 0.08, 0.15), width_m * 0.55, width_m * 0.21)
+	_add_leaf(st, Vector3(0, leaf_y * 1.12, 0), Vector3(-0.8, 0.06, 0.3), width_m * 0.52, width_m * 0.19)
 
-	# Eight simple petals around a small center.
+	# Tilt the flower face off the stem axis. Instance yaw rotates the tilt
+	# direction independently, so flowers do not all face parallel to the soil.
 	var center := Vector3(0, height_m * 0.86, 0)
 	var petal_radius := width_m * 0.32
+	var head_up := Vector3(0.24, 0.96, -0.12).normalized()
+	var head_right := (Vector3.RIGHT - head_up * head_up.dot(Vector3.RIGHT)).normalized()
+	var head_forward := head_up.cross(head_right).normalized()
+	var center_lift := head_up * width_m * 0.045
+	st.set_color(Color(1.0, 1.0, 1.0, 1.0))
 	for i in range(8):
 		var a := TAU * float(i) / 8.0
-		var dir := Vector3(cos(a), 0.0, sin(a))
-		var side := Vector3(-sin(a), 0.0, cos(a))
+		var dir := head_right * cos(a) + head_forward * sin(a)
+		var side := -head_right * sin(a) + head_forward * cos(a)
 		var p0 := center + dir * width_m * 0.06
 		var p1 := center + dir * petal_radius
 		var p2 := p1 + side * width_m * 0.12
 		var p3 := p1 - side * width_m * 0.12
 		_add_triangle(st, p0, p3, p2)
-		_add_triangle(st, p2, p3, center + Vector3(0, width_m * 0.045, 0))
+		_add_triangle(st, p2, p3, center + center_lift)
 
-	# Raised center.
-	_add_uv_sphere(st, center + Vector3(0, width_m * 0.045, 0), width_m * 0.10, 6, 3)
+	# Raised golden center, independent of each instance's petal hue.
+	st.set_color(Color(1.0, 1.0, 1.0, 0.48))
+	_add_uv_sphere(st, center + center_lift * 1.15, width_m * 0.10, 6, 3)
 
 	return st.commit()
 
@@ -92,6 +104,8 @@ static func mushroom(width_m: float = 0.22, height_m: float = 0.24) -> ArrayMesh
 
 	var stem_r := width_m * 0.15
 	var stem_h := height_m * 0.58
+	# Vertex alpha marks the stem separately from the per-instance cap color.
+	st.set_color(Color(1.0, 1.0, 1.0, 0.20))
 	_add_curved_cylinder(
 		st,
 		[
@@ -104,6 +118,7 @@ static func mushroom(width_m: float = 0.22, height_m: float = 0.24) -> ArrayMesh
 		7
 	)
 
+	st.set_color(Color(1.0, 1.0, 1.0, 1.0))
 	var cap_center := Vector3(0, stem_h, 0)
 	_add_hemisphere(st, cap_center, width_m * 0.52, 8, 3)
 

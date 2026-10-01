@@ -144,7 +144,31 @@ var perf_light_dist_slider: HSlider = null
 var perf_light_dist_val: Label = null
 var perf_clutter_dist_slider: HSlider = null
 var perf_clutter_dist_val: Label = null
+var perf_clutter_density_slider: HSlider = null
+var perf_clutter_density_val: Label = null
+var perf_clutter_auto_label: Label = null
 var perf_profiler_label: Label = null
+var clutter_auto_timer: float = 0.0
+var clutter_auto_fps_average: float = 0.0
+var clutter_auto_low_samples: int = 0
+var clutter_auto_good_samples: int = 0
+var clutter_auto_probe_kind: String = ""
+var clutter_auto_probe_samples: int = 0
+var clutter_auto_probe_fps_before: float = 0.0
+var clutter_auto_probe_draw_before: float = 1.0
+var clutter_auto_probe_density_before: float = 1.0
+var clutter_auto_probe_precipitation_before: float = 1.0
+var clutter_auto_probe_light_before: float = 1.0
+var clutter_auto_draw_effect: String = "not measured"
+var clutter_auto_density_effect: String = "not measured"
+var clutter_auto_precipitation_effect: String = "not measured"
+var clutter_auto_light_effect: String = "not measured"
+var clutter_auto_draw_reduction_ineffective: bool = false
+var clutter_auto_density_reduction_ineffective: bool = false
+var clutter_auto_precipitation_reduction_ineffective: bool = false
+var clutter_auto_light_reduction_ineffective: bool = false
+var clutter_auto_light_quality_ceiling: float = 1.5
+var clutter_auto_draw_quality_ceiling: float = 1.5
 
 # Tab 6: System & Scale UI Controls
 var scale_slider: HSlider = null
@@ -185,6 +209,7 @@ func _ready() -> void:
 
 	_setup_underwater_overlay()
 	_setup_looking_at_ui()
+	_setup_touch_controls_layout()
 
 	if player:
 		player.telemetry_updated.connect(_on_telemetry_updated)
@@ -307,6 +332,7 @@ func _process(delta: float) -> void:
 			_update_looking_at_inspection()
 
 	_update_fps_display(delta)
+	_update_clutter_auto_tuning(delta)
 	
 	keyboard_check_timer += delta
 	if keyboard_check_timer >= 0.1:
@@ -361,7 +387,7 @@ func _setup_ui_scaling() -> void:
 
 func apply_ui_scale(target_scale: float, auto_mode: bool) -> void:
 	var old_scale = current_ui_scale
-	current_ui_scale = clampf(target_scale, 0.5, 2.5)
+	current_ui_scale = clampf(target_scale, 0.5, 3.5)
 	is_scale_auto = auto_mode
 
 	if ui_root:
@@ -381,6 +407,7 @@ func apply_ui_scale(target_scale: float, auto_mode: bool) -> void:
 
 	if touch_controls:
 		touch_controls.ui_scale = current_ui_scale
+		_setup_touch_controls_layout()
 
 	_update_panel_constraints()
 	_update_scale_slider_ui()
@@ -602,6 +629,26 @@ func _on_viewport_size_changed() -> void:
 		var vp_size = get_viewport().get_visible_rect().size
 		ui_root.size = vp_size / current_ui_scale
 		_update_panel_constraints()
+	_setup_touch_controls_layout()
+
+func _setup_touch_controls_layout() -> void:
+	if not touch_controls or not is_instance_valid(touch_controls) or not is_inside_tree():
+		return
+	# Keep the touch surface anchored to the actual viewport, independent of the
+	# scaled settings/HUD root. This prevents bottom-anchored controls drifting
+	# upward when mobile DPI scaling or orientation changes resize that root.
+	if touch_controls.get_parent() != self:
+		touch_controls.reparent(self)
+	touch_controls.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	touch_controls.anchor_left = 0.0
+	touch_controls.anchor_top = 0.0
+	touch_controls.anchor_right = 0.0
+	touch_controls.anchor_bottom = 0.0
+	touch_controls.position = Vector2.ZERO
+	var scale_value = maxf(current_ui_scale, 1.0)
+	touch_controls.scale = Vector2.ONE * scale_value
+	touch_controls.size = get_viewport().get_visible_rect().size / scale_value
+	touch_controls.ui_scale = scale_value
 
 static func slider_pos_to_intensity(s: float) -> float:
 	var s_clamped = clampf(s, 0.0, 1.0)
@@ -1206,31 +1253,35 @@ func _setup_performance_tab(vbox: VBoxContainer) -> void:
 	var sep1 = HSeparator.new()
 	vbox.add_child(sep1)
 
-	var cur_far = player.camera.far if (player and player.camera) else 30000.0
+	var cur_far = 40000.0
+	if player and player.camera:
+		player.camera.far = cur_far
 	var r_cull = _create_slider_row(vbox, "Camera Culling Distance:", 500.0, 40000.0, 250.0, cur_far, _on_perf_culling_changed)
 	perf_culling_slider = r_cull[0]
 	perf_culling_val = r_cull[1]
 	_update_culling_label(cur_far)
 
-	var cur_scale = get_viewport().scaling_3d_scale if get_viewport() else 1.0
+	var cur_scale = 1.0
+	if get_viewport():
+		get_viewport().scaling_3d_scale = cur_scale
 	var r_scale = _create_slider_row(vbox, "3D Render Resolution Scale:", 0.25, 1.0, 0.05, cur_scale, _on_perf_scale_changed)
 	perf_scale_slider = r_scale[0]
 	perf_scale_val = r_scale[1]
 	_update_perf_scale_label(cur_scale)
 
 	var rain_lbl = Label.new()
-	rain_lbl.text = "🌧️ Rain / Snow Sheet Layers (Overdraw):"
+	rain_lbl.text = "🌧️ Rain / Snow Particle Density:"
 	rain_lbl.add_theme_font_size_override("font_size", 11)
 	vbox.add_child(rain_lbl)
 
 	perf_rain_layers_option = OptionButton.new()
 	perf_rain_layers_option.focus_mode = Control.FOCUS_NONE
 	perf_rain_layers_option.add_theme_font_size_override("font_size", 11)
-	perf_rain_layers_option.add_item("Rain Sheets: Disabled (0 Layers)", 0)
-	perf_rain_layers_option.add_item("Rain Sheets: Minimal (2 Concentric Tiers)", 2)
-	perf_rain_layers_option.add_item("Rain Sheets: Balanced (4 Concentric Tiers)", 4)
-	perf_rain_layers_option.add_item("Rain Sheets: Dense (6 Concentric Tiers)", 6)
-	perf_rain_layers_option.add_item("Rain Sheets: Volumetric Ultra (8 Concentric Tiers)", 8)
+	perf_rain_layers_option.add_item("Precipitation: Disabled", 0)
+	perf_rain_layers_option.add_item("Precipitation: Low (0.5×)", 2)
+	perf_rain_layers_option.add_item("Precipitation: Balanced (1×)", 4)
+	perf_rain_layers_option.add_item("Precipitation: Dense (1.5×)", 6)
+	perf_rain_layers_option.add_item("Precipitation: Ultra (2×)", 8)
 	var cur_rain_layers = weather_system.rain_sheet_layer_count if weather_system else 4
 	var select_idx = 2
 	match cur_rain_layers:
@@ -1259,6 +1310,17 @@ func _setup_performance_tab(vbox: VBoxContainer) -> void:
 	perf_clutter_dist_slider = r_clutter[0]
 	perf_clutter_dist_val = r_clutter[1]
 	_update_clutter_dist_label(cur_clutter_dist)
+	var cur_clutter_density = clutter_mgr.density_multiplier if clutter_mgr else 1.0
+	var r_clutter_density = _create_slider_row(vbox, "Ground Clutter Density:", 0.0, 2.0, 0.1, cur_clutter_density, _on_perf_clutter_density_changed)
+	perf_clutter_density_slider = r_clutter_density[0]
+	perf_clutter_density_val = r_clutter_density[1]
+	_update_clutter_density_label(cur_clutter_density)
+	perf_clutter_auto_label = Label.new()
+	perf_clutter_auto_label.name = "GroundClutterAutoTuneStatus"
+	perf_clutter_auto_label.add_theme_font_size_override("font_size", 10)
+	perf_clutter_auto_label.modulate = Color(0.72, 0.84, 0.92)
+	perf_clutter_auto_label.text = "Auto-tune activates when a target FPS is selected."
+	vbox.add_child(perf_clutter_auto_label)
 
 	var fps_limit_lbl = Label.new()
 	fps_limit_lbl.text = "🎯 Target Frame Rate (FPS Limit):"
@@ -1345,7 +1407,7 @@ func _setup_performance_tab(vbox: VBoxContainer) -> void:
 	_on_perf_preset_selected(default_preset)
 
 func _setup_system_tab(vbox: VBoxContainer) -> void:
-	var r_scale = _create_slider_row(vbox, "UI Scaling Factor:", 0.75, 2.75, 0.05, current_ui_scale, _on_scale_slider_changed)
+	var r_scale = _create_slider_row(vbox, "UI Scaling Factor:", 0.75, 3.5, 0.05, current_ui_scale, _on_scale_slider_changed)
 	scale_slider = r_scale[0]
 	scale_val = r_scale[1]
 	_update_scale_slider_ui()
@@ -2489,7 +2551,7 @@ func _on_perf_rain_layers_selected(idx: int) -> void:
 	if weather_system and perf_rain_layers_option:
 		var layer_count = perf_rain_layers_option.get_item_id(idx)
 		weather_system.rain_sheet_layer_count = layer_count
-		log_event("Performance Setting -> Rain Sheet Layers set to %d" % layer_count, "#ddaaff")
+		log_event("Performance Setting -> Rain/Snow Particle Density set to %.1fx" % (float(layer_count) / 4.0), "#ddaaff")
 
 func _on_perf_light_dist_changed(val: float) -> void:
 	SurfaceLightObject.global_active_light_distance = val
@@ -2521,11 +2583,226 @@ func _update_clutter_dist_label(val: float) -> void:
 		else:
 			perf_clutter_dist_val.text = "%.0f m" % val
 
+func _on_perf_clutter_density_changed(val: float) -> void:
+	var clutter_mgr = get_tree().get_first_node_in_group("clutter_manager") as ClutterManager if is_inside_tree() else null
+	if clutter_mgr:
+		clutter_mgr.density_multiplier = val
+	_update_clutter_density_label(val)
+	log_event("Performance Setting -> Ground Clutter Density set to %.1fx" % val, "#ddaaff")
+
+func _update_clutter_density_label(val: float) -> void:
+	if perf_clutter_density_val:
+		perf_clutter_density_val.text = "Disabled (0.0x)" if val <= 0.0 else "%.1fx" % val
+
 func _on_perf_fps_limit_selected(idx: int) -> void:
 	if perf_fps_limit_option:
 		var target_fps = perf_fps_limit_option.get_item_id(idx)
 		Engine.max_fps = target_fps
+		_reset_clutter_auto_measurements()
+		if target_fps > 0:
+			if get_viewport():
+				get_viewport().scaling_3d_scale = 1.0
+			if perf_scale_slider:
+				perf_scale_slider.set_value_no_signal(1.0)
+			_update_perf_scale_label(1.0)
+			if player and player.camera:
+				player.camera.far = 40000.0
+			if perf_culling_slider:
+				perf_culling_slider.set_value_no_signal(40000.0)
+			_update_culling_label(40000.0)
 		log_event("Performance Setting -> Engine Max FPS Limit set to %s" % ("Unlimited" if target_fps == 0 else ("%d FPS" % target_fps)), "#ddaaff")
+
+func _reset_clutter_auto_measurements() -> void:
+	clutter_auto_fps_average = 0.0
+	clutter_auto_low_samples = 0
+	clutter_auto_good_samples = 0
+	clutter_auto_probe_kind = ""
+	clutter_auto_draw_effect = "not measured"
+	clutter_auto_density_effect = "not measured"
+	clutter_auto_precipitation_effect = "not measured"
+	clutter_auto_light_effect = "not measured"
+	clutter_auto_draw_reduction_ineffective = false
+	clutter_auto_density_reduction_ineffective = false
+	clutter_auto_precipitation_reduction_ineffective = false
+	clutter_auto_light_reduction_ineffective = false
+	clutter_auto_draw_quality_ceiling = 1.5
+	clutter_auto_light_quality_ceiling = 1.5
+	var clutter_mgr = get_tree().get_first_node_in_group("clutter_manager") as ClutterManager if is_inside_tree() else null
+	if clutter_mgr:
+		clutter_mgr.set_adaptive_quality(1.0, 1.0)
+	if weather_system:
+		weather_system.set_adaptive_precipitation_scale(1.0)
+	SurfaceLightObject.set_adaptive_active_light_scale(1.0)
+
+func _update_clutter_auto_tuning(delta: float) -> void:
+	clutter_auto_timer += delta
+	if clutter_auto_timer < 1.0:
+		return
+	clutter_auto_timer = fposmod(clutter_auto_timer, 1.0)
+
+	var clutter_mgr = get_tree().get_first_node_in_group("clutter_manager") as ClutterManager if is_inside_tree() else null
+	var target_fps = Engine.max_fps
+	if not clutter_mgr:
+		if perf_clutter_auto_label:
+			perf_clutter_auto_label.text = "Auto-tune unavailable: no ground clutter manager."
+		return
+	if target_fps <= 0 or not clutter_mgr.enabled:
+		clutter_mgr.set_adaptive_quality(1.0, 1.0)
+		clutter_auto_fps_average = 0.0
+		clutter_auto_low_samples = 0
+		clutter_auto_good_samples = 0
+		clutter_auto_probe_kind = ""
+		if weather_system:
+			weather_system.set_adaptive_precipitation_scale(1.0)
+		SurfaceLightObject.set_adaptive_active_light_scale(1.0)
+		if perf_clutter_auto_label:
+			perf_clutter_auto_label.text = "Auto-tune %s." % ("paused while clutter is disabled" if not clutter_mgr.enabled else "off (FPS target is unlimited)")
+		return
+
+	var measured_fps = float(Engine.get_frames_per_second())
+	if measured_fps <= 0.0:
+		return
+	if clutter_auto_fps_average <= 0.0:
+		clutter_auto_fps_average = measured_fps
+	else:
+		clutter_auto_fps_average = lerpf(clutter_auto_fps_average, measured_fps, 0.35)
+
+	if not clutter_auto_probe_kind.is_empty():
+		clutter_auto_probe_samples -= 1
+		if clutter_auto_probe_samples <= 0:
+			var fps_delta = clutter_auto_fps_average - clutter_auto_probe_fps_before
+			var minimum_gain = maxf(0.5, float(target_fps) * 0.01)
+			if clutter_auto_probe_kind == "draw_down":
+				clutter_auto_draw_effect = "-%d%% range: %+.1f FPS" % [int(round((clutter_auto_probe_draw_before - clutter_mgr.adaptive_draw_distance_scale) * 100.0)), fps_delta]
+				if fps_delta < minimum_gain:
+					clutter_mgr.set_adaptive_quality(clutter_auto_probe_draw_before, clutter_mgr.adaptive_density_scale)
+					clutter_auto_draw_reduction_ineffective = true
+					clutter_auto_draw_effect = "no gain; range restored"
+			elif clutter_auto_probe_kind == "density_down":
+				clutter_auto_density_effect = "-%d%% instances: %+.1f FPS" % [int(round((clutter_auto_probe_density_before - clutter_mgr.adaptive_density_scale) * 100.0)), fps_delta]
+				if fps_delta < minimum_gain:
+					clutter_mgr.set_adaptive_quality(clutter_mgr.adaptive_draw_distance_scale, clutter_auto_probe_density_before)
+					clutter_auto_density_reduction_ineffective = true
+					clutter_auto_density_effect = "no gain; density restored"
+			elif clutter_auto_probe_kind == "precipitation_down":
+				var current_precip_scale = weather_system.adaptive_precipitation_scale if weather_system else 1.0
+				clutter_auto_precipitation_effect = "-%d%% particles: %+.1f FPS" % [int(round((clutter_auto_probe_precipitation_before - current_precip_scale) * 100.0)), fps_delta]
+				if not weather_system or not weather_system.is_precip_active:
+					if weather_system:
+						weather_system.set_adaptive_precipitation_scale(clutter_auto_probe_precipitation_before)
+					clutter_auto_precipitation_effect = "probe interrupted; rain unchanged"
+				elif fps_delta < minimum_gain:
+					weather_system.set_adaptive_precipitation_scale(clutter_auto_probe_precipitation_before)
+					clutter_auto_precipitation_reduction_ineffective = true
+					clutter_auto_precipitation_effect = "no gain; particles restored"
+			elif clutter_auto_probe_kind == "light_down":
+				var current_light_scale = SurfaceLightObject.adaptive_active_light_scale
+				clutter_auto_light_effect = "-%d%% range: %+.1f FPS" % [int(round((clutter_auto_probe_light_before - current_light_scale) * 100.0)), fps_delta]
+				if fps_delta < minimum_gain:
+					SurfaceLightObject.set_adaptive_active_light_scale(clutter_auto_probe_light_before)
+					clutter_auto_light_reduction_ineffective = true
+					clutter_auto_light_effect = "no gain; light range restored"
+			elif clutter_auto_probe_kind == "draw_up":
+				if clutter_auto_fps_average < float(target_fps) * 0.92:
+					clutter_mgr.set_adaptive_quality(clutter_auto_probe_draw_before, clutter_mgr.adaptive_density_scale)
+					clutter_auto_draw_quality_ceiling = clutter_auto_probe_draw_before
+					clutter_auto_draw_effect = "quality increase costs FPS; backed off"
+				else:
+					clutter_auto_draw_effect = "range increase: %+.1f FPS" % fps_delta
+			elif clutter_auto_probe_kind == "light_up":
+				if clutter_auto_fps_average < float(target_fps) * 0.92:
+					SurfaceLightObject.set_adaptive_active_light_scale(clutter_auto_probe_light_before)
+					clutter_auto_light_quality_ceiling = clutter_auto_probe_light_before
+					clutter_auto_light_effect = "quality increase costs FPS; backed off"
+				else:
+					clutter_auto_light_effect = "range increase: %+.1f FPS" % fps_delta
+			clutter_auto_probe_kind = ""
+			clutter_auto_probe_samples = 0
+
+	if clutter_auto_fps_average < float(target_fps) * 0.92:
+		clutter_auto_low_samples += 1
+		clutter_auto_good_samples = 0
+		if clutter_auto_low_samples >= 2 and clutter_auto_probe_kind.is_empty():
+			var draw_scale = clutter_mgr.adaptive_draw_distance_scale
+			var density_scale = clutter_mgr.adaptive_density_scale
+			var probe_kind = ""
+			if draw_scale > 0.75 and not clutter_auto_draw_reduction_ineffective:
+				draw_scale = maxf(0.75, draw_scale - 0.10)
+				probe_kind = "draw_down"
+			elif density_scale > 0.5 and not clutter_auto_density_reduction_ineffective:
+				density_scale = maxf(0.5, density_scale - 0.10)
+				probe_kind = "density_down"
+			elif weather_system and weather_system.is_precip_active and weather_system.rain_sheet_layer_count > 0 and weather_system.adaptive_precipitation_scale > 0.5 and not clutter_auto_precipitation_reduction_ineffective:
+				probe_kind = "precipitation_down"
+			elif SurfaceLightObject.global_active_light_distance > 0.0 and SurfaceLightObject.adaptive_active_light_scale > 0.5 and not clutter_auto_light_reduction_ineffective and not get_tree().get_nodes_in_group("surface_light_objects").is_empty():
+				probe_kind = "light_down"
+			if not probe_kind.is_empty():
+				clutter_auto_probe_kind = probe_kind
+				clutter_auto_probe_samples = 3
+				clutter_auto_probe_fps_before = clutter_auto_fps_average
+				clutter_auto_probe_draw_before = clutter_mgr.adaptive_draw_distance_scale
+				clutter_auto_probe_density_before = clutter_mgr.adaptive_density_scale
+				clutter_auto_probe_precipitation_before = weather_system.adaptive_precipitation_scale if weather_system else 1.0
+				clutter_auto_probe_light_before = SurfaceLightObject.adaptive_active_light_scale
+				if probe_kind == "precipitation_down" and weather_system:
+					weather_system.set_adaptive_precipitation_scale(maxf(0.5, clutter_auto_probe_precipitation_before - 0.10))
+				elif probe_kind == "light_down":
+					SurfaceLightObject.set_adaptive_active_light_scale(maxf(0.5, clutter_auto_probe_light_before - 0.10))
+				else:
+					clutter_mgr.set_adaptive_quality(draw_scale, density_scale)
+			clutter_auto_low_samples = 0
+	elif clutter_auto_fps_average >= float(target_fps) * 0.98:
+		clutter_auto_low_samples = 0
+		clutter_auto_good_samples += 1
+		if clutter_auto_good_samples >= 5 and clutter_auto_probe_kind.is_empty():
+			var draw_scale = clutter_mgr.adaptive_draw_distance_scale
+			var density_scale = clutter_mgr.adaptive_density_scale
+			if weather_system and weather_system.adaptive_precipitation_scale < 1.0:
+				weather_system.set_adaptive_precipitation_scale(minf(1.0, weather_system.adaptive_precipitation_scale + 0.05))
+			elif SurfaceLightObject.adaptive_active_light_scale < 1.0:
+				SurfaceLightObject.set_adaptive_active_light_scale(minf(1.0, SurfaceLightObject.adaptive_active_light_scale + 0.05))
+			elif density_scale < 1.0:
+				density_scale = minf(1.0, density_scale + 0.05)
+			elif draw_scale < 1.0:
+				draw_scale = minf(1.0, draw_scale + 0.05)
+			else:
+				var max_draw_scale = minf(1.5, 1000.0 / maxf(clutter_mgr.view_radius, 1.0))
+				if draw_scale < minf(max_draw_scale, clutter_auto_draw_quality_ceiling):
+					draw_scale = minf(minf(max_draw_scale, clutter_auto_draw_quality_ceiling), draw_scale + 0.05)
+					clutter_auto_probe_kind = "draw_up"
+					clutter_auto_probe_samples = 3
+					clutter_auto_probe_fps_before = clutter_auto_fps_average
+					clutter_auto_probe_draw_before = clutter_mgr.adaptive_draw_distance_scale
+					clutter_auto_probe_density_before = clutter_mgr.adaptive_density_scale
+				elif SurfaceLightObject.global_active_light_distance > 0.0 and SurfaceLightObject.adaptive_active_light_scale < minf(minf(1.5, 8000.0 / SurfaceLightObject.global_active_light_distance), clutter_auto_light_quality_ceiling):
+					var old_light_scale = SurfaceLightObject.adaptive_active_light_scale
+					var max_light_scale = minf(minf(1.5, 8000.0 / SurfaceLightObject.global_active_light_distance), clutter_auto_light_quality_ceiling)
+					SurfaceLightObject.set_adaptive_active_light_scale(minf(max_light_scale, old_light_scale + 0.05))
+					clutter_auto_probe_kind = "light_up"
+					clutter_auto_probe_samples = 3
+					clutter_auto_probe_fps_before = clutter_auto_fps_average
+					clutter_auto_probe_light_before = old_light_scale
+			clutter_mgr.set_adaptive_quality(draw_scale, density_scale)
+			clutter_auto_good_samples = 0
+	else:
+		clutter_auto_low_samples = 0
+		clutter_auto_good_samples = 0
+
+	if perf_clutter_auto_label:
+		var effective_radius = clutter_mgr._effective_draw_distance()
+		perf_clutter_auto_label.text = "Auto-tune target %d FPS | current %.0f | clutter %.0fm / %.0f%% | density %.0f%% | rain %.0f%% | lights %.0f%%\nFPS effect: distance %s; density %s; rain %s; lights %s\nRender scale 100%%; camera range 40 km" % [
+			target_fps,
+			clutter_auto_fps_average,
+			effective_radius,
+			clutter_mgr.adaptive_draw_distance_scale * 100.0,
+			clutter_mgr.adaptive_density_scale * 100.0,
+			(weather_system.adaptive_precipitation_scale if weather_system else 1.0) * 100.0,
+			SurfaceLightObject.adaptive_active_light_scale * 100.0,
+			clutter_auto_draw_effect,
+			clutter_auto_density_effect,
+			clutter_auto_precipitation_effect,
+			clutter_auto_light_effect
+		]
 
 func _on_perf_near_clouds_toggle() -> void:
 	if perf_near_clouds_btn:
@@ -2580,15 +2857,19 @@ func _on_perf_preset_selected(idx: int) -> void:
 		perf_preset_option.select(idx)
 	match idx:
 		0: # Ultra Performance
-			_apply_perf_preset("Ultra Performance", 30000.0, 0.65, 2, 600.0, 200.0, 60, true, false, true, false, false)
+			_apply_perf_preset("Ultra Performance", 40000.0, 1.0, 2, 600.0, 200.0, 60, true, false, true, false, false)
 		1: # Balanced Mobile
-			_apply_perf_preset("Balanced Mobile", 30000.0, 0.75, 4, 1500.0, 350.0, 60, true, true, true, false, true)
+			_apply_perf_preset("Balanced Mobile", 40000.0, 1.0, 4, 1500.0, 350.0, 60, true, true, true, false, true)
 		2: # High Quality
-			_apply_perf_preset("High Quality", 30000.0, 1.0, 6, 3500.0, 500.0, 0, true, true, true, true, true)
+			_apply_perf_preset("High Quality", 40000.0, 1.0, 6, 3500.0, 500.0, 0, true, true, true, true, true)
 		3: # Cinematic
-			_apply_perf_preset("Cinematic", 30000.0, 1.0, 8, 8000.0, 800.0, 0, true, true, true, true, true)
+			_apply_perf_preset("Cinematic", 40000.0, 1.0, 8, 8000.0, 800.0, 0, true, true, true, true, true)
 
 func _apply_perf_preset(preset_name: String, cull_dist: float, scale_3d: float, rain_layers: int, light_dist: float, clutter_dist: float, fps_limit: int, near_clouds: bool, far_clouds: bool, water: bool, glow: bool, fog: bool) -> void:
+	# Device measurements show the render scale and camera clip distance are not
+	# useful performance levers here, so keep both at their highest visual quality.
+	cull_dist = 40000.0
+	scale_3d = 1.0
 	if player and player.camera:
 		player.camera.far = cull_dist
 	if perf_culling_slider:
@@ -2631,6 +2912,7 @@ func _apply_perf_preset(preset_name: String, cull_dist: float, scale_3d: float, 
 	_update_clutter_dist_label(clutter_dist)
 
 	Engine.max_fps = fps_limit
+	_reset_clutter_auto_measurements()
 	if perf_fps_limit_option:
 		var opt_idx = 0
 		match fps_limit:
@@ -2935,5 +3217,3 @@ func _render_looking_at_ui(terrain_name: String, object_name: String, elev: floa
 			looking_at_coords_label.text = "Distance: %.2f km | Target: θ: %5.1f° | Z: %5.1f m" % [dist / 1000.0, theta_deg, z]
 		else:
 			looking_at_coords_label.text = "Distance: %5.1f m | Target: θ: %5.1f° | Z: %5.1f m" % [dist, theta_deg, z]
-
-

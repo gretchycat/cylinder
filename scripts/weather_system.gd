@@ -160,6 +160,8 @@ var current_rendered_snow_state: bool = false
 var current_wind_speed_m_s: float = 6.0
 var rain_scroll_offset: Vector2 = Vector2.ZERO
 var is_weather_ready: bool = false
+var is_precip_active: bool = false
+var adaptive_precipitation_scale: float = 1.0
 
 func _get_cloud_noise_texture() -> ImageTexture:
 	if cloud_noise_texture and is_instance_valid(cloud_noise_texture):
@@ -621,9 +623,9 @@ func _update_cloud_mesh_radius() -> void:
 
 @export var rain_sheet_layer_count: int = 4:
 	set(val):
-		rain_sheet_layer_count = clampi(val, 1, 8)
+		rain_sheet_layer_count = clampi(val, 0, 8)
 		if is_inside_tree():
-			_build_rain_sheets()
+			_update_precipitation_emitter()
 
 func _build_rain_sheets() -> void:
 	if rain_sheets_root and is_instance_valid(rain_sheets_root):
@@ -929,6 +931,14 @@ func get_effective_precipitation_rate() -> float:
 	var thickness_gate = clampf((cloud_thickness_m - 300.0) / 50.0, 0.0, 1.0)
 	return precipitation_rate_mmh * thickness_gate
 
+func set_adaptive_precipitation_scale(scale: float) -> void:
+	var next_scale = clampf(scale, 0.5, 1.0)
+	if is_equal_approx(adaptive_precipitation_scale, next_scale):
+		return
+	adaptive_precipitation_scale = next_scale
+	if is_inside_tree():
+		_update_precipitation_emitter()
+
 func _update_precipitation_emitter(effective_dt: float = 0.0) -> void:
 	var emitter = get_tree().get_first_node_in_group("particle_emitter") as CylinderParticleEmitter if is_inside_tree() else null
 	if emitter:
@@ -936,6 +946,7 @@ func _update_precipitation_emitter(effective_dt: float = 0.0) -> void:
 
 	var effective_precip = get_effective_precipitation_rate()
 	if effective_precip <= 0.05:
+		is_precip_active = false
 		if rain_sheets_root:
 			rain_sheets_root.visible = false
 		if rain_particles:
@@ -1064,7 +1075,7 @@ func _update_particle_positions() -> void:
 				is_player_submerged = true
 
 	var effective_precip = get_effective_precipitation_rate()
-	var is_precip_active = (effective_precip > 0.05 and altitude_rain_factor > 0.001 and is_weather_ready and not is_player_submerged)
+	is_precip_active = (effective_precip > 0.05 and altitude_rain_factor > 0.001 and is_weather_ready and not is_player_submerged)
 
 	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
 	var avg_int = light_bar.current_avg_intensity if light_bar else 3.5
@@ -1077,7 +1088,7 @@ func _update_particle_positions() -> void:
 
 	# 1. Update 3D Volumetric Rain Particles
 	if rain_particles and rain_particles.is_inside_tree():
-		var should_rain = is_precip_active and not is_snow_mode
+		var should_rain = is_precip_active and not is_snow_mode and rain_sheet_layer_count > 0
 		if rain_particles.emitting != should_rain:
 			rain_particles.emitting = should_rain
 
@@ -1086,7 +1097,7 @@ func _update_particle_positions() -> void:
 			if should_rain:
 				rain_particles.global_position = p_pos + up_sky_3d * 9.0
 				rain_particles.direction = (down_3d * 16.0 + tangent_3d * coriolis_drift).normalized()
-				var target_rain_amount = clampi(int(12000.0 * clampf(effective_precip / 25.0, 0.15, 1.0)), 600, 12000)
+				var target_rain_amount = int(12000.0 * clampf(effective_precip / 25.0, 0.15, 1.0) * float(rain_sheet_layer_count) / 4.0 * adaptive_precipitation_scale)
 				if rain_particles.amount != target_rain_amount:
 					rain_particles.amount = target_rain_amount
 
@@ -1102,7 +1113,7 @@ func _update_particle_positions() -> void:
 
 	# 2. Update 3D Volumetric Snow Particles
 	if snow_particles and snow_particles.is_inside_tree():
-		var should_snow = is_precip_active and is_snow_mode
+		var should_snow = is_precip_active and is_snow_mode and rain_sheet_layer_count > 0
 		if snow_particles.emitting != should_snow:
 			snow_particles.emitting = should_snow
 
@@ -1111,7 +1122,7 @@ func _update_particle_positions() -> void:
 			if should_snow:
 				snow_particles.global_position = p_pos + up_sky_3d * 10.0
 				snow_particles.direction = (down_3d * 1.3 + tangent_3d * (coriolis_drift * 0.15) + Vector3(0, 0, wind_velocity.y * 0.25)).normalized()
-				var target_snow_amount = clampi(int(8000.0 * clampf(effective_precip / 20.0, 0.15, 1.0)), 400, 8000)
+				var target_snow_amount = int(8000.0 * clampf(effective_precip / 20.0, 0.15, 1.0) * float(rain_sheet_layer_count) / 4.0 * adaptive_precipitation_scale)
 				if snow_particles.amount != target_snow_amount:
 					snow_particles.amount = target_snow_amount
 

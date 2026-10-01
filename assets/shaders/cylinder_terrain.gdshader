@@ -39,6 +39,15 @@ uniform sampler2D tex_road_2 : source_color, filter_linear_mipmap_anisotropic, r
 
 // Hemispherical End Cap Structure
 uniform sampler2D tex_end_cap_ribs : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+// One cached, map-owned atlas supplies low-cost ground cover by terrain type:
+// grass, crop seedlings, dirt weeds, rocky fragments, and sand pebbles.
+uniform sampler2D tex_clutter_cover_atlas : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
+uniform bool clutter_cover_enabled = false;
+uniform float clutter_cover_strength : hint_range(0.0, 1.0) = 0.82;
+uniform vec2 clutter_cover_atlas_size = vec2(768.0, 512.0);
+uniform float clutter_cover_cell_size = 256.0;
+uniform float clutter_cover_gutter = 16.0;
+uniform float clutter_cover_uv_scale = 1.0;
 
 // 2D RPG Terrain Tilemap texture (stores pure terrain IDs: 0..7)
 uniform sampler2D terrain_map : hint_default_black, filter_nearest, repeat_enable;
@@ -287,6 +296,8 @@ void fragment() {
 		float blended_rough = 0.0;
 		float blended_metal = 0.0;
 		float total_w = 0.0;
+		float cover_weight = 0.0;
+		int cover_type = -1;
 
 		float edge_noise = (hash21(terrain_uv * 1.5) - 0.5) * 0.14;
 
@@ -308,6 +319,10 @@ void fragment() {
 					blended_rough += r_k * effective_w;
 					blended_metal += m_k * effective_w;
 					total_w += effective_w;
+					if ((k == 1 || k == 2 || k == 3 || k == 4 || k == 5) && effective_w > cover_weight) {
+						cover_weight = effective_w;
+						cover_type = k;
+					}
 				}
 			}
 		}
@@ -318,6 +333,28 @@ void fragment() {
 			metallic_val = blended_metal / total_w;
 		} else {
 			sample_terrain_surface(t00, terrain_uv, var_w, final_color, roughness_val, metallic_val);
+		}
+
+		// Sample one cached cover layer for the dominant natural ground type.
+		// Explicit gradients keep atlas mip selection stable across the fract wrap.
+		if (clutter_cover_enabled && cover_type >= 1) {
+			vec2 cell = vec2(0.0);
+			if (cover_type == 4) {
+				cell = vec2(1.0, 0.0); // Farmland seedlings
+			} else if (cover_type == 2) {
+				cell = vec2(2.0, 0.0); // Dirt sprouts and pebbles
+			} else if (cover_type == 5) {
+				cell = vec2(0.0, 1.0); // Rock fragments
+			} else if (cover_type == 1) {
+				cell = vec2(1.0, 1.0); // Sand pebbles
+			}
+			vec2 repeated_uv = terrain_uv * clutter_cover_uv_scale;
+			vec2 content_size = vec2(clutter_cover_cell_size - 2.0 * clutter_cover_gutter);
+			vec2 atlas_uv = (cell * clutter_cover_cell_size + vec2(clutter_cover_gutter) + fract(repeated_uv) * content_size) / clutter_cover_atlas_size;
+			vec2 atlas_dx = dFdx(repeated_uv) * content_size / clutter_cover_atlas_size;
+			vec2 atlas_dy = dFdy(repeated_uv) * content_size / clutter_cover_atlas_size;
+			vec4 ground_cover = textureGrad(tex_clutter_cover_atlas, atlas_uv, atlas_dx, atlas_dy);
+			final_color = mix(final_color, ground_cover.rgb, ground_cover.a * cover_weight * clutter_cover_strength);
 		}
 
 		// Elevation micro-contour shading

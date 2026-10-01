@@ -21,9 +21,11 @@ usage() {
     echo "Commands:"
     echo "  run             Run the game on desktop"
     echo "  test            Run headless verification test suite"
-    echo "  android         Export Android APK (build/cylinder.apk)"
-    echo "  linux           Export Linux binary (build/cylinder.x86_64)"
-    echo "  install         Install exported APK to connected Android device (via adb)"
+    echo "  android [abi]   Export Android APK (default ABI: arm64-v8a)"
+    echo "                  ABIs: arm64-v8a, armeabi-v7a, x86, x86_64"
+    echo "  linux [arch]    Export Linux binary (default: host architecture)"
+    echo "                  Architectures: x86_64, x86_32, arm64, arm32, rv64, ppc64, loongarch64"
+    echo "  install [abi]   Install APK; build it for this ABI if needed"
     echo "  maps            Generate vertically tileable elevation & terrain PNG maps"
     echo "  templates       Check status of Godot export templates"
     echo "  help            Show this help message"
@@ -35,6 +37,156 @@ check_godot() {
         echo "[ERROR] Godot executable not found at '$GODOT_BIN'."
         exit 1
     fi
+}
+
+detect_linux_arch() {
+    local host_arch
+    host_arch="$(uname -m)"
+    case "$host_arch" in
+        x86_64|amd64) echo "x86_64" ;;
+        i386|i486|i586|i686) echo "x86_32" ;;
+        aarch64|arm64) echo "arm64" ;;
+        armv7*|armv6*|arm) echo "arm32" ;;
+        riscv64) echo "rv64" ;;
+        ppc64|ppc64le) echo "ppc64" ;;
+        loongarch64) echo "loongarch64" ;;
+        *)
+            echo "[ERROR] Cannot infer a Godot Linux export architecture from '$host_arch'. Pass one to './build.sh linux <arch>'." >&2
+            return 1
+            ;;
+    esac
+}
+
+normalize_android_arch() {
+    case "$1" in
+        arm64|arm64-v8a) echo "arm64-v8a" ;;
+        arm32|armeabi-v7a) echo "armeabi-v7a" ;;
+        x86_32|x86) echo "x86" ;;
+        x86_64) echo "x86_64" ;;
+        *)
+            echo "[ERROR] Unsupported Android ABI '$1'. Use arm64-v8a, armeabi-v7a, x86, or x86_64." >&2
+            return 1
+            ;;
+    esac
+}
+
+normalize_linux_arch() {
+    case "$1" in
+        amd64|x86_64) echo "x86_64" ;;
+        i386|i486|i586|i686|x86_32) echo "x86_32" ;;
+        aarch64|arm64) echo "arm64" ;;
+        armv7*|armv6*|arm|arm32) echo "arm32" ;;
+        riscv64|rv64) echo "rv64" ;;
+        ppc64|ppc64le) echo "ppc64" ;;
+        loongarch64) echo "loongarch64" ;;
+        *)
+            echo "[ERROR] Unsupported Linux architecture '$1'." >&2
+            return 1
+            ;;
+    esac
+}
+
+generate_export_presets() {
+    local android_arch="$1"
+    local linux_arch="$2"
+    local android_arm64=false android_arm32=false android_x86=false android_x86_64=false
+    case "$android_arch" in
+        arm64-v8a) android_arm64=true ;;
+        armeabi-v7a) android_arm32=true ;;
+        x86) android_x86=true ;;
+        x86_64) android_x86_64=true ;;
+    esac
+    local debug_keystore="${ANDROID_DEBUG_KEYSTORE:-$HOME/.local/share/godot/keystores/debug.keystore}"
+
+    cat > "$PROJECT_DIR/export_presets.cfg" <<EOF
+[preset.0]
+
+name="Android"
+platform="Android"
+runnable=true
+advanced_options=false
+dedicated_server=false
+custom_features=""
+export_filter="all_resources"
+include_filter="*.json"
+exclude_filter=""
+export_path="build/cylinder.apk"
+encryption_include_filters=""
+encryption_exclude_filters=""
+encrypt_pck=false
+encrypt_directory=false
+
+[preset.0.options]
+
+custom_template/debug=""
+custom_template/release=""
+gradle_build/use_gradle_build=false
+gradle_build/export_format=0
+gradle_build/min_sdk=""
+gradle_build/target_sdk=""
+package/unique_name="org.godotengine.cylinder"
+package/name="ONeill Cylinder"
+package/signed=true
+package/app_category=0
+package/retain_data_on_uninstall=false
+package/exclude_from_recents=false
+package/show_in_app_library=true
+version/code=1
+version/name="1.0"
+architectures/armeabi-v7a=$android_arm32
+architectures/arm64-v8a=$android_arm64
+architectures/x86=$android_x86
+architectures/x86_64=$android_x86_64
+launcher_icons/main_192=""
+launcher_icons/adaptive_foreground_432=""
+launcher_icons/adaptive_background_432=""
+graphics/opengl_debug=false
+xr/mode=0
+screen/orientation=0
+screen/support_multi_window=false
+screen/immersive_mode=true
+keystore/debug="$debug_keystore"
+keystore/debug_user="androiddebugkey"
+keystore/debug_password="android"
+keystore/release=""
+keystore/release_user=""
+keystore/release_password=""
+
+[preset.1]
+
+name="Linux"
+platform="Linux/X11"
+runnable=true
+advanced_options=false
+dedicated_server=false
+custom_features=""
+export_filter="all_resources"
+include_filter="*.json"
+exclude_filter=""
+export_path="build/cylinder.$linux_arch"
+encryption_include_filters=""
+encryption_exclude_filters=""
+encrypt_pck=false
+encrypt_directory=false
+
+[preset.1.options]
+
+custom_template/debug=""
+custom_template/release=""
+binary_format/embed_pck=false
+texture_format/bptc=true
+texture_format/s3tc=true
+texture_format/etc=false
+texture_format/etc2=false
+binary_format/architecture="$linux_arch"
+ssh/ssh_path=""
+ssh/host=""
+ssh/port="22"
+ssh/user=""
+ssh/password=""
+ssh/remote_path=""
+EOF
+    echo "[PRESET] Android ABI: $android_arch | Linux architecture: $linux_arch"
 }
 
 cmd_run() {
@@ -61,6 +213,10 @@ cmd_test() {
 
 cmd_android() {
     check_godot
+    local android_arch linux_arch
+    android_arch="$(normalize_android_arch "${1:-${ANDROID_ARCH:-arm64-v8a}}")"
+    linux_arch="$(normalize_linux_arch "${LINUX_ARCH:-$(detect_linux_arch)}")"
+    generate_export_presets "$android_arch" "$linux_arch"
     echo "[BUILD] Exporting Android APK..."
     "$GODOT_BIN" --headless --export-debug "Android" "$BUILD_DIR/cylinder.apk"
     echo "[SUCCESS] Exported Android APK to: $BUILD_DIR/cylinder.apk"
@@ -68,9 +224,13 @@ cmd_android() {
 
 cmd_linux() {
     check_godot
+    local android_arch linux_arch
+    android_arch="$(normalize_android_arch "${ANDROID_ARCH:-arm64-v8a}")"
+    linux_arch="$(normalize_linux_arch "${1:-${LINUX_ARCH:-$(detect_linux_arch)}}")"
+    generate_export_presets "$android_arch" "$linux_arch"
     echo "[BUILD] Exporting Linux binary..."
-    "$GODOT_BIN" --headless --export-release "Linux" "$BUILD_DIR/cylinder.x86_64"
-    echo "[SUCCESS] Exported Linux binary to: $BUILD_DIR/cylinder.x86_64"
+    "$GODOT_BIN" --headless --export-release "Linux" "$BUILD_DIR/cylinder.$linux_arch"
+    echo "[SUCCESS] Exported Linux binary to: $BUILD_DIR/cylinder.$linux_arch"
 }
 
 cmd_install() {
@@ -82,7 +242,7 @@ cmd_install() {
     APK_FILE="$BUILD_DIR/cylinder.apk"
     if [ ! -f "$APK_FILE" ]; then
         echo "[INFO] APK not found. Building Android APK first..."
-        cmd_android
+        cmd_android "${1:-}"
     fi
     echo "[ADB] Installing $APK_FILE to connected device..."
     "$ADB_BIN" install -r "$APK_FILE"
@@ -124,13 +284,13 @@ case "${1:-run}" in
         cmd_maps "$@"
         ;;
     android)
-        cmd_android
+        cmd_android "${2:-}"
         ;;
     linux)
-        cmd_linux
+        cmd_linux "${2:-}"
         ;;
     install)
-        cmd_install
+        cmd_install "${2:-}"
         ;;
     templates)
         cmd_templates

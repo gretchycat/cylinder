@@ -1,5 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://c0tr33_d3d01"]
 
-[ext_resource type="PackedScene" path="res://assets/maps/default/models/source/trees/dead_tree.glb" id="1_tree_model"]
+[ext_resource type="PackedScene" path="res://assets/maps/default/models/objects/trees/dead_standing.glb" id="1_tree_model"]
 
 [node name="TreeDead" instance=ExtResource("1_tree_model")]
+scale = Vector3(5.0, 5.0, 5.0)

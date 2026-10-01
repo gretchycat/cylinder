@@ -1,6 +1,8 @@
 class_name TerrainManager
 extends RefCounted
 
+const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
+
 enum TerrainType {
 	WATER = 0,
 	SAND = 1,
@@ -57,14 +59,21 @@ func _init(u_divisions: int = 512, v_divisions: int = 256, variance: float = 100
 	if not loaded:
 		generate_default_rpg_map()
 
-## Load both elevation and terrain tile maps from PNG image files
+## Backwards-compatible alias for loading elevation and terrain image files.
 func load_maps_from_png(elev_path: String, terrain_path: String) -> bool:
-	var ok_elev = load_elevation_from_png(elev_path)
-	var ok_terr = load_terrain_from_png(terrain_path)
+	var ok_elev = load_elevation_from_image(elev_path)
+	var ok_terr = load_terrain_from_image(terrain_path)
 	return ok_elev and ok_terr
 
-## Load elevation map from PNG image (8-bit grayscale: 0..255 maps to 0..elevation_variance meters)
+func load_maps_from_images(elev_path: String, terrain_path: String) -> bool:
+	return load_maps_from_png(elev_path, terrain_path)
+
+## Backwards-compatible alias; image format is detected by Godot.
 func load_elevation_from_png(path: String) -> bool:
+	return load_elevation_from_image(path)
+
+## Load elevation image (grayscale: 0..255 maps to 0..elevation_variance meters).
+func load_elevation_from_image(path: String) -> bool:
 	var img = _load_image_from_file_or_buffer(path)
 	if not img:
 		return false
@@ -82,8 +91,12 @@ func load_elevation_from_png(path: String) -> bool:
 
 	return true
 
-## Load terrain map from 2D RPG color-coded PNG image
+## Backwards-compatible alias; image format is detected by Godot.
 func load_terrain_from_png(path: String) -> bool:
+	return load_terrain_from_image(path)
+
+## Load terrain map from a 2D RPG color-coded image.
+func load_terrain_from_image(path: String) -> bool:
 	var img = _load_image_from_file_or_buffer(path)
 	if not img:
 		return false
@@ -192,30 +205,11 @@ func _color_to_terrain_type(col: Color) -> int:
 
 ## Robust image loader supporting res://, buffers, and exported packages
 func _load_image_from_file_or_buffer(path: String) -> Image:
-	var img = Image.new()
-	if FileAccess.file_exists(path):
-		var file = FileAccess.open(path, FileAccess.READ)
-		if file:
-			var bytes = file.get_buffer(file.get_length())
-			var err = img.load_png_from_buffer(bytes)
-			if err == OK:
-				return img
-
-	var global_path = ProjectSettings.globalize_path(path)
-	if FileAccess.file_exists(global_path):
-		var file = FileAccess.open(global_path, FileAccess.READ)
-		if file:
-			var bytes = file.get_buffer(file.get_length())
-			var err = img.load_png_from_buffer(bytes)
-			if err == OK:
-				return img
-
-	if ResourceLoader.exists(path):
-		var res = ResourceLoader.load(path)
-		if res is Texture2D:
-			return res.get_image()
-
-	return null
+	var img = MapAssetLoaderClass.load_image(path)
+	if img and not img.is_empty():
+		return img
+	var texture = MapAssetLoaderClass.load_texture(path)
+	return texture.get_image() if texture else null
 
 ## Generates a classic 2D RPG-style world map layout on the cylinder inner surface
 func generate_default_rpg_map() -> void:

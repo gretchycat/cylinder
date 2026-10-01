@@ -44,21 +44,21 @@
   "statistics": {
     "num_city_centers": 1,
     "num_villages": 10,
-    "total_placed_objects": 206,
-    "campfires_and_bonfires": 31,
-    "street_lamps": 4,
-    "beacon_lanterns": 9,
-    "bridges": 46,
-    "houses": 23,
-    "trees": 90,
-    "windmills": 3,
+    "total_placed_objects": 220,
+    "campfires_and_bonfires": 33,
+    "street_lamps": 5,
+    "beacon_lanterns": 10,
+    "bridges": 47,
+    "houses": 24,
+    "trees": 97,
+    "windmills": 4,
     "tree_variants": {
-      "oak": 31,
-      "pine": 20,
-      "birch": 11,
-      "willow": 15,
-      "cherry_blossom": 8,
-      "dead_tree": 5
+      "oak": 32,
+      "pine": 21,
+      "birch": 12,
+      "willow": 16,
+      "cherry_blossom": 9,
+      "dead_tree": 6
     }
   },
   "settlements": [
@@ -5009,6 +5009,292 @@
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_North",
       "role": "navigation_beacon"
+    },
+    {
+      "name": "Spawn_Showcase_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.2791009,
+      "v": 0.41469444,
+      "theta": -1.38795,
+      "z": -1535.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example"
+    },
+    {
+      "name": "Spawn_Showcase_Lamp_Post",
+      "object_type": 1,
+      "object_type_name": "LAMP_POST",
+      "u": 0.28053329,
+      "v": 0.41469444,
+      "theta": -1.37895,
+      "z": -1535.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example"
+    },
+    {
+      "name": "Spawn_Showcase_Beacon_Lantern",
+      "object_type": 2,
+      "object_type_name": "BEACON_LANTERN",
+      "u": 0.28196569,
+      "v": 0.41469444,
+      "theta": -1.36995,
+      "z": -1535.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example"
+    },
+    {
+      "name": "Spawn_Showcase_Arched_Bridge",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.28339808,
+      "v": 0.41469444,
+      "theta": -1.36095,
+      "z": -1535.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example"
+    },
+    {
+      "name": "Spawn_Showcase_Bonfire",
+      "object_type": 4,
+      "object_type_name": "BONFIRE",
+      "u": 0.2791009,
+      "v": 0.41669444,
+      "theta": -1.38795,
+      "z": -1499.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example"
+    },
+    {
+      "name": "Spawn_Showcase_Colony_House",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.28053329,
+      "v": 0.41669444,
+      "theta": -1.37895,
+      "z": -1499.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example"
+    },
+    {
+      "name": "Spawn_Showcase_Foliage_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.28196569,
+      "v": 0.41669444,
+      "theta": -1.36995,
+      "z": -1499.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example"
+    },
+    {
+      "name": "Spawn_Showcase_Windmill",
+      "object_type": 7,
+      "object_type_name": "WINDMILL",
+      "u": 0.28339808,
+      "v": 0.41669444,
+      "theta": -1.36095,
+      "z": -1499.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example"
+    },
+    {
+      "name": "Spawn_Showcase_Oak_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.2791009,
+      "v": 0.41869444,
+      "theta": -1.38795,
+      "z": -1463.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 0
+    },
+    {
+      "name": "Spawn_Showcase_Pine_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.28053329,
+      "v": 0.41869444,
+      "theta": -1.37895,
+      "z": -1463.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 1
+    },
+    {
+      "name": "Spawn_Showcase_Birch_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.28196569,
+      "v": 0.41869444,
+      "theta": -1.36995,
+      "z": -1463.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 2
+    },
+    {
+      "name": "Spawn_Showcase_Willow_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.28339808,
+      "v": 0.41869444,
+      "theta": -1.36095,
+      "z": -1463.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 3
+    },
+    {
+      "name": "Spawn_Showcase_Cherry_Blossom_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.2791009,
+      "v": 0.42069444,
+      "theta": -1.38795,
+      "z": -1427.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 4
+    },
+    {
+      "name": "Spawn_Showcase_Dead_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.28053329,
+      "v": 0.42069444,
+      "theta": -1.37895,
+      "z": -1427.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 5
     }
   ]
 }

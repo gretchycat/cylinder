@@ -1124,6 +1124,8 @@ def generate_tileable_maps(
             "view_radius_m": 220.0,
             "chunk_size_m": 40.0,
             "density_multiplier": 1.0,
+            "grassland_density_multiplier": 2.0,
+            "farmland_density_multiplier": 2.0,
             "models": {
                 "grass_tuft": {
                     "type": "procedural_mesh",
@@ -1132,6 +1134,8 @@ def generate_tileable_maps(
                     "scene_path": "models/ground_clutter/grass_tuft.tscn",
                     "base_color": [0.24, 0.52, 0.16, 1.0],
                     "tip_color": [0.48, 0.78, 0.25, 1.0],
+                    "gradient_mode": "linear",
+                    "gradient_extent_m": 0.85,
                     "wind_speed": 2.2,
                     "wind_strength": 0.24,
                     "fade_distance_m": 45.0
@@ -1143,6 +1147,8 @@ def generate_tileable_maps(
                     "scene_path": "models/ground_clutter/wildflowers.tscn",
                     "base_color": [0.22, 0.50, 0.18, 1.0],
                     "tip_color": [0.95, 0.30, 0.20, 1.0],
+                    "gradient_mode": "linear",
+                    "gradient_extent_m": 0.80,
                     "wind_speed": 2.6,
                     "wind_strength": 0.18,
                     "fade_distance_m": 45.0,
@@ -1159,6 +1165,8 @@ def generate_tileable_maps(
                     "scene_path": "models/ground_clutter/pebbles.tscn",
                     "base_color": [0.42, 0.44, 0.46, 1.0],
                     "tip_color": [0.55, 0.56, 0.58, 1.0],
+                    "gradient_mode": "radial",
+                    "gradient_extent_m": 0.40,
                     "roughness": 0.94,
                     "fade_distance_m": 45.0
                 },
@@ -1169,6 +1177,8 @@ def generate_tileable_maps(
                     "scene_path": "models/ground_clutter/crops.tscn",
                     "base_color": [0.65, 0.52, 0.22, 1.0],
                     "tip_color": [0.88, 0.74, 0.32, 1.0],
+                    "gradient_mode": "linear",
+                    "gradient_extent_m": 1.15,
                     "wind_speed": 1.8,
                     "wind_strength": 0.20,
                     "fade_distance_m": 45.0
@@ -1180,6 +1190,8 @@ def generate_tileable_maps(
                     "scene_path": "models/ground_clutter/shrubs.tscn",
                     "base_color": [0.18, 0.42, 0.14, 1.0],
                     "tip_color": [0.35, 0.65, 0.22, 1.0],
+                    "gradient_mode": "radial",
+                    "gradient_extent_m": 0.65,
                     "wind_speed": 1.5,
                     "wind_strength": 0.12,
                     "fade_distance_m": 45.0
@@ -1191,6 +1203,8 @@ def generate_tileable_maps(
                     "scene_path": "models/ground_clutter/mushrooms.tscn",
                     "base_color": [0.84, 0.76, 0.63, 1.0],
                     "tip_color": [0.44, 0.27, 0.16, 1.0],
+                    "gradient_mode": "radial",
+                    "gradient_extent_m": 0.115,
                     "fade_distance_m": 45.0,
                     "instance_colors": [
                         [0.62, 0.24, 0.21, 1.0], [0.44, 0.31, 0.22, 1.0],

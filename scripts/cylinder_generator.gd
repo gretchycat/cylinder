@@ -4,6 +4,7 @@ extends Node3D
 
 const TerrainManagerClass = preload("res://scripts/terrain_manager.gd")
 const MapConfigClass = preload("res://scripts/map_config.gd")
+const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 
 @export_category("Cylinder Dimensions (8 km dia x 18 km length)")
 @export var radius: float = 4000.0: # 8 km diameter = 4 km radius
@@ -49,7 +50,7 @@ const MapConfigClass = preload("res://scripts/map_config.gd")
 		if is_inside_tree() and Engine.is_editor_hint():
 			generate_cylinder()
 
-@export_category("Terrain & Elevation (PNG Heightmap & RPG Tilemap)")
+@export_category("Terrain & Elevation Maps")
 @export var elevation_variance: float = 100.0: # 0 to 100 m elevation range
 	set(val):
 		elevation_variance = max(val, 0.0)
@@ -66,18 +67,18 @@ const MapConfigClass = preload("res://scripts/map_config.gd")
 		if is_inside_tree() and Engine.is_editor_hint():
 			generate_cylinder()
 
-@export_file("*.png") var elevation_map_path: String = "res://assets/maps/default/elevation_map.png":
+@export_file var elevation_map_path: String = "res://assets/maps/default/elevation_map.png":
 	set(val):
 		elevation_map_path = val
 		if terrain_manager and is_inside_tree():
-			terrain_manager.load_elevation_from_png(elevation_map_path)
+			terrain_manager.load_elevation_from_image(elevation_map_path)
 			generate_cylinder()
 
-@export_file("*.png") var terrain_map_path: String = "res://assets/maps/default/terrain_map.png":
+@export_file var terrain_map_path: String = "res://assets/maps/default/terrain_map.png":
 	set(val):
 		terrain_map_path = val
 		if terrain_manager and is_inside_tree():
-			terrain_manager.load_terrain_from_png(terrain_map_path)
+			terrain_manager.load_terrain_from_image(terrain_map_path)
 			generate_cylinder()
 
 @export var map_package: String = "res://assets/maps/default":
@@ -111,6 +112,7 @@ const MapConfigClass = preload("res://scripts/map_config.gd")
 @export var water_material: Material
 
 var terrain_manager: TerrainManagerClass
+var active_map_config: Dictionary = {}
 
 var mesh_instance: MeshInstance3D
 var water_mesh_instance: MeshInstance3D
@@ -149,6 +151,7 @@ func load_map_package(package_path_or_name: String) -> bool:
 	var cfg = MapConfigClass.load_map_config(package_path_or_name)
 	if cfg.is_empty():
 		return false
+	active_map_config = cfg
 
 	var geom = cfg.get("geometry", {})
 	var r = radius
@@ -171,9 +174,9 @@ func load_map_package(package_path_or_name: String) -> bool:
 		terrain_manager.water_level = w_lvl
 
 	if FileAccess.file_exists(elevation_map_path) or FileAccess.file_exists(ProjectSettings.globalize_path(elevation_map_path)):
-		terrain_manager.load_elevation_from_png(elevation_map_path)
+		terrain_manager.load_elevation_from_image(elevation_map_path)
 	if FileAccess.file_exists(terrain_map_path) or FileAccess.file_exists(ProjectSettings.globalize_path(terrain_map_path)):
-		terrain_manager.load_terrain_from_png(terrain_map_path)
+		terrain_manager.load_terrain_from_image(terrain_map_path)
 
 	radius = r
 	cylinder_length = clen
@@ -458,17 +461,7 @@ func generate_cylinder() -> void:
 	_is_generating = false
 
 func _load_texture_safe(path: String) -> Texture2D:
-	if ResourceLoader.exists(path):
-		var res = ResourceLoader.load(path)
-		if res is Texture2D:
-			return res
-	var global_path = ProjectSettings.globalize_path(path)
-	if FileAccess.file_exists(path) or FileAccess.file_exists(global_path):
-		var check_path = global_path if FileAccess.file_exists(global_path) else path
-		var img = Image.load_from_file(check_path)
-		if img:
-			return ImageTexture.create_from_image(img)
-	return null
+	return MapAssetLoaderClass.load_texture(path)
 
 func _update_terrain_material_textures(mat: ShaderMaterial = null) -> void:
 	if not mat:
@@ -476,51 +469,31 @@ func _update_terrain_material_textures(mat: ShaderMaterial = null) -> void:
 	if not mat:
 		return
 
-	# Grass variations
-	if not mat.get_shader_parameter("tex_grass_0"):
-		mat.set_shader_parameter("tex_grass_0", _load_texture_safe("res://assets/textures/terrain/grass_0.png"))
-		mat.set_shader_parameter("tex_grass_1", _load_texture_safe("res://assets/textures/terrain/grass_1.png"))
-		mat.set_shader_parameter("tex_grass_2", _load_texture_safe("res://assets/textures/terrain/grass_2.png"))
+	var terrain_names := ["grass", "sand", "dirt", "farmland", "rocks", "concrete", "road"]
+	var custom_textures: Dictionary = active_map_config.get("terrain_textures", {}) as Dictionary
+	for terrain_name in terrain_names:
+		var defaults: Array[String] = []
+		for variation in range(3):
+			defaults.append("res://assets/textures/terrain/%s_%d.png" % [terrain_name, variation])
+		var map_paths = custom_textures.get(terrain_name, []) as Array
+		for variation in range(3):
+			var uniform_name = "tex_%s_%d" % [terrain_name, variation]
+			var texture_path = str(map_paths[variation]) if variation < map_paths.size() else defaults[variation]
+			texture_path = MapConfigClass.resolve_map_asset_path(active_map_config, texture_path)
+			mat.set_shader_parameter(uniform_name, _load_texture_safe(texture_path))
 
-	# Sand variations
-	if not mat.get_shader_parameter("tex_sand_0"):
-		mat.set_shader_parameter("tex_sand_0", _load_texture_safe("res://assets/textures/terrain/sand_0.png"))
-		mat.set_shader_parameter("tex_sand_1", _load_texture_safe("res://assets/textures/terrain/sand_1.png"))
-		mat.set_shader_parameter("tex_sand_2", _load_texture_safe("res://assets/textures/terrain/sand_2.png"))
-
-	# Dirt variations
-	if not mat.get_shader_parameter("tex_dirt_0"):
-		mat.set_shader_parameter("tex_dirt_0", _load_texture_safe("res://assets/textures/terrain/dirt_0.png"))
-		mat.set_shader_parameter("tex_dirt_1", _load_texture_safe("res://assets/textures/terrain/dirt_1.png"))
-		mat.set_shader_parameter("tex_dirt_2", _load_texture_safe("res://assets/textures/terrain/dirt_2.png"))
-
-	# Farmland variations
-	if not mat.get_shader_parameter("tex_farmland_0"):
-		mat.set_shader_parameter("tex_farmland_0", _load_texture_safe("res://assets/textures/terrain/farmland_0.png"))
-		mat.set_shader_parameter("tex_farmland_1", _load_texture_safe("res://assets/textures/terrain/farmland_1.png"))
-		mat.set_shader_parameter("tex_farmland_2", _load_texture_safe("res://assets/textures/terrain/farmland_2.png"))
-
-	# Rocks variations
-	if not mat.get_shader_parameter("tex_rocks_0"):
-		mat.set_shader_parameter("tex_rocks_0", _load_texture_safe("res://assets/textures/terrain/rocks_0.png"))
-		mat.set_shader_parameter("tex_rocks_1", _load_texture_safe("res://assets/textures/terrain/rocks_1.png"))
-		mat.set_shader_parameter("tex_rocks_2", _load_texture_safe("res://assets/textures/terrain/rocks_2.png"))
-
-	# Concrete variations
-	if not mat.get_shader_parameter("tex_concrete_0"):
-		mat.set_shader_parameter("tex_concrete_0", _load_texture_safe("res://assets/textures/terrain/concrete_0.png"))
-		mat.set_shader_parameter("tex_concrete_1", _load_texture_safe("res://assets/textures/terrain/concrete_1.png"))
-		mat.set_shader_parameter("tex_concrete_2", _load_texture_safe("res://assets/textures/terrain/concrete_2.png"))
-
-	# Road variations
-	if not mat.get_shader_parameter("tex_road_0"):
-		mat.set_shader_parameter("tex_road_0", _load_texture_safe("res://assets/textures/terrain/road_0.png"))
-		mat.set_shader_parameter("tex_road_1", _load_texture_safe("res://assets/textures/terrain/road_1.png"))
-		mat.set_shader_parameter("tex_road_2", _load_texture_safe("res://assets/textures/terrain/road_2.png"))
-
-	var rib_tex: Texture2D = _load_texture_safe("res://assets/textures/terrain/end_cap_ribs.png")
+	var rib_path = str(custom_textures.get("end_cap_ribs", "res://assets/textures/terrain/end_cap_ribs.png"))
+	rib_path = MapConfigClass.resolve_map_asset_path(active_map_config, rib_path)
+	var rib_tex: Texture2D = _load_texture_safe(rib_path)
 	if rib_tex:
 		mat.set_shader_parameter("tex_end_cap_ribs", rib_tex)
+
+	var clutter_cover_path = str(custom_textures.get("clutter_cover_atlas", ""))
+	clutter_cover_path = MapConfigClass.resolve_map_asset_path(active_map_config, clutter_cover_path)
+	var clutter_cover_tex: Texture2D = _load_texture_safe(clutter_cover_path) if not clutter_cover_path.is_empty() else null
+	mat.set_shader_parameter("clutter_cover_enabled", clutter_cover_tex != null)
+	if clutter_cover_tex:
+		mat.set_shader_parameter("tex_clutter_cover_atlas", clutter_cover_tex)
 
 	if terrain_manager:
 		var terr_id_img = terrain_manager.create_terrain_type_id_image()

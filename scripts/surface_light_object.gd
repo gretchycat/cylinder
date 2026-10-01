@@ -24,6 +24,7 @@ enum TreeVariant {
 }
 
 const MapConfigClass = preload("res://scripts/map_config.gd")
+const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 
 @export var object_type: ObjectType = ObjectType.CAMPFIRE:
 	set(val):
@@ -37,7 +38,7 @@ const MapConfigClass = preload("res://scripts/map_config.gd")
 		if is_inside_tree() and object_type == ObjectType.TREE:
 			rebuild_object()
 
-@export_file("*.tscn") var model_scene_path: String = ""
+@export_file var model_scene_path: String = ""
 
 @export var light_color: Color = Color(1.0, 0.58, 0.22):
 	set(val):
@@ -74,7 +75,7 @@ func _ready() -> void:
 	flicker_time = rng_offset
 	rebuild_object()
 
-func _get_model_scene() -> PackedScene:
+func _get_model_instance() -> Node3D:
 	var scene_path = model_scene_path
 	if scene_path.is_empty():
 		var reference_objects = get_tree().get_first_node_in_group("reference_objects") if is_inside_tree() else null
@@ -85,8 +86,7 @@ func _get_model_scene() -> PackedScene:
 			scene_path = MapConfigClass.get_object_model_path(map_config, int(object_type), int(tree_variant))
 	if scene_path.is_empty():
 		return null
-	var resource = ResourceLoader.load(scene_path)
-	return resource as PackedScene
+	return MapAssetLoaderClass.instantiate_model(scene_path)
 
 func rebuild_object() -> void:
 	for child in get_children():
@@ -98,9 +98,7 @@ func rebuild_object() -> void:
 	omni_light = null
 
 	var instance: Node3D = null
-	var model_scene = _get_model_scene()
-	if model_scene:
-		instance = model_scene.instantiate() as Node3D
+	instance = _get_model_instance()
 
 	if not instance:
 		return
@@ -262,11 +260,21 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 		bl.light_energy = base_energy
 
 static var global_active_light_distance: float = 3500.0
+static var adaptive_active_light_scale: float = 1.0
+
+static func set_adaptive_active_light_scale(scale: float) -> void:
+	adaptive_active_light_scale = clampf(scale, 0.5, 1.5)
+
+static func get_effective_active_light_distance() -> float:
+	if global_active_light_distance <= 0.0:
+		return 0.0
+	return minf(global_active_light_distance * adaptive_active_light_scale, 8000.0)
+
 var distance_check_timer: float = 0.0
 var is_near_camera: bool = true
 
 func _process(delta: float) -> void:
-	if not enable_flicker or not omni_light:
+	if not omni_light and bridge_lights.is_empty():
 		return
 
 	# Dynamic distance culling: disable distant OmniLight3Ds from Godot's light clusterer
@@ -277,7 +285,7 @@ func _process(delta: float) -> void:
 		var cam = vp.get_camera_3d() if is_inside_tree() and vp else null
 		if cam:
 			var d_sq = global_position.distance_squared_to(cam.global_position)
-			var max_dist = global_active_light_distance
+			var max_dist = get_effective_active_light_distance()
 			var should_be_active = (max_dist > 0.0) and (d_sq < (max_dist * max_dist))
 			if is_near_camera != should_be_active:
 				is_near_camera = should_be_active
@@ -286,7 +294,7 @@ func _process(delta: float) -> void:
 				for bl in bridge_lights:
 					bl.visible = is_near_camera
 
-	if not is_near_camera:
+	if not enable_flicker or not is_near_camera:
 		return
 
 	flicker_time += delta

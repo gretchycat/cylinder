@@ -4,6 +4,9 @@ render_mode cull_disabled, depth_draw_opaque;
 uniform sampler2D albedo_texture : source_color, filter_linear_mipmap_anisotropic;
 uniform vec4 base_color : source_color = vec4(0.35, 0.72, 0.22, 1.0);
 uniform vec4 tip_color : source_color = vec4(0.55, 0.88, 0.32, 1.0);
+// 0 = flat, 1 = vertical (linear), 2 = outward from local XZ center (radial).
+uniform int gradient_mode = 0;
+uniform float gradient_extent = 1.0;
 uniform float roughness : hint_range(0.0, 1.0) = 0.85;
 uniform float wind_speed : hint_range(0.0, 10.0) = 2.4;
 uniform float wind_strength : hint_range(0.0, 2.0) = 0.22;
@@ -11,6 +14,7 @@ uniform float wind_turbulence : hint_range(0.0, 2.0) = 0.50;
 uniform float max_distance : hint_range(50.0, 1000.0) = 500.0;
 uniform float fade_distance : hint_range(10.0, 400.0) = 120.0;
 uniform bool is_flower = false;
+uniform bool is_mushroom = false;
 uniform bool is_stone = false;
 
 uniform float cylinder_radius = 4000.0;
@@ -23,10 +27,48 @@ uniform float air_distance_max = 18000.0;
 
 varying vec3 v_world_pos;
 varying float v_dist_fade;
+varying float v_gradient_amount;
 varying vec4 v_instance_color;
 
 void vertex() {
 	v_instance_color = COLOR;
+	// Rotate only each flower's petal head around its own axis. The per-instance
+	// angle comes from MultiMesh custom data, so flowers still share one mesh.
+	if (is_flower && COLOR.a > 0.65) {
+		vec3 head_up = normalize(vec3(0.24, 0.96, -0.12));
+		vec3 head_right = normalize(vec3(1.0, 0.0, 0.0) - head_up * head_up.x);
+		vec3 head_forward = normalize(cross(head_up, head_right));
+		vec3 head_center = vec3(0.0, gradient_extent * 0.86, 0.0);
+		vec3 relative_vertex = VERTEX - head_center;
+		float head_angle = INSTANCE_CUSTOM.x;
+		float angle_cos = cos(head_angle);
+		float angle_sin = sin(head_angle);
+		float right_offset = dot(relative_vertex, head_right);
+		float forward_offset = dot(relative_vertex, head_forward);
+		float up_offset = dot(relative_vertex, head_up);
+		float normal_right = dot(NORMAL, head_right);
+		float normal_forward = dot(NORMAL, head_forward);
+		float normal_up = dot(NORMAL, head_up);
+		VERTEX = head_center
+			+ head_right * (right_offset * angle_cos - forward_offset * angle_sin)
+			+ head_forward * (right_offset * angle_sin + forward_offset * angle_cos)
+			+ head_up * up_offset;
+		NORMAL = normalize(
+			head_right * (normal_right * angle_cos - normal_forward * angle_sin)
+			+ head_forward * (normal_right * angle_sin + normal_forward * angle_cos)
+			+ head_up * normal_up
+		);
+	}
+	// Clutter gradients are fixed in model space, so evaluate them once per
+	// vertex and interpolate across fragments instead of doing a radial length
+	// (or mode branch) for every covered pixel.
+	if (gradient_mode == 1) {
+		v_gradient_amount = clamp(VERTEX.y / max(gradient_extent, 0.001), 0.0, 1.0);
+	} else if (gradient_mode == 2) {
+		v_gradient_amount = clamp(length(VERTEX.xz) / max(gradient_extent, 0.001), 0.0, 1.0);
+	} else {
+		v_gradient_amount = 0.0;
+	}
 	v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 
 	// Camera distance fade factor: 1.0 (near/solid) down to 0.0 (far/transparent)
@@ -68,19 +110,29 @@ void fragment() {
 		discard;
 	}
 
-	vec4 col = base_color;
-	
-	// Blend tip color based on vertical UV or mesh height
-	if (!is_stone) {
-		float height_blend = clamp(UV.y, 0.0, 1.0);
-		col = mix(base_color, tip_color, height_blend);
-	}
+	vec4 col = mix(base_color, tip_color, v_gradient_amount);
 
 	// Instance color modulation
 	if (v_instance_color.a > 0.01) {
 		if (is_flower) {
-			// Flower petals inherit instance blossom color
-			col = mix(col, v_instance_color, v_instance_color.a);
+			// The vertex alpha channel identifies stem, center, and petal. Only
+			// petals inherit the instance hue; foliage stays green and the flower
+			// center stays golden yellow.
+			if (v_instance_color.a < 0.28) {
+				col.rgb = mix(vec3(0.12, 0.27, 0.10), vec3(0.25, 0.48, 0.18), v_gradient_amount);
+			} else if (v_instance_color.a < 0.65) {
+				col.rgb = mix(vec3(0.72, 0.38, 0.08), vec3(1.0, 0.78, 0.20), v_gradient_amount);
+			} else {
+				col.rgb = v_instance_color.rgb * mix(vec3(0.88), vec3(1.12), v_gradient_amount);
+			}
+		} else if (is_mushroom) {
+			// Stems remain a soft ivory; only the cap receives its selected
+			// instance palette color.
+			if (v_instance_color.a < 0.55) {
+				col.rgb = mix(vec3(0.58, 0.49, 0.36), vec3(0.88, 0.80, 0.65), v_gradient_amount);
+			} else {
+				col.rgb = v_instance_color.rgb * mix(vec3(0.86), vec3(1.12), v_gradient_amount);
+			}
 		} else {
 			// Vegetation/stone subtle tint variation
 			col.rgb *= v_instance_color.rgb;

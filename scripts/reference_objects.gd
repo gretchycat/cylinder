@@ -21,6 +21,10 @@ func _ready() -> void:
 		add_child(console_node)
 	# Avoid spawning duplicate objects when running in tool mode repeatedly
 	for child in get_children():
+		# Keep the mobile console alive. This child was just created above and
+		# used to be queued for deletion along with regenerated marker objects.
+		if child is CanvasLayer and child.name == "DebugConsole":
+			continue
 		child.queue_free()
 
 	spawn_all_markers()

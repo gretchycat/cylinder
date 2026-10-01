@@ -85,10 +85,13 @@ static func load_map_config(map_name_or_path: String = "default") -> Dictionary:
 			"cloud_thickness_m": 250.0,
 			"cloud_coverage": 0.55
 		},
+		"terrain_textures": {},
 		"ground_clutter": {
 			"view_radius_m": 220.0,
 			"chunk_size_m": 40.0,
 			"density_multiplier": 1.0,
+			"grassland_density_multiplier": 1.0,
+			"farmland_density_multiplier": 1.0,
 			"models": {},
 			"biomes": {}
 		},
@@ -120,6 +123,8 @@ static func load_map_config(map_name_or_path: String = "default") -> Dictionary:
 			"biomes_manifest": map_dir.path_join("biomes_manifest.json")
 		}
 	}
+	if config.get("terrain_textures", {}) is Dictionary:
+		norm_config["terrain_textures"] = config.get("terrain_textures", {})
 
 	# Merge geometry from file if present
 	if config.has("geometry") and config["geometry"] is Dictionary:
@@ -148,6 +153,8 @@ static func load_map_config(map_name_or_path: String = "default") -> Dictionary:
 		norm_config["ground_clutter"]["view_radius_m"] = float(gc.get("view_radius_m", 220.0))
 		norm_config["ground_clutter"]["chunk_size_m"] = float(gc.get("chunk_size_m", 40.0))
 		norm_config["ground_clutter"]["density_multiplier"] = float(gc.get("density_multiplier", 1.0))
+		norm_config["ground_clutter"]["grassland_density_multiplier"] = float(gc.get("grassland_density_multiplier", 1.0))
+		norm_config["ground_clutter"]["farmland_density_multiplier"] = float(gc.get("farmland_density_multiplier", 1.0))
 		if gc.has("models") and gc["models"] is Dictionary:
 			norm_config["ground_clutter"]["models"] = gc["models"]
 		if gc.has("biomes") and gc["biomes"] is Dictionary:

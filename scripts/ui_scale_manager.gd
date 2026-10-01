@@ -27,11 +27,13 @@ static func calculate_intelligent_scale(custom_dpi: float = -1.0, custom_size: V
 	if is_phone:
 		device_type = "Android Phone" if has_mobile_feature else "Phone"
 		var density = dpi / 160.0
-		scale_factor = clampf(density * 0.65, 1.6, 2.2)
+		# CanvasItem font sizes are pixel based. The old 0.65 factor made 10–12px
+		# labels physically tiny on high-density Android displays.
+		scale_factor = clampf(density, 2.25, 3.25)
 	elif is_tablet:
 		device_type = "Android Tablet" if has_mobile_feature else "Tablet"
 		var density = dpi / 160.0
-		scale_factor = clampf(density * 0.55, 1.4, 1.8)
+		scale_factor = clampf(density * 0.85, 1.9, 2.8)
 	else:
 		if dpi > 150.0 and not has_mobile_feature:
 			device_type = "High-DPI Desktop"
