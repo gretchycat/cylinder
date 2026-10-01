@@ -62,7 +62,6 @@ const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 @export var enable_flicker: bool = true
 
 var omni_light: OmniLight3D = null
-var bridge_lights: Array[OmniLight3D] = []
 var flame_nodes: Array[Node3D] = []
 var flame_mats: Array[StandardMaterial3D] = []
 var base_energy: float = 5.5
@@ -94,7 +93,6 @@ func rebuild_object() -> void:
 
 	flame_nodes.clear()
 	flame_mats.clear()
-	bridge_lights.clear()
 	omni_light = null
 
 	var instance: Node3D = null
@@ -229,13 +227,6 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 				beacon.material_override = m
 				flame_mats.append(m)
 
-		ObjectType.BRIDGE:
-			var l_n = _find.call("BridgeLightNorth") as OmniLight3D
-			var l_s = _find.call("BridgeLightSouth") as OmniLight3D
-			if l_n: bridge_lights.append(l_n)
-			if l_s: bridge_lights.append(l_s)
-			if l_n: omni_light = l_n
-
 		ObjectType.HOUSE:
 			omni_light = _find.call("WindowLight") as OmniLight3D
 
@@ -255,9 +246,6 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 		if light_range > 0.0:
 			omni_light.omni_range = light_range
 
-	for bl in bridge_lights:
-		bl.light_color = light_color
-		bl.light_energy = base_energy
 
 static var global_active_light_distance: float = 3500.0
 static var adaptive_active_light_scale: float = 1.0
@@ -270,29 +258,16 @@ static func get_effective_active_light_distance() -> float:
 		return 0.0
 	return minf(global_active_light_distance * adaptive_active_light_scale, 8000.0)
 
-var distance_check_timer: float = 0.0
 var is_near_camera: bool = true
 
-func _process(delta: float) -> void:
-	if not omni_light and bridge_lights.is_empty():
-		return
+func set_surface_light_active(light: OmniLight3D, active: bool) -> void:
+	light.visible = active
+	if active:
+		is_near_camera = true
 
-	# Dynamic distance culling: disable distant OmniLight3Ds from Godot's light clusterer
-	distance_check_timer += delta
-	if distance_check_timer > 0.35:
-		distance_check_timer = 0.0
-		var vp = get_viewport()
-		var cam = vp.get_camera_3d() if is_inside_tree() and vp else null
-		if cam:
-			var d_sq = global_position.distance_squared_to(cam.global_position)
-			var max_dist = get_effective_active_light_distance()
-			var should_be_active = (max_dist > 0.0) and (d_sq < (max_dist * max_dist))
-			if is_near_camera != should_be_active:
-				is_near_camera = should_be_active
-				if omni_light:
-					omni_light.visible = is_near_camera
-				for bl in bridge_lights:
-					bl.visible = is_near_camera
+func _process(delta: float) -> void:
+	if not omni_light:
+		return
 
 	if not enable_flicker or not is_near_camera:
 		return
@@ -342,10 +317,6 @@ func _process(delta: float) -> void:
 			if flame_mats.size() > 0:
 				flame_mats[0].emission_energy_multiplier = lerpf(1.5, 5.0, pulse)
 
-		ObjectType.BRIDGE:
-			var hum = sin(flicker_time * 4.0) * 0.05
-			for bl in bridge_lights:
-				bl.light_energy = base_energy * (1.0 + hum)
 
 # Static factory to create and orient a surface light object anywhere on the curved cylinder floor
 static func create_on_cylinder(

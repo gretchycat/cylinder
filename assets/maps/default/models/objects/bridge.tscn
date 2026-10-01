@@ -107,17 +107,3 @@ mesh = SubResource("PostMesh")
 [node name="LanternSE" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3, 2.6, 17.0)
 mesh = SubResource("LanternMesh")
-
-[node name="BridgeLightNorth" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, -16.0)
-light_color = Color(1, 0.90, 0.72, 1)
-light_energy = 4.2
-omni_range = 38.0
-omni_attenuation = 0.9
-
-[node name="BridgeLightSouth" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, 16.0)
-light_color = Color(1, 0.90, 0.72, 1)
-light_energy = 4.2
-omni_range = 38.0
-omni_attenuation = 0.9

@@ -11,6 +11,10 @@ const DebugConsole = preload("res://scripts/debug_console.gd")
 const MapConfigClass = preload("res://scripts/map_config.gd")
 
 var active_map_config: Dictionary = {}
+var surface_light_selection_timer: float = 0.0
+
+const MOBILE_LOCAL_LIGHT_BUDGET: int = 6
+const FORWARD_LIGHT_LOOKAHEAD_MULTIPLIER: float = 8.0
 
 func _ready() -> void:
 	add_to_group("reference_objects")
@@ -28,6 +32,99 @@ func _ready() -> void:
 		child.queue_free()
 
 	spawn_all_markers()
+
+func _process(delta: float) -> void:
+	surface_light_selection_timer += delta
+	if surface_light_selection_timer < 0.05:
+		return
+	surface_light_selection_timer = 0.0
+	_update_nearest_surface_lights()
+
+func _update_nearest_surface_lights() -> void:
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	var listener_position: Vector3
+	if player:
+		listener_position = player.global_position
+	else:
+		var viewport = get_viewport()
+		var camera = viewport.get_camera_3d() if viewport else null
+		if not camera:
+			return
+		listener_position = camera.global_position
+	if not is_inside_tree():
+		return
+
+	var objects: Array[SurfaceLightObject] = []
+	var forward_candidates: Array[Dictionary] = []
+	var behind_candidates: Array[Dictionary] = []
+	var max_distance = SurfaceLightObject.get_effective_active_light_distance()
+	var player_forward = (player.global_basis * Vector3.FORWARD).normalized() if player else Vector3.ZERO
+	for node in get_tree().get_nodes_in_group("surface_light_objects"):
+		if not node is SurfaceLightObject:
+			continue
+		var light_object := node as SurfaceLightObject
+		objects.append(light_object)
+		light_object.is_near_camera = false
+		var object_lights: Array[OmniLight3D] = []
+		if light_object.omni_light:
+			object_lights.append(light_object.omni_light)
+		for light in object_lights:
+			if not is_instance_valid(light):
+				continue
+			var offset_to_light = light.global_position - listener_position
+			var distance_sq = offset_to_light.length_squared()
+			var within_user_range = max_distance > 0.0 and distance_sq <= max_distance * max_distance
+			var is_in_front = not player or distance_sq < 0.001 or player_forward.dot(offset_to_light.normalized()) > 0.0
+			var activation_range = light.omni_range * FORWARD_LIGHT_LOOKAHEAD_MULTIPLIER if is_in_front else light.omni_range
+			if not within_user_range or distance_sq > activation_range * activation_range:
+				light.visible = false
+				continue
+			var candidate = {"light": light, "owner": light_object, "distance_sq": distance_sq}
+			if is_in_front:
+				forward_candidates.append(candidate)
+			else:
+				behind_candidates.append(candidate)
+
+	var by_distance = func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["distance_sq"]) < float(b["distance_sq"])
+	forward_candidates.sort_custom(by_distance)
+	behind_candidates.sort_custom(by_distance)
+
+	var selected_lights: Array[Dictionary] = []
+	if ProjectSettings.get_setting("rendering/renderer/rendering_method", "mobile") == "mobile":
+		for candidate in forward_candidates:
+			if selected_lights.size() >= MOBILE_LOCAL_LIGHT_BUDGET:
+				break
+			selected_lights.append(candidate)
+		for candidate in behind_candidates:
+			if selected_lights.size() >= MOBILE_LOCAL_LIGHT_BUDGET:
+				break
+			selected_lights.append(candidate)
+	else:
+		selected_lights.append_array(forward_candidates)
+		selected_lights.append_array(behind_candidates)
+
+	for candidate in selected_lights:
+		var light := candidate["light"] as OmniLight3D
+		var light_object := candidate["owner"] as SurfaceLightObject
+		light_object.set_surface_light_active(light, true)
+	for candidate in forward_candidates + behind_candidates:
+		var light := candidate["light"] as OmniLight3D
+		if not light.visible:
+			continue
+		var is_selected := false
+		for selected in selected_lights:
+			if selected["light"] == light:
+				is_selected = true
+				break
+		if not is_selected:
+			light.visible = false
+
+	# Ensure sources outside their own range or the nearest-light budget stay off.
+	for light_object in objects:
+		if not light_object.is_near_camera:
+			if light_object.omni_light:
+				light_object.omni_light.visible = false
 
 func _get_terrain_elevation(theta: float, z: float) -> float:
 	var cyl_world = get_parent().get_node_or_null("CylinderWorld") if get_parent() else null
