@@ -685,14 +685,16 @@ func _build_terrain_mesh() -> void:
 				st.set_color(Color(alpha, float(t_type) / 7.0, 1.0, 1.0))
 				st.add_vertex(pos)
 
-		# Cap 1 Triangles: Center to Ring 1
+		# Cap 1 Triangles: Clockwise from inside, matching the inward +Z normals.
+		# With cull_disabled, back-facing triangles would flip those normals outward.
+		# Center to Ring 1
 		for i in range(cap_divisions):
 			var p0 = center_idx1
 			var p1 = center_idx1 + 1 + i
 			var p2 = center_idx1 + 1 + (i + 1)
 			st.add_index(p0)
-			st.add_index(p1)
 			st.add_index(p2)
+			st.add_index(p1)
 
 		# Cap 1 Triangles: Ring k to Ring k+1
 		for k in range(1, cap_rings):
@@ -705,12 +707,12 @@ func _build_terrain_mesh() -> void:
 				var i11 = r_next_start + (i + 1)
 
 				st.add_index(i00)
-				st.add_index(i01)
 				st.add_index(i10)
+				st.add_index(i01)
 
 				st.add_index(i10)
-				st.add_index(i01)
 				st.add_index(i11)
+				st.add_index(i01)
 
 		# === Cap 2: Hemispherical Dome at z = +half_len (inward normal facing -Z into cylinder) ===
 		var center_idx2 = center_idx1 + 1 + cap_rings * stride
@@ -754,14 +756,14 @@ func _build_terrain_mesh() -> void:
 				st.set_color(Color(alpha, float(t_type) / 7.0, 1.0, 1.0))
 				st.add_vertex(pos)
 
-		# Cap 2 Triangles: Center to Ring 1 (reversed winding for -Z facing)
+		# Cap 2 Triangles: Clockwise from inside, matching the inward -Z normals.
 		for i in range(cap_divisions):
 			var p0 = center_idx2
 			var p1 = center_idx2 + 1 + i
 			var p2 = center_idx2 + 1 + (i + 1)
 			st.add_index(p0)
-			st.add_index(p2)
 			st.add_index(p1)
+			st.add_index(p2)
 
 		# Cap 2 Triangles: Ring k to Ring k+1 (reversed winding for -Z facing)
 		for k in range(1, cap_rings):
@@ -774,12 +776,12 @@ func _build_terrain_mesh() -> void:
 				var i11 = r_next_start + (i + 1)
 
 				st.add_index(i00)
-				st.add_index(i10)
 				st.add_index(i01)
+				st.add_index(i10)
 
 				st.add_index(i10)
-				st.add_index(i11)
 				st.add_index(i01)
+				st.add_index(i11)
 
 	st.generate_tangents()
 	var mesh = st.commit()
