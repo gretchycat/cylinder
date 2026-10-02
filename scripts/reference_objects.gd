@@ -9,6 +9,7 @@ extends Node3D
 
 const DebugConsole = preload("res://scripts/debug_console.gd")
 const MapConfigClass = preload("res://scripts/map_config.gd")
+const EditStorage = preload("res://scripts/world_edit_storage.gd")
 
 var active_map_config: Dictionary = {}
 var surface_light_selection_timer: float = 0.0
@@ -32,6 +33,7 @@ func _ready() -> void:
 		child.queue_free()
 
 	spawn_all_markers()
+	EditStorage.restore(self)
 
 func _process(delta: float) -> void:
 	surface_light_selection_timer += delta

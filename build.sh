@@ -204,6 +204,8 @@ cmd_run() {
 
 cmd_test() {
     check_godot
+    echo "[TEST] Running touch controls, world editing, and save/reload tests..."
+    "$GODOT_BIN" --headless -s scripts/test_edit_controls.gd
     echo "[TEST] Running automated test suite in headless mode..."
     if command -v timeout >/dev/null 2>&1; then
         timeout 75s "$GODOT_BIN" --headless -s scripts/test_simulation.gd

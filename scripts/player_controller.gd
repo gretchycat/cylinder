@@ -39,6 +39,7 @@ signal telemetry_updated(data: Dictionary)
 var is_flying: bool = false
 var is_sprinting: bool = true
 var mobile_sprint_active: bool = true
+var ui_input_blocked: bool = false
 
 # Jump and vertical kinematics
 var vertical_velocity: float = 0.0
@@ -92,6 +93,8 @@ func _ready() -> void:
 	reset_to_spawn()
 
 func _input(event: InputEvent) -> void:
+	if ui_input_blocked:
+		return
 	# Traditional PC mouse look only active if mouse is explicitly captured
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		apply_look_input(Vector2(event.relative.x, event.relative.y) * mouse_sensitivity)
@@ -248,6 +251,11 @@ func _enforce_surface_and_habitat_bounds() -> void:
 					velocity += inward_up * outward_vel
 
 func _update_input() -> void:
+	if ui_input_blocked:
+		input_axis = Vector2.ZERO
+		fly_vertical_axis = 0.0
+		jump_requested = false
+		return
 	# Keyboard input
 	var forward = Input.get_action_strength("move_forward")
 	var back = Input.get_action_strength("move_backward")
@@ -487,6 +495,25 @@ func get_spawn_points() -> Array:
 	return []
 
 func reset_to_spawn() -> void:
+	var references = get_tree().get_first_node_in_group("reference_objects") if is_inside_tree() else null
+	var saved: Dictionary = references.get_meta("saved_player_spawn", {}) if references else {}
+	if not saved.is_empty():
+		var p: Array = saved.position
+		var b: Array = saved.basis
+		global_transform = Transform3D(Basis(Vector3(b[0], b[1], b[2]), Vector3(b[3], b[4], b[5]), Vector3(b[6], b[7], b[8])), Vector3(p[0], p[1], p[2]))
+		pitch = float(saved.pitch)
+		head.rotation = Vector3(pitch, 0.0, 0.0)
+		is_flying = bool(saved.is_flying)
+		velocity = Vector3.ZERO
+		vertical_velocity = 0.0
+		wobble_roll = 0.0
+		wobble_velocity = 0.0
+		jump_cooldown_timer = 0.0
+		jump_requested = false
+		input_axis = Vector2.ZERO
+		fly_vertical_axis = 0.0
+		is_sprinting = mobile_sprint_active
+		return
 	var spawn_pts = get_spawn_points()
 	var default_pt = null
 	for pt in spawn_pts:

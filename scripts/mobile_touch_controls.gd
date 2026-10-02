@@ -5,7 +5,16 @@ extends Control
 @export var joystick_radius: float = 70.0
 @export var touch_look_sensitivity: float = 0.0035
 
+const EditorUI = preload("res://scripts/object_editor_ui.gd")
+const TAP_MAX_MS := 300
+const TAP_SLOP := 14.0
 var ui_scale: float = 1.0
+var joystick_press_position := Vector2.ZERO
+var joystick_press_time := 0
+var joystick_tap_candidate := false
+var knob_style: StyleBoxFlat
+var editor_ui: EditorUI
+var last_run_state := false
 
 # Virtual joystick state
 var joystick_touch_id: int = -1
@@ -22,11 +31,12 @@ var last_look_pos: Vector2 = Vector2.ZERO
 @onready var joystick_base: Control = $JoystickBase
 @onready var joystick_knob: Control = $JoystickBase/Knob
 @onready var jump_btn: Button = $ActionButtons/JumpButton
-@onready var fly_btn: Button = $ActionButtons/FlyButton
-@onready var sprint_btn: Button = $ActionButtons/SprintButton
-@onready var flashlight_btn: Button = get_node_or_null("ActionButtons/FlashlightButton")
-@onready var fly_up_btn: Button = get_node_or_null("ActionButtons/FlyUpButton")
-@onready var fly_down_btn: Button = get_node_or_null("ActionButtons/FlyDownButton")
+@onready var fly_btn: Button = $DebugPanel/VBox/Grid/FlyButton
+@onready var edit_btn: Button = $DebugPanel/VBox/EditButton
+@onready var debug_panel: PanelContainer = $DebugPanel
+@onready var flashlight_btn: Button = get_node_or_null("DebugPanel/VBox/Grid/FlashlightButton")
+@onready var fly_up_btn: Button = get_node_or_null("DebugPanel/VBox/Grid/FlyUpButton")
+@onready var fly_down_btn: Button = get_node_or_null("DebugPanel/VBox/Grid/FlyDownButton")
 
 func _ready() -> void:
 	if not player:
@@ -38,9 +48,6 @@ func _ready() -> void:
 		jump_btn.pressed.connect(_on_jump_pressed)
 	if fly_btn:
 		fly_btn.pressed.connect(_on_fly_pressed)
-	if sprint_btn:
-		sprint_btn.text = "SPRINT: ON" if (player and player.mobile_sprint_active) else "SPRINT: OFF"
-		sprint_btn.pressed.connect(_on_sprint_pressed)
 	if flashlight_btn and player:
 		_update_flashlight_button()
 		flashlight_btn.pressed.connect(_on_flashlight_pressed)
@@ -52,15 +59,46 @@ func _ready() -> void:
 		fly_down_btn.button_down.connect(func(): if player: player.fly_vertical_axis = -1.0)
 		fly_down_btn.button_up.connect(func(): if player and player.fly_vertical_axis < 0: player.fly_vertical_axis = 0.0)
 
+	editor_ui = EditorUI.new()
+	add_child(editor_ui)
+	editor_ui.editor.player = player
+	editor_ui.palette_visibility_changed.connect(_on_palette_visibility_changed)
+	edit_btn.toggled.connect(func(active: bool):
+		edit_btn.text = "EDIT: ON" if active else "EDIT: OFF"
+		editor_ui.set_edit_mode(active))
+	visibility_changed.connect(_on_visibility_changed)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.035, 0.055, 0.09, 0.9)
+	panel_style.border_color = Color(0.35, 0.55, 0.7, 0.8)
+	panel_style.set_border_width_all(1)
+	panel_style.set_corner_radius_all(8)
+	panel_style.content_margin_left = 6
+	panel_style.content_margin_right = 6
+	panel_style.content_margin_top = 6
+	panel_style.content_margin_bottom = 6
+	debug_panel.add_theme_stylebox_override("panel", panel_style)
+	knob_style = joystick_knob.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+	joystick_knob.add_theme_stylebox_override("panel", knob_style)
+	_update_run_indicator()
 	_update_fly_buttons_visibility()
 	_reset_joystick()
 
 func _process(_delta: float) -> void:
+	if player and last_run_state != player.mobile_sprint_active:
+		_update_run_indicator()
+	_update_fly_buttons_visibility()
 	if (look_touch_id != -1 or is_mouse_looking) and player:
 		player.look_control_timer = 0.5
 
 func _input(event: InputEvent) -> void:
-	if not player:
+	if not player or not is_visible_in_tree():
+		return
+	# Touch-to-mouse emulation must not process the same gesture twice.
+	if event.device == InputEvent.DEVICE_ID_EMULATION:
+		return
+	if editor_ui and editor_ui.palette_open and event.is_action_pressed("ui_cancel"):
+		editor_ui.set_palette_open(false)
+		get_viewport().set_input_as_handled()
 		return
 
 	# 1. Touch Events (Mobile or emulated touch)
@@ -68,6 +106,8 @@ func _input(event: InputEvent) -> void:
 		if event.pressed:
 			_handle_touch_start(event.index, event.position)
 		else:
+			if event.canceled:
+				joystick_tap_candidate = false
 			_handle_touch_end(event.index)
 
 	elif event is InputEventScreenDrag:
@@ -99,6 +139,10 @@ func _is_pos_inside_joystick_zone(pos: Vector2) -> bool:
 	return active_rect.has_point(pos)
 
 func _is_pos_inside_ui(pos: Vector2) -> bool:
+	if editor_ui and editor_ui.contains_ui_point(pos):
+		return true
+	if debug_panel and debug_panel.is_visible_in_tree() and debug_panel.get_global_rect().has_point(pos):
+		return true
 	if _is_pos_inside_action_buttons(pos):
 		return true
 
@@ -122,12 +166,15 @@ func _is_pos_inside_ui(pos: Vector2) -> bool:
 	return false
 
 func _handle_touch_start(id: int, pos: Vector2) -> void:
+	if not is_visible_in_tree():
+		return
 	if _is_pos_inside_ui(pos):
 		return
 
-	# If touch is in the bottom-left joystick zone: Virtual Joystick MOVEMENT ONLY
+	# A short tap toggles run; dragging the joystick only moves the player.
 	if _is_pos_inside_joystick_zone(pos):
 		if joystick_touch_id == -1:
+			_begin_joystick_tap(pos)
 			joystick_touch_id = id
 			joystick_active = true
 			if joystick_base:
@@ -155,6 +202,7 @@ func _handle_touch_drag(id: int, pos: Vector2, rel: Vector2) -> void:
 
 func _handle_touch_end(id: int) -> void:
 	if id == joystick_touch_id:
+		_finish_joystick_tap()
 		_reset_joystick()
 	elif id == look_touch_id:
 		look_touch_id = -1
@@ -164,6 +212,7 @@ func _handle_mouse_press(pos: Vector2) -> void:
 		return
 
 	if _is_pos_inside_joystick_zone(pos):
+		_begin_joystick_tap(pos)
 		is_mouse_joystick = true
 		joystick_active = true
 		if joystick_base:
@@ -185,11 +234,14 @@ func _handle_mouse_motion(pos: Vector2, rel: Vector2) -> void:
 
 func _handle_mouse_release() -> void:
 	if is_mouse_joystick:
+		_finish_joystick_tap()
 		is_mouse_joystick = false
 		_reset_joystick()
 	is_mouse_looking = false
 
 func _update_joystick_knob(pos: Vector2) -> void:
+	if pos.distance_to(joystick_press_position) > TAP_SLOP * ui_scale:
+		joystick_tap_candidate = false
 	var offset = pos - joystick_center
 	var active_radius = joystick_radius * ui_scale
 	var dist = offset.length()
@@ -208,6 +260,7 @@ func _update_joystick_knob(pos: Vector2) -> void:
 		player.input_axis = Vector2(input_vec.x, input_vec.y)
 
 func _reset_joystick() -> void:
+	joystick_tap_candidate = false
 	joystick_touch_id = -1
 	is_mouse_joystick = false
 	joystick_active = false
@@ -331,8 +384,7 @@ func _on_sprint_pressed() -> void:
 	if player:
 		player.mobile_sprint_active = not player.mobile_sprint_active
 		player.is_sprinting = player.mobile_sprint_active
-		if sprint_btn:
-			sprint_btn.text = "SPRINT: ON" if player.mobile_sprint_active else "SPRINT: OFF"
+		_update_run_indicator()
 
 func _on_flashlight_pressed() -> void:
 	if player:
@@ -345,7 +397,45 @@ func _update_flashlight_button() -> void:
 
 func _update_fly_buttons_visibility() -> void:
 	var flying = player.is_flying if player else false
+	if fly_btn:
+		fly_btn.text = "FLY: ON" if flying else "FLY: OFF"
+	_update_flashlight_button()
 	if fly_up_btn:
-		fly_up_btn.visible = flying
+		fly_up_btn.disabled = not flying
 	if fly_down_btn:
-		fly_down_btn.visible = flying
+		fly_down_btn.disabled = not flying
+
+func _begin_joystick_tap(pos: Vector2) -> void:
+	joystick_press_position = pos
+	joystick_press_time = Time.get_ticks_msec()
+	joystick_tap_candidate = true
+
+func _finish_joystick_tap() -> void:
+	if joystick_tap_candidate and Time.get_ticks_msec() - joystick_press_time <= TAP_MAX_MS:
+		_on_sprint_pressed()
+
+func _update_run_indicator() -> void:
+	last_run_state = player.mobile_sprint_active if player else false
+	if knob_style:
+		knob_style.bg_color = Color(0.95, 0.16, 0.19, 0.95) if last_run_state else Color(0.25, 0.75, 1.0, 0.85)
+
+func _cancel_gestures() -> void:
+	_reset_joystick()
+	look_touch_id = -1
+	is_mouse_looking = false
+	if player:
+		player.fly_vertical_axis = 0.0
+		player.jump_requested = false
+
+func _on_palette_visibility_changed(open: bool) -> void:
+	_cancel_gestures()
+	if player:
+		player.ui_input_blocked = open
+	if open:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func _on_visibility_changed() -> void:
+	if not is_visible_in_tree():
+		_cancel_gestures()
+		if editor_ui:
+			editor_ui.set_palette_open(false)

@@ -490,107 +490,83 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -320.0
-offset_top = -240.0
+offset_left = -130.0
+offset_top = -100.0
 offset_right = -20.0
 offset_bottom = -20.0
-grow_horizontal = 0
-grow_vertical = 0
+mouse_filter = 2
 
 [node name="JumpButton" type="Button" parent="UIRoot/TouchControls/ActionButtons"]
 layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -90.0
-offset_top = -80.0
-offset_right = 0.0
-offset_bottom = 0.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_override_font_sizes/font_size = 15
+focus_mode = 0
+theme_override_font_sizes/font_size = 17
 text = "JUMP"
 
-[node name="FlyButton" type="Button" parent="UIRoot/TouchControls/ActionButtons"]
+[node name="DebugPanel" type="PanelContainer" parent="UIRoot/TouchControls"]
 layout_mode = 1
-anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -190.0
-offset_top = -80.0
-offset_right = -100.0
-offset_bottom = 0.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_override_font_sizes/font_size = 13
+offset_left = -238.0
+offset_top = -296.0
+offset_right = -20.0
+offset_bottom = -112.0
+
+[node name="VBox" type="VBoxContainer" parent="UIRoot/TouchControls/DebugPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="UIRoot/TouchControls/DebugPanel/VBox"]
+layout_mode = 2
+text = "DEBUG"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 12
+
+[node name="Grid" type="GridContainer" parent="UIRoot/TouchControls/DebugPanel/VBox"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="FlyButton" type="Button" parent="UIRoot/TouchControls/DebugPanel/VBox/Grid"]
+custom_minimum_size = Vector2(100, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_font_sizes/font_size = 12
 text = "FLY: OFF"
 
-[node name="SprintButton" type="Button" parent="UIRoot/TouchControls/ActionButtons"]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -90.0
-offset_top = -170.0
-offset_right = 0.0
-offset_bottom = -90.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_override_font_sizes/font_size = 13
-text = "SPRINT: ON"
-
-[node name="FlashlightButton" type="Button" parent="UIRoot/TouchControls/ActionButtons"]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -190.0
-offset_top = -170.0
-offset_right = -100.0
-offset_bottom = -90.0
-grow_horizontal = 0
-grow_vertical = 0
+[node name="FlashlightButton" type="Button" parent="UIRoot/TouchControls/DebugPanel/VBox/Grid"]
+custom_minimum_size = Vector2(100, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
 theme_override_font_sizes/font_size = 12
 text = "LIGHT: OFF"
 
-[node name="FlyUpButton" type="Button" parent="UIRoot/TouchControls/ActionButtons"]
-visible = false
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -285.0
-offset_top = -170.0
-offset_right = -205.0
-offset_bottom = -90.0
-grow_horizontal = 0
-grow_vertical = 0
+[node name="FlyUpButton" type="Button" parent="UIRoot/TouchControls/DebugPanel/VBox/Grid"]
+custom_minimum_size = Vector2(100, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
 theme_override_font_sizes/font_size = 12
 text = "FLY UP"
 
-[node name="FlyDownButton" type="Button" parent="UIRoot/TouchControls/ActionButtons"]
-visible = false
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -285.0
-offset_top = -80.0
-offset_right = -205.0
-offset_bottom = 0.0
-grow_horizontal = 0
-grow_vertical = 0
+[node name="FlyDownButton" type="Button" parent="UIRoot/TouchControls/DebugPanel/VBox/Grid"]
+custom_minimum_size = Vector2(100, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
 theme_override_font_sizes/font_size = 12
-text = "FLY DN"
+text = "FLY DOWN"
+
+[node name="EditButton" type="Button" parent="UIRoot/TouchControls/DebugPanel/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+focus_mode = 0
+toggle_mode = true
+text = "EDIT: OFF"

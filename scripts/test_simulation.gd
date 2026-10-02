@@ -336,7 +336,7 @@ func _init() -> void:
 
 	# --- TEST 8: Standard Controls (Joystick Movement vs Screen Drag Look) ---
 	print("\n--- TEST 8: Standard Controls (Joystick Movement vs Screen Drag Look) ---")
-	var touch_controls = root_node.get_node_or_null("UI/UIRoot/TouchControls") as MobileTouchControls
+	var touch_controls = hud_node.touch_controls as MobileTouchControls
 	test_check(touch_controls != null, "MobileTouchControls node must exist")
 
 	# Verify joystick creation and visibility
@@ -769,9 +769,11 @@ func _init() -> void:
 	test_check(test_hud.log_panel != null, "Event Log panel must exist")
 
 	test_hud._update_panel_constraints()
-	test_check(test_hud.telemetry_panel.offset_left == 15.0 and test_hud.telemetry_panel.offset_right == -15.0, "TelemetryPanel must span screen width minus 15px margins")
-	test_check(test_hud.control_panel.offset_left == 15.0 and test_hud.control_panel.offset_right == -15.0, "ControlPanel must span screen width minus 15px margins")
-	test_check(test_hud.log_panel.offset_left == 15.0 and test_hud.log_panel.offset_right == -15.0, "EventLogPanel must span screen width minus 15px margins")
+	# Panels use different anchor/scale strategies; verify visible screen margins.
+	var screen_width := test_hud.get_viewport().get_visible_rect().size.x
+	for panel in [test_hud.telemetry_panel, test_hud.control_panel, test_hud.log_panel]:
+		var rect: Rect2 = panel.get_global_rect()
+		test_check(absf(rect.position.x - 15.0) < 1.0 and absf(rect.end.x - (screen_width - 15.0)) < 1.0, "%s must span screen width minus 15px margins" % panel.name)
 
 	# Verify ControlPanel minimum height constraint
 	var cp_height = test_hud.control_panel.offset_bottom - test_hud.control_panel.offset_top
