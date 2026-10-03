@@ -33,7 +33,7 @@ usage() {
     echo "  linux [arch]    Export Linux binary (default: host architecture)"
     echo "                  Architectures: x86_64, x86_32, arm64, arm32, rv64, ppc64, loongarch64"
     echo "  install [abi]   Install APK; build it for this ABI if needed"
-    echo "  maps            Generate vertically tileable elevation & terrain PNG maps"
+    echo "  maps SRC DEST [SEED]  Generate a new map from its descriptor"
     echo "  templates       Check status of Godot export templates"
     echo "  help            Show this help message"
     echo "=========================================================="
@@ -115,7 +115,7 @@ advanced_options=false
 dedicated_server=false
 custom_features=""
 export_filter="all_resources"
-include_filter="*.json"
+include_filter="*.json,*.cylh,assets/maps/*/biomes.png"
 exclude_filter=""
 export_path="build/cylinder.apk"
 encryption_include_filters=""
@@ -168,7 +168,7 @@ advanced_options=false
 dedicated_server=false
 custom_features=""
 export_filter="all_resources"
-include_filter="*.json"
+include_filter="*.json,*.cylh,assets/maps/*/biomes.png"
 exclude_filter=""
 export_path="build/cylinder.$linux_arch"
 encryption_include_filters=""
@@ -204,6 +204,10 @@ cmd_run() {
 
 cmd_test() {
     check_godot
+    "$GODOT_BIN" --headless -s scripts/test_map_pipeline.gd
+    "$GODOT_BIN" --headless -s scripts/test_map_scene.gd
+    "$GODOT_BIN" --headless -s scripts/test_map_imports.gd
+    "$GODOT_BIN" --headless -s scripts/test_map_library.gd
     echo "[TEST] Running touch controls, world editing, and save/reload tests..."
     "$GODOT_BIN" --headless -s scripts/test_edit_controls.gd
     echo "[TEST] Running automated test suite in headless mode..."
@@ -293,9 +297,9 @@ cmd_templates() {
 }
 
 cmd_maps() {
-    echo "[MAPS] Generating vertically tileable elevation & terrain maps..."
+    echo "[MAPS] Generating schema 3 map..."
     shift || true
-    python3 scripts/generate_tileable_maps.py "$@"
+    "$GODOT_BIN" --headless --path . -s scripts/generate_map_cli.gd -- "$@"
 }
 
 case "${1:-run}" in

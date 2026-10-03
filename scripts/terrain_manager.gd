@@ -3,366 +3,194 @@ extends RefCounted
 
 const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 
-enum TerrainType {
-	WATER = 0,
-	SAND = 1,
-	DIRT = 2,
-	GRASS = 3,
-	FARMLAND = 4,
-	ROCKS = 5,
-	CONCRETE = 6,
-	ROAD = 7
-}
+# Dimensions are owned by each layer. grid_u/v are elevation aliases only.
+var grid_u: int = 0
+var grid_v: int = 0
+var elevation_grid_u: int = 0
+var elevation_grid_v: int = 0
+var terrain_grid_u: int = 0
+var terrain_grid_v: int = 0
+var elevation_variance: float
+var water_level: float
+var elevation_data := PackedFloat32Array()
+var terrain_data := PackedByteArray()
+var biomes: Dictionary = {}
+var biome_by_id: Dictionary = {}
+var last_error: String = ""
 
-const PALETTE: Dictionary = {
-	TerrainType.WATER: Color(0.137, 0.412, 0.765, 1.0),      # #2369C3 Deep Blue
-	TerrainType.SAND: Color(0.882, 0.745, 0.490, 1.0),       # #E1BE7D Beach Gold
-	TerrainType.DIRT: Color(0.451, 0.306, 0.188, 1.0),       # #734E30 Earth Brown
-	TerrainType.GRASS: Color(0.235, 0.549, 0.165, 1.0),      # #3C8C2A Meadow Green
-	TerrainType.FARMLAND: Color(0.647, 0.471, 0.196, 1.0),   # #A57832 Ochre Furrowed Soil
-	TerrainType.ROCKS: Color(0.373, 0.392, 0.424, 1.0),      # #5F646C Slate Mountain Rock
-	TerrainType.CONCRETE: Color(0.686, 0.706, 0.737, 1.0),   # #AFB4BC Light Grey
-	TerrainType.ROAD: Color(0.165, 0.173, 0.188, 1.0),       # #2A2C30 Asphalt
-}
-
-## Connection and edge fading properties per terrain type
-const TERRAIN_RULES: Dictionary = {
-	TerrainType.WATER:    {"name": "Water",    "is_artificial": false, "fade_width": 0.35, "roughness": 0.20, "metallic": 0.05},
-	TerrainType.SAND:     {"name": "Sand",     "is_artificial": false, "fade_width": 0.40, "roughness": 0.90, "metallic": 0.02},
-	TerrainType.DIRT:     {"name": "Dirt",     "is_artificial": false, "fade_width": 0.42, "roughness": 0.88, "metallic": 0.02},
-	TerrainType.GRASS:    {"name": "Grass",    "is_artificial": false, "fade_width": 0.45, "roughness": 0.82, "metallic": 0.02},
-	TerrainType.FARMLAND: {"name": "Farmland", "is_artificial": true,  "fade_width": 0.04, "roughness": 0.85, "metallic": 0.02},
-	TerrainType.ROCKS:    {"name": "Rocks",    "is_artificial": false, "fade_width": 0.38, "roughness": 0.92, "metallic": 0.05},
-	TerrainType.CONCRETE: {"name": "Concrete", "is_artificial": true,  "fade_width": 0.01, "roughness": 0.45, "metallic": 0.15},
-	TerrainType.ROAD:     {"name": "Road",     "is_artificial": true,  "fade_width": 0.01, "roughness": 0.38, "metallic": 0.12},
-}
-
-var grid_u: int = 512   # Grid divisions around circumference (angle theta)
-var grid_v: int = 256   # Grid divisions along cylinder length (Z axis)
-
-var elevation_variance: float = 100.0   # Valid elevations range from 0.0 to 100.0 m
-var water_level: float = 20.0           # Water surface is 20.0 meters from elevation 0
-
-# Flat 1D storage for 2D RPG grids (size = grid_u * grid_v)
-var elevation_data: PackedFloat32Array = PackedFloat32Array()
-var terrain_data: PackedByteArray = PackedByteArray()
-
-func _init(u_divisions: int = 512, v_divisions: int = 256, variance: float = 100.0, water_h: float = 20.0) -> void:
-	grid_u = max(u_divisions, 16)
-	grid_v = max(v_divisions, 8)
+func _init(_u: int = 0, _v: int = 0, variance: float = 1.0, sea: float = 0.0) -> void:
 	elevation_variance = variance
-	water_level = water_h
+	water_level = sea
 
-	var loaded = load_maps_from_png("res://assets/maps/default/elevation_map.png", "res://assets/maps/default/terrain_map.png")
-	if not loaded:
-		loaded = load_maps_from_png("res://assets/maps/elevation_map.png", "res://assets/maps/terrain_map.png")
-	if not loaded:
-		generate_default_rpg_map()
+func configure(doc: Dictionary) -> void:
+	elevation_variance = doc.geometry.elevation_variance_m
+	water_level = doc.geometry.water_sea_level_m
+	biomes = doc.biomes
+	biome_by_id.clear()
+	for key in biomes:
+		biome_by_id[int(biomes[key].raster_id)] = key
 
-## Backwards-compatible alias for loading elevation and terrain image files.
-func load_maps_from_png(elev_path: String, terrain_path: String) -> bool:
-	var ok_elev = load_elevation_from_image(elev_path)
-	var ok_terr = load_terrain_from_image(terrain_path)
-	return ok_elev and ok_terr
-
-func load_maps_from_images(elev_path: String, terrain_path: String) -> bool:
-	return load_maps_from_png(elev_path, terrain_path)
-
-## Backwards-compatible alias; image format is detected by Godot.
-func load_elevation_from_png(path: String) -> bool:
-	return load_elevation_from_image(path)
-
-## Load elevation image (grayscale: 0..255 maps to 0..elevation_variance meters).
-func load_elevation_from_image(path: String) -> bool:
-	var img = _load_image_from_file_or_buffer(path)
-	if not img:
+func load_layers(elev_path: String, terrain_path: String) -> bool:
+	last_error = ""
+	# Keep an already loaded world intact when either incoming layer is invalid.
+	var old_terrain_data = terrain_data
+	var old_terrain_u = terrain_grid_u
+	var old_terrain_v = terrain_grid_v
+	var old_elevation_data = elevation_data
+	var old_elevation_u = elevation_grid_u
+	var old_elevation_v = elevation_grid_v
+	if not load_terrain(terrain_path):
+		if last_error.is_empty():
+			last_error = "Invalid biome layer: " + terrain_path
 		return false
+	if not load_elevation(elev_path):
+		terrain_data = old_terrain_data
+		terrain_grid_u = old_terrain_u
+		terrain_grid_v = old_terrain_v
+		elevation_data = old_elevation_data
+		elevation_grid_u = old_elevation_u
+		elevation_grid_v = old_elevation_v
+		grid_u = old_elevation_u
+		grid_v = old_elevation_v
+		if last_error.is_empty():
+			last_error = "Invalid elevation layer: " + elev_path
+		return false
+	last_error = ""
+	return true
 
+static func read_elevation(path: String) -> Image:
+	var parsed = _read_elevation_data(path)
+	if parsed.is_empty():
+		return null
+	return Image.create_from_data(parsed.width, parsed.height, false, Image.FORMAT_RF, parsed.samples.to_byte_array())
+
+static func _read_elevation_data(path: String) -> Dictionary:
+	var file = FileAccess.open(path, FileAccess.READ)
+	if not file:
+		return {"error": "Cannot open elevation layer: " + path}
+	file.big_endian = false
+	if file.get_length() < 12 or file.get_buffer(4).get_string_from_ascii() != "CYLH":
+		return {"error": "Elevation layer must start with CYLH and contain its header: " + path}
+	var width = file.get_32()
+	var height = file.get_32()
+	if width < 2 or height < 2 or width > 4096 or height > 4096 or width * height > 4194304:
+		return {"error": "Elevation dimensions are invalid or exceed 4,194,304 samples: %s (%d x %d)" % [path, width, height]}
+	var expected_length: int = 12 + width * height * 4
+	if file.get_length() != expected_length:
+		return {"error": "Elevation byte count does not match its dimensions: " + path}
+	var samples = PackedFloat32Array()
+	samples.resize(width * height)
+	var index = 0
+	while index < samples.size():
+		var byte_count = mini(65536, (samples.size() - index) * 4)
+		var chunk = file.get_buffer(byte_count)
+		if chunk.size() != byte_count:
+			return {"error": "Elevation data ended unexpectedly: " + path}
+		for offset in range(0, byte_count, 4):
+			var value = chunk.decode_float(offset)
+			if not is_finite(value) or value < 0 or value > 1:
+				return {"error": "Elevation samples must be finite normalized values from 0 to 1: " + path}
+			samples[index] = value
+			index += 1
+	return {"width": width, "height": height, "samples": samples}
+
+static func write_elevation(path: String, image: Image) -> Error:
+	var f = FileAccess.open(path, FileAccess.WRITE)
+	if not f:
+		return FileAccess.get_open_error()
+	var copy = image.duplicate() as Image
+	copy.convert(Image.FORMAT_RF)
+	f.store_buffer("CYLH".to_ascii_buffer())
+	f.store_32(copy.get_width())
+	f.store_32(copy.get_height())
+	f.store_buffer(copy.get_data())
+	f.flush()
+	return f.get_error()
+
+func load_elevation(path: String) -> bool:
+	var parsed = _read_elevation_data(path)
+	if parsed.is_empty():
+		last_error = str(parsed.get("error", "Invalid elevation layer: " + path))
+		return false
+	elevation_grid_u = parsed.width
+	elevation_grid_v = parsed.height
+	grid_u = elevation_grid_u
+	grid_v = elevation_grid_v
+	elevation_data = parsed.samples
+	for i in elevation_data.size():
+		elevation_data[i] *= elevation_variance
+	last_error = ""
+	return true
+
+
+func load_terrain(path: String) -> bool:
+	var img = MapAssetLoaderClass.load_image(path, 4194304)
+	if not img or img.get_width() < 2 or img.get_height() < 2:
+		last_error = "Biome layer is missing, malformed, or exceeds 4,194,304 pixels: " + path
+		return false
+	if img.get_width() * img.get_height() > 4194304:
+		last_error = "Biome layer exceeds 4,194,304 pixels: " + path
+		return false
 	img.convert(Image.FORMAT_L8)
-	grid_u = img.get_width()
-	grid_v = img.get_height()
-	var total_cells = grid_u * grid_v
-	elevation_data.resize(total_cells)
-	var raw_bytes = img.get_data()
-	var factor = elevation_variance / 255.0
-
-	for i in range(total_cells):
-		elevation_data[i] = float(raw_bytes[i]) * factor
-
+	var data = img.get_data()
+	for id in data:
+		if not biome_by_id.has(id):
+			last_error = "Biome layer contains an ID absent from map_config.json: %d (%s)" % [id, path]
+			return false
+	terrain_grid_u = img.get_width()
+	terrain_grid_v = img.get_height()
+	terrain_data = data
+	last_error = ""
 	return true
 
-## Backwards-compatible alias; image format is detected by Godot.
-func load_terrain_from_png(path: String) -> bool:
-	return load_terrain_from_image(path)
 
-## Load terrain map from a 2D RPG color-coded image.
-func load_terrain_from_image(path: String) -> bool:
-	var img = _load_image_from_file_or_buffer(path)
-	if not img:
-		return false
-
-	img.convert(Image.FORMAT_RGBA8)
-	grid_u = img.get_width()
-	grid_v = img.get_height()
-	var total_cells = grid_u * grid_v
-	terrain_data.resize(total_cells)
-	var raw_bytes = img.get_data()
-
-	var pal_entries: Array = []
-	for t_id in PALETTE:
-		var c: Color = PALETTE[t_id]
-		pal_entries.append({
-			"type": t_id,
-			"r": int(round(c.r * 255.0)),
-			"g": int(round(c.g * 255.0)),
-			"b": int(round(c.b * 255.0))
-		})
-
-	for i in range(total_cells):
-		var p_idx = i * 4
-		var r = int(raw_bytes[p_idx])
-		var g = int(raw_bytes[p_idx + 1])
-		var b = int(raw_bytes[p_idx + 2])
-
-		var best_dist = 999999
-		var best_type = TerrainType.GRASS
-		for entry in pal_entries:
-			var dr = r - entry.r
-			var dg = g - entry.g
-			var db = b - entry.b
-			var dist_sq = dr * dr + dg * dg + db * db
-			if dist_sq < best_dist:
-				best_dist = dist_sq
-				best_type = entry.type
-
-		terrain_data[i] = best_type
-
-	return true
-
-## Save current elevation grid to PNG image file
-func save_elevation_to_png(save_path: String) -> bool:
-	var img = create_elevation_image()
-	if not img:
-		return false
-	var global_path = ProjectSettings.globalize_path(save_path)
-	var err = img.save_png(global_path)
-	return err == OK
-
-## Save current terrain tile grid to 2D RPG color-coded PNG image file
-func save_terrain_to_png(save_path: String) -> bool:
-	var img = create_terrain_image()
-	if not img:
-		return false
-	var global_path = ProjectSettings.globalize_path(save_path)
-	var err = img.save_png(global_path)
-	return err == OK
-
-## Export elevation data as an 8-bit Image object
 func create_elevation_image() -> Image:
-	var img = Image.create(grid_u, grid_v, false, Image.FORMAT_L8)
-	for y in range(grid_v):
-		for x in range(grid_u):
-			var elev = elevation_data[y * grid_u + x]
-			var norm = clampf(elev / max(elevation_variance, 0.1), 0.0, 1.0)
-			img.set_pixel(x, y, Color(norm, norm, norm, 1.0))
-	return img
+	var normalized = elevation_data.duplicate()
+	for i in normalized.size():
+		normalized[i] /= elevation_variance
+	return Image.create_from_data(elevation_grid_u, elevation_grid_v, false, Image.FORMAT_RF, normalized.to_byte_array())
 
-## Export terrain tile data as an RGBA8 Image object
 func create_terrain_image() -> Image:
-	var img = Image.create(grid_u, grid_v, false, Image.FORMAT_RGBA8)
-	for y in range(grid_v):
-		for x in range(grid_u):
-			var t_type = terrain_data[y * grid_u + x]
-			var col = PALETTE.get(t_type, PALETTE[TerrainType.GRASS])
-			img.set_pixel(x, y, col)
-	return img
+	return Image.create_from_data(terrain_grid_u, terrain_grid_v, false, Image.FORMAT_L8, terrain_data)
 
-## Export terrain type as single-channel byte texture (R8) for direct shader sampling
 func create_terrain_type_id_image() -> Image:
-	var img = Image.create(grid_u, grid_v, false, Image.FORMAT_R8)
-	for y in range(grid_v):
-		for x in range(grid_u):
-			var t_type = float(terrain_data[y * grid_u + x]) / 255.0
-			img.set_pixel(x, y, Color(t_type, 0.0, 0.0, 1.0))
-	return img
+	return Image.create_from_data(terrain_grid_u, terrain_grid_v, false, Image.FORMAT_R8, terrain_data)
 
-## Convert an RGB pixel color to the closest TerrainType
-func _color_to_terrain_type(col: Color) -> int:
-	var best_dist: float = 999999.0
-	var best_type: int = TerrainType.GRASS
+func save_elevation(path: String) -> bool:
+	return write_elevation(path, create_elevation_image()) == OK
 
-	for t_id in PALETTE:
-		var pal_col: Color = PALETTE[t_id]
-		var dr = col.r - pal_col.r
-		var dg = col.g - pal_col.g
-		var db = col.b - pal_col.b
-		var dist_sq = dr * dr + dg * dg + db * db
-		if dist_sq < best_dist:
-			best_dist = dist_sq
-			best_type = t_id
+func save_terrain(path: String) -> bool:
+	return create_terrain_image().save_png(path) == OK
 
-	return best_type
+static func sample_image(img: Image, u: float, v: float) -> float:
+	var x = fposmod(u, 1.0) * img.get_width()
+	var y = clampf(v, 0, 1) * (img.get_height() - 1)
+	var x0 = int(floor(x)) % img.get_width()
+	var x1 = (x0 + 1) % img.get_width()
+	var y0 = int(floor(y))
+	var y1 = mini(y0 + 1, img.get_height() - 1)
+	return lerpf(lerpf(img.get_pixel(x0, y0).r, img.get_pixel(x1, y0).r, x - floor(x)), lerpf(img.get_pixel(x0, y1).r, img.get_pixel(x1, y1).r, x - floor(x)), y - floor(y))
 
-## Robust image loader supporting res://, buffers, and exported packages
-func _load_image_from_file_or_buffer(path: String) -> Image:
-	var img = MapAssetLoaderClass.load_image(path)
-	if img and not img.is_empty():
-		return img
-	var texture = MapAssetLoaderClass.load_texture(path)
-	return texture.get_image() if texture else null
-
-## Generates a classic 2D RPG-style world map layout on the cylinder inner surface
-func generate_default_rpg_map() -> void:
-	var total_cells = grid_u * grid_v
-	elevation_data.resize(total_cells)
-	terrain_data.resize(total_cells)
-
-	for j in range(grid_v):
-		var v_frac = float(j) / float(grid_v)
-		var z_norm = (v_frac - 0.5) * 2.0
-
-		for i in range(grid_u):
-			var u_frac = float(i) / float(grid_u)
-			var angle = u_frac * TAU
-
-			# 1. Base Rolling Topography in 0 to 100 m
-			var h1 = sin(angle * 2.0) * cos(z_norm * PI * 1.5) * 0.32
-			var h2 = sin(angle * 4.0 + 1.2) * sin(z_norm * PI * 2.5 + 0.5) * 0.18
-			var h3 = cos(angle * 8.0 + z_norm * 3.5) * 0.10
-			var h4 = sin(angle * 14.0 - z_norm * 6.0) * 0.05
-			var raw_height = (h1 + h2 + h3 + h4 + 0.52)
-
-			# 2. Water river channel & lake
-			var river_center_angle = 0.5 * PI + sin(z_norm * PI * 2.0) * 0.55
-			var angle_dist_river = absf(wrapf(angle - river_center_angle, -PI, PI))
-			var lake_dist_sq = ((angle - 0.5 * PI) ** 2 + (z_norm * 2.5) ** 2) / 0.35
-			var lake_factor = exp(-lake_dist_sq)
-
-			var river_factor = clampf(1.0 - (angle_dist_river / 0.32), 0.0, 1.0)
-			if lake_factor > 0.15:
-				river_factor = max(river_factor, clampf(lake_factor * 1.4, 0.0, 1.0))
-
-			var elevation = raw_height * elevation_variance
-			if river_factor > 0.0:
-				var target_seabed = lerpf(17.5, 3.5, river_factor)
-				elevation = lerpf(elevation, target_seabed, river_factor)
-
-			# End Cap Awareness
-			var dist_to_cap_norm = 1.0 - absf(z_norm)
-			var is_bulkhead_apron = dist_to_cap_norm < 0.015
-			var is_perimeter_ring_road = absf(dist_to_cap_norm - 0.035) < 0.008
-
-			if dist_to_cap_norm < 0.055:
-				var seawall_blend = maxf(0.0, 1.0 - dist_to_cap_norm / 0.055)
-				elevation = elevation * (1.0 - seawall_blend) + maxf(elevation, 28.0) * seawall_blend
-
-			elevation = clampf(elevation, 0.0, elevation_variance)
-
-			# 3. Determine Pure Terrain Type
-			var angle_dist_road = absf(wrapf(angle - 0.0, -PI, PI))
-			var is_axial_road = angle_dist_road < 0.035
-			var is_ring_road = absf(z_norm - 0.5) < 0.025 or absf(z_norm + 0.5) < 0.025
-			var is_road = (is_axial_road or is_ring_road or is_perimeter_ring_road) and elevation >= (water_level - 1.0)
-
-			var is_concrete_hub = absf(wrapf(angle - 0.45, -PI, PI)) < 0.08 and absf(z_norm) < 0.08
-			var is_farmland = absf(wrapf(angle - 1.2, -PI, PI)) < 0.14 and absf(z_norm - 0.25) < 0.12 and elevation > water_level + 2.0 and elevation < 55.0
-
-			var t_type = TerrainType.GRASS
-
-			if is_bulkhead_apron:
-				t_type = TerrainType.CONCRETE
-				elevation = max(elevation, water_level + 8.0)
-			elif is_concrete_hub:
-				t_type = TerrainType.CONCRETE
-				elevation = max(elevation, water_level + 8.0)
-			elif is_road:
-				t_type = TerrainType.ROAD
-				elevation = max(elevation, water_level + 4.0)
-			elif is_farmland:
-				t_type = TerrainType.FARMLAND
-			elif elevation < water_level:
-				t_type = TerrainType.WATER
-			elif elevation < water_level + 6.0:
-				t_type = TerrainType.SAND
-			elif elevation > 75.0:
-				t_type = TerrainType.ROCKS
-			elif elevation > 58.0:
-				t_type = TerrainType.DIRT
-			else:
-				t_type = TerrainType.GRASS
-
-			var idx = j * grid_u + i
-			elevation_data[idx] = elevation
-			terrain_data[idx] = t_type
-
-## Set user-defined elevation array
-func set_elevation_array(arr: Array, w: int = -1, l: int = -1) -> void:
-	if w > 0: grid_u = w
-	if l > 0: grid_v = l
-	var count = grid_u * grid_v
-	elevation_data.resize(count)
-	for idx in range(min(arr.size(), count)):
-		elevation_data[idx] = float(arr[idx])
-
-## Set user-defined terrain tile array
-func set_terrain_array(arr: Array, w: int = -1, l: int = -1) -> void:
-	if w > 0: grid_u = w
-	if l > 0: grid_v = l
-	var count = grid_u * grid_v
-	terrain_data.resize(count)
-	for idx in range(min(arr.size(), count)):
-		terrain_data[idx] = int(arr[idx])
-
-## Query elevation in meters at continuous angle theta [0, TAU] and z [-L/2, L/2] with bilinear interpolation
-func get_elevation(theta: float, z: float, cyl_len: float) -> float:
+func get_elevation(theta: float, z: float, length_m: float) -> float:
 	if elevation_data.is_empty():
-		return 0.0
+		return 0
+	var x = fposmod(theta, TAU) / TAU * elevation_grid_u
+	var y = clampf(z / length_m + 0.5, 0, 1) * (elevation_grid_v - 1)
+	var x0 = int(floor(x)) % elevation_grid_u
+	var x1 = (x0 + 1) % elevation_grid_u
+	var y0 = int(floor(y))
+	var y1 = mini(y0 + 1, elevation_grid_v - 1)
+	return lerpf(lerpf(elevation_data[y0 * elevation_grid_u + x0], elevation_data[y0 * elevation_grid_u + x1], x - floor(x)), lerpf(elevation_data[y1 * elevation_grid_u + x0], elevation_data[y1 * elevation_grid_u + x1], x - floor(x)), y - floor(y))
 
-	var u = fposmod(theta, TAU) / TAU
-	var v = clampf((z + cyl_len * 0.5) / max(cyl_len, 1.0), 0.0, 1.0)
-
-	var fx = u * float(grid_u)
-	var fy = v * float(grid_v - 1)
-
-	var i0 = int(floor(fx)) % grid_u
-	var i1 = (i0 + 1) % grid_u
-	var j0 = clampi(int(floor(fy)), 0, grid_v - 1)
-	var j1 = clampi(j0 + 1, 0, grid_v - 1)
-
-	var tx = fx - floor(fx)
-	var ty = fy - floor(fy)
-
-	var e00 = elevation_data[j0 * grid_u + i0]
-	var e10 = elevation_data[j0 * grid_u + i1]
-	var e01 = elevation_data[j1 * grid_u + i0]
-	var e11 = elevation_data[j1 * grid_u + i1]
-
-	var top = lerpf(e00, e10, tx)
-	var bot = lerpf(e01, e11, tx)
-	return lerpf(top, bot, ty)
-
-## Query terrain tile type at continuous angle theta and z
-func get_terrain_type(theta: float, z: float, cyl_len: float) -> int:
+func get_biome_id(theta: float, z: float, length_m: float) -> int:
 	if terrain_data.is_empty():
-		return TerrainType.GRASS
+		return -1
+	var x = int(round(fposmod(theta, TAU) / TAU * terrain_grid_u)) % terrain_grid_u
+	var y = clampi(int(round((z / length_m + 0.5) * (terrain_grid_v - 1))), 0, terrain_grid_v - 1)
+	return terrain_data[y * terrain_grid_u + x]
 
-	var u = fposmod(theta, TAU) / TAU
-	var v = clampf((z + cyl_len * 0.5) / max(cyl_len, 1.0), 0.0, 1.0)
+func get_biome(theta: float, z: float, length_m: float) -> Dictionary:
+	return biomes.get(biome_by_id.get(get_biome_id(theta, z, length_m), ""), {})
 
-	var i = clampi(int(round(u * float(grid_u))) % grid_u, 0, grid_u - 1)
-	var j = clampi(int(round(v * float(grid_v - 1))), 0, grid_v - 1)
-	return terrain_data[j * grid_u + i]
-
-## Export current elevation map as a flat array
-func export_elevation_array() -> Array[float]:
-	var out: Array[float] = []
-	for val in elevation_data:
-		out.append(val)
-	return out
-
-## Export current terrain type map as a flat array
-func export_terrain_array() -> Array[int]:
-	var out: Array[int] = []
-	for val in terrain_data:
-		out.append(val)
-	return out
+func get_terrain_type(theta: float, z: float, length_m: float) -> int:
+	return get_biome_id(theta, z, length_m)

@@ -73,7 +73,7 @@ func _run() -> void:
 	check(not editor_ui.editor.enabled and not editor_ui.actions.visible, "Edit actions initially hidden")
 	controls.edit_btn.button_pressed = true
 	check(editor_ui.editor.enabled and editor_ui.actions.visible, "Edit toggle reveals actions")
-	check(editor_ui.editor.catalog.size() == 14, "Palette includes eight models and six tree variants")
+	check(editor_ui.editor.catalog.size() >= 14, "Palette includes models and tree variants")
 	check(editor_ui.current_preview.mesh_count > 0, "Selected object has a miniature model")
 	var group_count := get_nodes_in_group("surface_light_objects").size()
 	editor_ui.set_palette_open(true)
@@ -81,13 +81,17 @@ func _run() -> void:
 	await process_frame
 	await screenshot("edit-palette")
 	check(player.ui_input_blocked, "Palette blocks player input")
-	check(editor_ui.selection_buttons.size() == 14, "Palette contains every catalog entry")
+	check(editor_ui.selection_buttons.size() == editor_ui.editor.catalog.size(), "Palette contains every catalog entry")
 	for preview in editor_ui.previews:
 		check(preview.mesh_count > 0, "Each palette card contains model meshes")
 	check(get_nodes_in_group("surface_light_objects").size() == group_count, "Previews do not create gameplay objects")
 	controls._handle_touch_start(11, joy)
 	check(controls.joystick_touch_id == -1, "Palette blocks joystick touches")
-	editor_ui._select(7)
+	var windmill_index := -1
+	for i in editor_ui.editor.catalog.size():
+		if editor_ui.editor.catalog[i].id == "windmill":
+			windmill_index = i
+	editor_ui._select(windmill_index)
 	check(editor_ui.editor.current_object().type == SurfaceLightObject.ObjectType.WINDMILL, "Windmill catalog ID maps to correct runtime type")
 	check(not player.ui_input_blocked and not editor_ui.palette_open, "Selection closes palette and restores input")
 
@@ -114,7 +118,7 @@ func _run() -> void:
 	player.camera.look_at(Vector3(0, 0, -8), Vector3.UP)
 	await physics_frame
 	await physics_frame
-	editor_ui._select(0)
+	editor_ui._select(_catalog_index(editor_ui.editor.catalog, "campfire"))
 	var placed: SurfaceLightObject = editor_ui.editor.place()
 	check(placed != null, "Place creates the selected object on the camera ray hit")
 	if placed:
@@ -154,7 +158,7 @@ func _run() -> void:
 	player.camera.look_at(Vector3(0, 0, -8), Vector3.UP)
 	await physics_frame
 	await physics_frame
-	editor_ui._select(13)
+	editor_ui._select(_catalog_index(editor_ui.editor.catalog, "tree_5"))
 	var tree: SurfaceLightObject = editor_ui.editor.place()
 	check(tree != null, "Tree variant places on a sloped surface")
 	if tree:
@@ -186,14 +190,14 @@ func _run() -> void:
 	check(is_equal_approx(restarted_player.pitch, 0.3) and is_equal_approx(restarted_player.head.rotation.x, 0.3), "Saved camera pitch is restored")
 	check(restarted_player.is_flying, "A spawn saved in flight remains in flight")
 	restarted_player.free()
-	# An old object-only save must clear the saved default and retain map spawning.
+	# A placement document without an explicit player transform uses map spawning.
 	var old_save: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TEST_SAVE))
 	old_save.erase("player_spawn")
 	var old_file := FileAccess.open(TEST_SAVE, FileAccess.WRITE)
 	old_file.store_string(JSON.stringify(old_save))
 	old_file.close()
-	check(Storage.restore(layer, TEST_SAVE), "Old object-only saves remain compatible")
-	check(layer.get_meta("saved_player_spawn").is_empty(), "Old saves use the original map default")
+	check(Storage.restore(layer, TEST_SAVE), "Object-only document loads")
+	check(layer.get_meta("saved_player_spawn").is_empty(), "Absent player transform uses map spawn")
 	player.reset_to_spawn()
 	check(not player.global_position.is_equal_approx(saved_transform.origin), "Missing saved location falls back to map spawn")
 	controls.edit_btn.button_pressed = false
@@ -215,3 +219,9 @@ func screenshot(label: String) -> void:
 	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()
 	check(image.save_png("res://build/%s.png" % label) == OK, "Screenshot saved")
+
+func _catalog_index(catalog: Array[Dictionary], id: String) -> int:
+	for i in catalog.size():
+		if catalog[i].id == id:
+			return i
+	return -1

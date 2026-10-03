@@ -366,6 +366,7 @@ func _setup_underwater_overlay() -> void:
 	if overlay_shader:
 		var overlay_mat = ShaderMaterial.new()
 		overlay_mat.shader = overlay_shader
+		preload("res://scripts/map_runtime.gd").shader_parameters(overlay_mat, preload("res://scripts/map_runtime.gd").document(self))
 		underwater_overlay.material = overlay_mat
 
 	if ui_root:
@@ -3262,27 +3263,9 @@ func _update_looking_at_inspection() -> void:
 			if cyl_world:
 				var t_id = cyl_world.get_terrain_type_at(hit_theta, hit_z)
 				hit_elevation = cyl_world.get_elevation_at(hit_theta, hit_z)
-				is_water = (t_id == 0 or hit_elevation < water_level)
+				is_water = hit_elevation < water_level
 
-				match t_id:
-					0:
-						detected_terrain_name = "Water / Seabed"
-					1:
-						detected_terrain_name = "Sand Beach"
-					2:
-						detected_terrain_name = "Dirt Highlands"
-					3:
-						detected_terrain_name = "Grass Plains"
-					4:
-						detected_terrain_name = "Farmland (Cultivated Plots)"
-					5:
-						detected_terrain_name = "Mountain Rocks & Cliffs"
-					6:
-						detected_terrain_name = "Concrete Spaceport & Foundation"
-					7:
-						detected_terrain_name = "Paved Road Network"
-					_:
-						detected_terrain_name = "Grass Plains"
+				detected_terrain_name = str(cyl_world.terrain_manager.get_biome(hit_theta, hit_z, cyl_world.cylinder_length).get("name", "Unknown biome"))
 
 				if is_water and detected_object_type == "None":
 					var depth = maxf(water_level - hit_elevation, 0.0)

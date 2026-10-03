@@ -69,6 +69,7 @@ var debug_flashlight: SpotLight3D = null
 var debug_flashlight_enabled: bool = false
 
 func _ready() -> void:
+	preload("res://scripts/map_runtime.gd").configure_node(self, "player")
 	# Standard drag / touch controls: default mouse to visible so dragging anywhere on screen rotates
 	# and dragging the virtual joystick moves only
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -471,30 +472,18 @@ func toggle_fly_mode() -> void:
 			velocity -= global_basis.y * v_up
 
 func get_spawn_points() -> Array:
-	var candidate_paths = [
-		"res://assets/maps/default/object_map.json",
-		"res://assets/maps/object_map.json",
-		ProjectSettings.globalize_path("res://assets/maps/default/object_map.json"),
-		ProjectSettings.globalize_path("res://assets/maps/object_map.json"),
-		"assets/maps/default/object_map.json",
-		"assets/maps/object_map.json"
-	]
-	var f: FileAccess = null
-	for p in candidate_paths:
-		f = FileAccess.open(p, FileAccess.READ)
-		if f != null:
-			break
-	if not f:
+	var config = preload("res://scripts/map_config.gd")
+	var world = get_tree().get_first_node_in_group("cylinder_world")
+	if not world:
 		return []
-	var json = JSON.new()
-	if json.parse(f.get_as_text()) != OK:
-		return []
-	var data = json.data
-	if data is Dictionary and data.has("spawn_points"):
-		return data["spawn_points"] as Array
-	return []
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(config.get_object_map_path(world.active_map_config)))
+	return data.get("spawn_points", []) if data is Dictionary else []
 
 func reset_to_spawn() -> void:
+	var active_world = get_tree().get_first_node_in_group("cylinder_world")
+	if active_world:
+		cylinder_radius = active_world.radius
+		cylinder_length = active_world.cylinder_length
 	var references = get_tree().get_first_node_in_group("reference_objects") if is_inside_tree() else null
 	var saved: Dictionary = references.get_meta("saved_player_spawn", {}) if references else {}
 	if not saved.is_empty():
@@ -666,11 +655,13 @@ func _emit_telemetry(delta: float = 0.016) -> void:
 	var omega_n = lerpf(wobble_frequency_min, wobble_frequency_max, grav_ratio)
 	var correction_rate = omega_n
 
-	var is_in_water = dist_surface < 20.0
+	var world = get_tree().get_first_node_in_group("cylinder_world")
+	var sea_level: float = world.water_level if world else 0
+	var is_in_water = dist_surface < sea_level
 	var cam_pos = camera.global_position if camera else global_position
 	var cam_dist_axis = Vector3(cam_pos.x, cam_pos.y, 0.0).length()
 	var cam_elevation = max(cylinder_radius - cam_dist_axis, 0.0)
-	var is_camera_underwater = cam_elevation < 20.0
+	var is_camera_underwater = cam_elevation < sea_level
 
 	var telemetry = {
 		"is_flying": is_flying,

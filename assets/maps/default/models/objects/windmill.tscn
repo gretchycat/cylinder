@@ -30,7 +30,7 @@ roughness = 0.75
 
 [sub_resource type="BoxMesh" id="BladeMesh"]
 material = SubResource("BladeMat")
-size = Vector3(0.55, 6.2, 0.08)
+size = Vector3(0.55, 0.08, 6.2)
 
 [sub_resource type="StandardMaterial3D" id="HubMat"]
 albedo_color = Color(0.20, 0.20, 0.22, 1)
@@ -60,15 +60,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.9, 0)
 mesh = SubResource("CapMesh")
 
 [node name="RotorHub" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 8.5, 2.5)
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 8.5, 2.6)
 mesh = SubResource("HubMesh")
 
 [node name="BladeVertical" type="MeshInstance3D" parent="RotorHub"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
 mesh = SubResource("BladeMesh")
 
 [node name="BladeHorizontal" type="MeshInstance3D" parent="RotorHub"]
-transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0.2)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0.35, 0)
 mesh = SubResource("BladeMesh")
 
 [node name="LanternLight" type="OmniLight3D" parent="."]

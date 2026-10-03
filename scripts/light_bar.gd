@@ -150,6 +150,7 @@ func _get_system_time_hours() -> float:
 	return float(t_dict["hour"]) + float(t_dict["minute"]) / 60.0 + float(t_dict["second"]) / 3600.0
 
 func _ready() -> void:
+	preload("res://scripts/map_runtime.gd").configure_node(self, "light_bar")
 	add_to_group("light_bar")
 	if use_real_time:
 		time_of_day_hours = _get_system_time_hours()
@@ -191,7 +192,7 @@ func rebuild_light_bar() -> void:
 	spine_mesh.rings = 1
 
 	var spine_mat = StandardMaterial3D.new()
-	spine_mat.albedo_color = Color(0.12, 0.13, 0.16)
+	spine_mat.albedo_color = _map_color("spine")
 	spine_mat.metallic = 0.85
 	spine_mat.roughness = 0.25
 
@@ -292,7 +293,7 @@ func _apply_current_preset() -> void:
 					segment_intensities[i] = p["intensity"]
 			else:
 				for i in range(num_segments):
-					segment_colors[i] = Color(1.0, 0.98, 0.95)
+					segment_colors[i] = _map_color("daylight")
 					segment_intensities[i] = 3.5
 
 		LightingPreset.GRADIENT:
@@ -313,11 +314,11 @@ func _apply_current_preset() -> void:
 					segment_intensities[i] = p["intensity"]
 			else:
 				# Multi-stop Sunrise to Twilight gradient along the 18 km cylinder
-				var col_dawn = Color(1.0, 0.52, 0.18)     # Dawn Golden Orange
-				var col_morning = Color(1.0, 0.88, 0.65)  # Warm Morning Gold
-				var col_noon = Color(0.98, 0.98, 1.0)     # Clean High Noon
-				var col_dusk = Color(0.65, 0.35, 0.75)    # Evening Dusk Violet
-				var col_night = Color(0.08, 0.16, 0.38)   # Deep Twilight Sapphire
+				var col_dawn = _map_color("dawn")     # Dawn Golden Orange
+				var col_morning = _map_color("morning")  # Warm Morning Gold
+				var col_noon = _map_color("noon")     # Clean High Noon
+				var col_dusk = _map_color("dusk")    # Evening Dusk Violet
+				var col_night = _map_color("night")   # Deep Twilight Sapphire
 
 				for i in range(num_segments):
 					var t = float(i) / max(float(num_segments - 1), 1.0)
@@ -340,10 +341,10 @@ func _apply_current_preset() -> void:
 					segment_intensities[i] = intensity
 
 		LightingPreset.WARM_SUNSET:
-			var sunset_amber = Color(1.0, 0.48, 0.15)
-			var sunset_gold = Color(1.0, 0.85, 0.45)
-			var sunset_crimson = Color(0.92, 0.25, 0.35)
-			var sunset_twilight = Color(0.18, 0.28, 0.75)
+			var sunset_amber = _map_color("sunset_amber")
+			var sunset_gold = _map_color("sunset_gold")
+			var sunset_crimson = _map_color("sunset_crimson")
+			var sunset_twilight = _map_color("sunset_twilight")
 			for i in range(num_segments):
 				var t = float(i) / max(float(num_segments - 1), 1.0)
 				var col: Color
@@ -369,8 +370,8 @@ func _update_animated_wave() -> void:
 
 		if preset == LightingPreset.DAY_NIGHT_WAVE:
 			var wave_factor = (sin(phase) + 1.0) * 0.5
-			var col_night = Color(0.35, 0.34, 0.65)
-			var col_day = Color(1.0, 0.96, 0.90)
+			var col_night = _map_color("moon_night")
+			var col_day = _map_color("moon_day")
 			var col = col_night.lerp(col_day, wave_factor)
 			var intensity = lerpf(0.12, 4.0, wave_factor)
 			segment_colors[i] = col
@@ -394,7 +395,7 @@ func _refresh_all_segments() -> void:
 
 	for i in range(count):
 		var col = segment_colors[i]
-		var energy = segment_intensities[i] * intensity_norm
+		var energy = segment_intensities[i] * intensity_norm * col.a
 
 		# Update mesh emission
 		var mesh_inst = segment_nodes[i]
@@ -405,7 +406,7 @@ func _refresh_all_segments() -> void:
 			mat.emission_energy_multiplier = energy * 1.5
 
 		avg_col += col
-		avg_intensity += segment_intensities[i]
+		avg_intensity += segment_intensities[i] * col.a
 
 	if count > 0:
 		avg_col = Color(avg_col.r / float(count), avg_col.g / float(count), avg_col.b / float(count), 1.0)
@@ -420,10 +421,10 @@ func _refresh_all_segments() -> void:
 		var north_inten = 0.0
 		for i in range(half_count):
 			south_col += segment_colors[i]
-			south_inten += segment_intensities[i]
+			south_inten += segment_intensities[i] * segment_colors[i].a
 		for i in range(half_count, count):
 			north_col += segment_colors[i]
-			north_inten += segment_intensities[i]
+			north_inten += segment_intensities[i] * segment_colors[i].a
 		if half_count > 0:
 			south_col = south_col / float(half_count)
 			south_inten = south_inten / float(half_count)
@@ -449,8 +450,9 @@ func _refresh_all_segments() -> void:
 	# Synchronize scene ambient lighting with intensity and preset color
 	if world_environment and world_environment.environment:
 		var env = world_environment.environment
-		env.ambient_light_color = avg_col
-		env.ambient_light_energy = clampf(lerpf(0.15, 1.0, solar_factor) * intensity_norm, 0.12, 1.5)
+		var doc = preload("res://scripts/map_runtime.gd").document(self)
+		env.ambient_light_color = preload("res://scripts/map_config.gd").color(doc.environment.ambient_color) * avg_col
+		env.ambient_light_energy = doc.environment.ambient_energy * clampf(lerpf(0.15, 1.0, solar_factor) * intensity_norm, 0.12, 1.5)
 
 	# Synchronize depth fog and material air tint with current light level and color
 	_sync_fog_and_atmosphere()
@@ -466,7 +468,7 @@ func _update_axial_lut() -> void:
 
 	for i in range(num_segments):
 		var c = segment_colors[i]
-		var intensity_factor = clampf(segment_intensities[i] / 3.5, 0.0, 1.5)
+		var intensity_factor = clampf(segment_intensities[i] * c.a / 3.5, 0.0, 1.5)
 		lut_image.set_pixel(i, 0, Color(c.r, c.g, c.b, intensity_factor))
 
 	if not lut_texture:
@@ -500,7 +502,7 @@ func _get_camera_z() -> float:
 
 func get_light_at_z(z: float) -> Dictionary:
 	if num_segments <= 0 or segment_colors.is_empty():
-		return {"color": Color(1.0, 0.98, 0.95), "intensity": 3.5}
+		return {"color": _map_color("daylight"), "intensity": 3.5}
 	var half_len = bar_length * 0.5
 	var t = clampf((z + half_len) / bar_length, 0.0, 1.0)
 	var seg_idx = t * float(num_segments - 1)
@@ -526,17 +528,15 @@ func get_effective_fog_properties() -> Dictionary:
 	var local_norm = (effective_intensity / 3.5) * intensity_norm
 
 	# Atmospheric Rayleigh scattered fog tint calculated from current light color
-	# In nominal daylight (Color(1.0, 0.98, 0.95)), this yields exactly Color(0.52, 0.72, 0.88, 1.0)
+	# In nominal daylight (_map_color("daylight")), this yields exactly Color(0.52, 0.72, 0.88, 1.0)
 	var light_r_ratio = clampf(effective_light_col.r / 1.00, 0.0, 3.0)
 	var light_g_ratio = clampf(effective_light_col.g / 0.98, 0.0, 3.0)
 	var light_b_ratio = clampf(effective_light_col.b / 0.95, 0.0, 3.0)
 
-	var fog_col = Color(
-		clampf(0.52 * light_r_ratio, 0.05, 1.0),
-		clampf(0.72 * light_g_ratio, 0.05, 1.0),
-		clampf(0.88 * light_b_ratio, 0.08, 1.0),
-		1.0
-	)
+	var doc = preload("res://scripts/map_runtime.gd").document(self)
+	var fog_col = preload("res://scripts/map_config.gd").color(doc.environment.air_color)
+	fog_col *= Color(light_r_ratio, light_g_ratio, light_b_ratio, 1)
+
 	var fog_energy = clampf(lerpf(0.35, 1.0, intensity_norm), 0.35, 1.0)
 
 	return {
@@ -561,7 +561,7 @@ func _sync_fog_and_atmosphere() -> void:
 		env.fog_light_color = fog_col
 		env.fog_light_energy = fog_energy
 		env.fog_depth_curve = 1.1
-		env.fog_depth_begin = 200.0
+		env.fog_depth_begin = cylinder_world.active_map_config.environment.air_distance_min if cylinder_world else env.fog_depth_begin
 		# Update end‑cap emission based on scene brightness
 		if cylinder_world and cylinder_world.surface_material is ShaderMaterial:
 			cylinder_world.surface_material.set_shader_parameter("endcap_emission_factor", intensity_norm)
@@ -634,3 +634,7 @@ func get_solar_status() -> Dictionary:
 		"is_real_time": use_real_time,
 		"time_scale": time_scale
 	}
+
+func _map_color(key: String) -> Color:
+	var doc = preload("res://scripts/map_runtime.gd").document(self)
+	return preload("res://scripts/map_config.gd").color(doc.lighting_palette[key])

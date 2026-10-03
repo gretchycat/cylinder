@@ -1,20 +1,43 @@
-# Map packages
+# Maps
 
-Each map lives in `assets/maps/<mapname>/`. Its `map_config.json` points to height and terrain images, model assets, and optional terrain textures. Asset paths in the config are relative to that map directory, so each map can carry its own models and visual setup.
+The authoritative specification is [Map descriptor, schema 3](../../docs/map-descriptor.md).
+The complete bundled example is `default/map_config.json`.
 
-The `ground_clutter` section supports `grassland_density_multiplier` and `farmland_density_multiplier` (default `1.0`, capped at `10.0`) to control grass and crop placement density independently per map.
+A map contains one definition (`map_config.json`), float elevation (`elevation.cylh`),
+a byte-ID biome raster (`biomes.png`), placements (`placements.json`), and imported
+`assets/`. Definitions include geometry, generation settings, environment, biome
+materials, clutter palettes, simulation settings and the object catalog.
 
-Each procedural model may set `gradient_mode` to `linear`, `radial`, or `none`, plus `gradient_extent_m`. Linear gradients blend from the base color at the ground to the tip color along the model height. Radial gradients blend from the model's local center outward, for round forms such as rocks, shrubs, and mushrooms.
+In EDIT mode, open REGEN MAP to edit the map. Expand a biome to change its weight,
+import a ground texture, choose clutter from either catalog, import a GLB, and edit
+RGBA palette stops. Object palette entries have independent appearance and emitted
+light colors. SELECT also offers tint controls for the object under the crosshair.
+Save applies definitions and appearance; Generate replaces terrain and placements.
+Both create a new writable map under `user://maps/`; the bundled example is unchanged.
+The last activated map is remembered in `user://active_map.txt`.
 
-Model catalog `scene_path` values accept Godot imported 3D scenes such as `.gltf`, `.glb`, `.fbx`, `.dae`, `.blend`, `.tscn`, and `.scn`. Ground clutter also accepts an imported mesh resource such as `.obj`; it is converted to a `MeshInstance3D` for instancing. Godot recommends glTF for 3D scenes. Blender source files need Blender available during editor import, and OBJ has fewer material and scene features than glTF.
+Generate from the same implementation on the command line:
 
-The optional `terrain_textures` object in `map_config.json` can override the default terrain textures. Each terrain key (`grass`, `sand`, `dirt`, `farmland`, `rocks`, `concrete`, or `road`) takes up to three image paths. `end_cap_ribs` takes one image path. For example:
-
-```json
-"terrain_textures": {
-  "grass": ["textures/grass_a.webp", "textures/grass_b.jpg", "textures/grass_c.png"],
-  "end_cap_ribs": "textures/ribs.tga"
-}
+```sh
+./build.sh maps default user://maps/my_world 123
 ```
 
-Godot image imports include BMP, DDS, KTX, EXR, HDR, JPEG, PNG, TGA, WebP, and SVG. Height and terrain maps use the same image decoder; height maps are read as grayscale and terrain maps are matched to the terrain palette. KTX is limited to 2D images by Godot's importer.
+The destination must not already exist. Edit `generation` resolutions in the source
+map before generation; each layer stretches over the entire configured cylinder.
+
+Historical `map_manifest.json`, `map_generation_descriptor.json`,
+`biomes_manifest.json`, RGB terrain previews and the old conversion utility are
+not inputs to schema 3. The engine does not merge them with the current definition.
+
+## Saving and sharing maps
+
+The app copies the bundled default template into writable `user://maps/` on first
+launch. App upgrades preserve user maps; **New map from current app template**
+starts a separate map using the latest bundled template.
+
+Open the map editor (or tap **SAVE**), enter a map name, and choose **Save map**.
+**Save as a new map** keeps the original map separately. Use the map picker and
+**Load selected map** to switch maps; save unsaved changes before switching.
+**Save and export map** writes a `.cylmap` ZIP archive, and **Import map** validates
+and loads an archive as a separate user map. Custom models and textures travel
+with the archive; built-in asset references require the app's bundled assets.

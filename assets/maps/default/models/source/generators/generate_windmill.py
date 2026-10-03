@@ -51,12 +51,9 @@ for i in range(4):
     bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0))
     blade = bpy.context.active_object
     blade.name = f"Blade{i}"
-    blade.scale = (0.5, 0.1, 6.0)
-    # Move origin to end so it rotates correctly
-    for v in blade.data.vertices:
-        v.co.z += 0.5
+    blade.scale = (0.5, 6.0, 0.1)
     blade.location = (0, -2.6, 8.5)
-    blade.rotation_euler = (0, i * 1.5708, 0)
+    blade.rotation_euler = (0, 0, i * 1.5708)
     blade.parent = hub
     blade.data.materials.append(mat_fabric)
 

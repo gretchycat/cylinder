@@ -58,6 +58,7 @@ var particle_multimesh: MultiMesh = null
 var terrain_manager = null
 
 func _ready() -> void:
+	preload("res://scripts/map_runtime.gd").configure_node(self, "particle_emitter")
 	add_to_group("particle_emitter")
 	_setup_visual_nodes()
 	_fetch_references()

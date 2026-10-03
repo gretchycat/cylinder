@@ -728,7 +728,8 @@
       "light_energy": 6.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Clearance",
-      "role": "spawn_landmark"
+      "role": "spawn_landmark",
+      "id": "obj_162014263ced"
     },
     {
       "name": "Spawn_Ranger_Cabin",
@@ -748,7 +749,8 @@
       "light_energy": 2.4,
       "yaw_rad": 0.35,
       "settlement_id": "Spawn_Clearance",
-      "role": "spawn_ranger_cabin"
+      "role": "spawn_ranger_cabin",
+      "id": "obj_f60368ea20cb"
     },
     {
       "name": "Grand_City_Center_Central_Beacon",
@@ -768,7 +770,8 @@
       "light_energy": 6.5,
       "yaw_rad": 0.0,
       "settlement_id": "Grand_City_Center",
-      "role": "city_central_beacon"
+      "role": "city_central_beacon",
+      "id": "obj_6f8e39b1b52a"
     },
     {
       "name": "Grand_City_Center_StreetLamp_1",
@@ -788,7 +791,8 @@
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Grand_City_Center",
-      "role": "street_lamp"
+      "role": "street_lamp",
+      "id": "obj_e23ecf4d708f"
     },
     {
       "name": "Grand_City_Center_StreetLamp_2",
@@ -808,7 +812,8 @@
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Grand_City_Center",
-      "role": "street_lamp"
+      "role": "street_lamp",
+      "id": "obj_44ece1844c70"
     },
     {
       "name": "Grand_City_Center_StreetLamp_3",
@@ -828,7 +833,8 @@
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Grand_City_Center",
-      "role": "street_lamp"
+      "role": "street_lamp",
+      "id": "obj_7d3e2427b1d6"
     },
     {
       "name": "Grand_City_Center_StreetLamp_4",
@@ -848,7 +854,8 @@
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Grand_City_Center",
-      "role": "street_lamp"
+      "role": "street_lamp",
+      "id": "obj_976a0862dbd4"
     },
     {
       "name": "Grand_City_Center_Townhouse_2",
@@ -868,7 +875,8 @@
       "light_energy": 2.4,
       "yaw_rad": 1.5708,
       "settlement_id": "Grand_City_Center",
-      "role": "city_residence"
+      "role": "city_residence",
+      "id": "obj_0dc5a1e1b6f5"
     },
     {
       "name": "Grand_City_Center_Townhouse_3",
@@ -888,7 +896,8 @@
       "light_energy": 2.4,
       "yaw_rad": 3.1416,
       "settlement_id": "Grand_City_Center",
-      "role": "city_residence"
+      "role": "city_residence",
+      "id": "obj_212e4d13b16c"
     },
     {
       "name": "Village_1_Central_Bonfire",
@@ -908,7 +917,8 @@
       "light_energy": 8.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_1",
-      "role": "village_bonfire"
+      "role": "village_bonfire",
+      "id": "obj_b3c92b30489d"
     },
     {
       "name": "Village_1_Perimeter_Campfire_1",
@@ -928,7 +938,8 @@
       "light_energy": 5.0,
       "yaw_rad": 0.0,
       "settlement_id": "Village_1",
-      "role": "village_perimeter_fire"
+      "role": "village_perimeter_fire",
+      "id": "obj_601bac181020"
     },
     {
       "name": "Village_1_Perimeter_Campfire_2",
@@ -948,7 +959,8 @@
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_1",
-      "role": "village_perimeter_fire"
+      "role": "village_perimeter_fire",
+      "id": "obj_bb5878aeb6a1"
     },
     {
       "name": "Village_1_Cabin_1",
@@ -968,7 +980,8 @@
       "light_energy": 2.4,
       "yaw_rad": 0.3,
       "settlement_id": "Village_1",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_b01289afeec6"
     },
     {
       "name": "Village_1_Cabin_4",
@@ -988,7 +1001,8 @@
       "light_energy": 2.4,
       "yaw_rad": 5.01,
       "settlement_id": "Village_1",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_5795f87521c0"
     },
     {
       "name": "Village_1_Windmill",
@@ -1008,7 +1022,8 @@
       "light_energy": 2.8,
       "yaw_rad": 0.75,
       "settlement_id": "Village_1",
-      "role": "agricultural_windmill"
+      "role": "agricultural_windmill",
+      "id": "obj_c87fafa9443e"
     },
     {
       "name": "Village_2_Hearth_Campfire",
@@ -1028,7 +1043,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_2",
-      "role": "village_hearth"
+      "role": "village_hearth",
+      "id": "obj_42f69011a4df"
     },
     {
       "name": "Village_2_Communal_Campfire",
@@ -1048,7 +1064,8 @@
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_2",
-      "role": "village_communal_fire"
+      "role": "village_communal_fire",
+      "id": "obj_c45dc0eb57bc"
     },
     {
       "name": "Village_2_Outpost_Campfire",
@@ -1068,7 +1085,8 @@
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_2",
-      "role": "village_outpost_fire"
+      "role": "village_outpost_fire",
+      "id": "obj_ecc20ade378b"
     },
     {
       "name": "Village_2_Cabin_1",
@@ -1088,7 +1106,8 @@
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_2",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_882bb3509c12"
     },
     {
       "name": "Village_3_Hearth_Campfire",
@@ -1108,7 +1127,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_3",
-      "role": "village_hearth"
+      "role": "village_hearth",
+      "id": "obj_f78548794ddd"
     },
     {
       "name": "Village_3_Communal_Campfire",
@@ -1128,7 +1148,8 @@
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_3",
-      "role": "village_communal_fire"
+      "role": "village_communal_fire",
+      "id": "obj_625c2fe1cc75"
     },
     {
       "name": "Village_3_Outpost_Campfire",
@@ -1148,7 +1169,8 @@
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_3",
-      "role": "village_outpost_fire"
+      "role": "village_outpost_fire",
+      "id": "obj_1735f229ec2e"
     },
     {
       "name": "Village_3_Cabin_1",
@@ -1168,7 +1190,8 @@
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_3",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_06d768984000"
     },
     {
       "name": "Village_4_Central_Bonfire",
@@ -1188,7 +1211,8 @@
       "light_energy": 8.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_4",
-      "role": "village_bonfire"
+      "role": "village_bonfire",
+      "id": "obj_1d574071acef"
     },
     {
       "name": "Village_4_Perimeter_Campfire_1",
@@ -1208,7 +1232,8 @@
       "light_energy": 5.0,
       "yaw_rad": 0.0,
       "settlement_id": "Village_4",
-      "role": "village_perimeter_fire"
+      "role": "village_perimeter_fire",
+      "id": "obj_f196904c9a6c"
     },
     {
       "name": "Village_4_Perimeter_Campfire_2",
@@ -1228,7 +1253,8 @@
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_4",
-      "role": "village_perimeter_fire"
+      "role": "village_perimeter_fire",
+      "id": "obj_1c37732ea604"
     },
     {
       "name": "Village_4_Cabin_2",
@@ -1248,7 +1274,8 @@
       "light_energy": 2.4,
       "yaw_rad": 1.87,
       "settlement_id": "Village_4",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_e692c71b655d"
     },
     {
       "name": "Village_4_Cabin_3",
@@ -1268,7 +1295,8 @@
       "light_energy": 2.4,
       "yaw_rad": 3.44,
       "settlement_id": "Village_4",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_dc0d1349fcb4"
     },
     {
       "name": "Village_4_Cabin_4",
@@ -1288,7 +1316,8 @@
       "light_energy": 2.4,
       "yaw_rad": 5.01,
       "settlement_id": "Village_4",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_cb09013067f6"
     },
     {
       "name": "Village_4_Windmill",
@@ -1308,7 +1337,8 @@
       "light_energy": 2.8,
       "yaw_rad": 0.75,
       "settlement_id": "Village_4",
-      "role": "agricultural_windmill"
+      "role": "agricultural_windmill",
+      "id": "obj_45b2e5a0fa20"
     },
     {
       "name": "Village_5_Hearth_Campfire",
@@ -1328,7 +1358,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_5",
-      "role": "village_hearth"
+      "role": "village_hearth",
+      "id": "obj_c3ea64b64a8d"
     },
     {
       "name": "Village_5_Communal_Campfire",
@@ -1348,7 +1379,8 @@
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_5",
-      "role": "village_communal_fire"
+      "role": "village_communal_fire",
+      "id": "obj_8689a282e116"
     },
     {
       "name": "Village_5_Outpost_Campfire",
@@ -1368,7 +1400,8 @@
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_5",
-      "role": "village_outpost_fire"
+      "role": "village_outpost_fire",
+      "id": "obj_978d448ba123"
     },
     {
       "name": "Village_5_Cabin_1",
@@ -1388,7 +1421,8 @@
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_5",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_e6e9eb3b5573"
     },
     {
       "name": "Village_5_Cabin_2",
@@ -1408,7 +1442,8 @@
       "light_energy": 2.4,
       "yaw_rad": 2.37,
       "settlement_id": "Village_5",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_f965b266497c"
     },
     {
       "name": "Village_6_Hearth_Campfire",
@@ -1428,7 +1463,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_6",
-      "role": "village_hearth"
+      "role": "village_hearth",
+      "id": "obj_55f1766275f2"
     },
     {
       "name": "Village_6_Communal_Campfire",
@@ -1448,7 +1484,8 @@
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_6",
-      "role": "village_communal_fire"
+      "role": "village_communal_fire",
+      "id": "obj_68c1d7f5316a"
     },
     {
       "name": "Village_6_Outpost_Campfire",
@@ -1468,7 +1505,8 @@
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_6",
-      "role": "village_outpost_fire"
+      "role": "village_outpost_fire",
+      "id": "obj_ec1183636f7a"
     },
     {
       "name": "Village_6_Cabin_1",
@@ -1488,7 +1526,8 @@
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_6",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_53ea1add6b3c"
     },
     {
       "name": "Village_7_Central_Bonfire",
@@ -1508,7 +1547,8 @@
       "light_energy": 8.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_7",
-      "role": "village_bonfire"
+      "role": "village_bonfire",
+      "id": "obj_c2de336e6cb6"
     },
     {
       "name": "Village_7_Perimeter_Campfire_1",
@@ -1528,7 +1568,8 @@
       "light_energy": 5.0,
       "yaw_rad": 0.0,
       "settlement_id": "Village_7",
-      "role": "village_perimeter_fire"
+      "role": "village_perimeter_fire",
+      "id": "obj_317974e1f3a1"
     },
     {
       "name": "Village_7_Perimeter_Campfire_2",
@@ -1548,7 +1589,8 @@
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_7",
-      "role": "village_perimeter_fire"
+      "role": "village_perimeter_fire",
+      "id": "obj_35fa790d2e72"
     },
     {
       "name": "Village_7_Cabin_1",
@@ -1568,7 +1610,8 @@
       "light_energy": 2.4,
       "yaw_rad": 0.3,
       "settlement_id": "Village_7",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_930a704bec0e"
     },
     {
       "name": "Village_7_Cabin_2",
@@ -1588,7 +1631,8 @@
       "light_energy": 2.4,
       "yaw_rad": 1.87,
       "settlement_id": "Village_7",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_a7bb3ec47295"
     },
     {
       "name": "Village_7_Cabin_3",
@@ -1608,7 +1652,8 @@
       "light_energy": 2.4,
       "yaw_rad": 3.44,
       "settlement_id": "Village_7",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_5a795ac4b899"
     },
     {
       "name": "Village_7_Cabin_4",
@@ -1628,7 +1673,8 @@
       "light_energy": 2.4,
       "yaw_rad": 5.01,
       "settlement_id": "Village_7",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_fc078630a53d"
     },
     {
       "name": "Village_7_Windmill",
@@ -1648,7 +1694,8 @@
       "light_energy": 2.8,
       "yaw_rad": 0.75,
       "settlement_id": "Village_7",
-      "role": "agricultural_windmill"
+      "role": "agricultural_windmill",
+      "id": "obj_24f7b23e54fd"
     },
     {
       "name": "Village_8_Hearth_Campfire",
@@ -1668,7 +1715,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_8",
-      "role": "village_hearth"
+      "role": "village_hearth",
+      "id": "obj_ffb7de37672e"
     },
     {
       "name": "Village_8_Communal_Campfire",
@@ -1688,7 +1736,8 @@
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_8",
-      "role": "village_communal_fire"
+      "role": "village_communal_fire",
+      "id": "obj_b25416932cb4"
     },
     {
       "name": "Village_8_Outpost_Campfire",
@@ -1708,7 +1757,8 @@
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_8",
-      "role": "village_outpost_fire"
+      "role": "village_outpost_fire",
+      "id": "obj_a4abb1887f02"
     },
     {
       "name": "Village_8_Cabin_1",
@@ -1728,7 +1778,8 @@
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_8",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_450058e6b9c0"
     },
     {
       "name": "Village_8_Cabin_2",
@@ -1748,7 +1799,8 @@
       "light_energy": 2.4,
       "yaw_rad": 2.37,
       "settlement_id": "Village_8",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_f38dfb0572ad"
     },
     {
       "name": "Village_9_Hearth_Campfire",
@@ -1768,7 +1820,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_9",
-      "role": "village_hearth"
+      "role": "village_hearth",
+      "id": "obj_05d0174526c8"
     },
     {
       "name": "Village_9_Communal_Campfire",
@@ -1788,7 +1841,8 @@
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_9",
-      "role": "village_communal_fire"
+      "role": "village_communal_fire",
+      "id": "obj_f8753c17d2d5"
     },
     {
       "name": "Village_9_Outpost_Campfire",
@@ -1808,7 +1862,8 @@
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_9",
-      "role": "village_outpost_fire"
+      "role": "village_outpost_fire",
+      "id": "obj_ef23b822a89b"
     },
     {
       "name": "Village_9_Cabin_1",
@@ -1828,7 +1883,8 @@
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_9",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_070523155dfe"
     },
     {
       "name": "Village_9_Cabin_2",
@@ -1848,7 +1904,8 @@
       "light_energy": 2.4,
       "yaw_rad": 2.37,
       "settlement_id": "Village_9",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_e65cd55b0d4f"
     },
     {
       "name": "Village_10_Hearth_Campfire",
@@ -1868,7 +1925,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_10",
-      "role": "village_hearth"
+      "role": "village_hearth",
+      "id": "obj_29b6505a6ca0"
     },
     {
       "name": "Village_10_Communal_Campfire",
@@ -1888,7 +1946,8 @@
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_10",
-      "role": "village_communal_fire"
+      "role": "village_communal_fire",
+      "id": "obj_6d86e59b0e6c"
     },
     {
       "name": "Village_10_Outpost_Campfire",
@@ -1908,7 +1967,8 @@
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_10",
-      "role": "village_outpost_fire"
+      "role": "village_outpost_fire",
+      "id": "obj_a7a6b4384b82"
     },
     {
       "name": "Village_10_Cabin_1",
@@ -1928,7 +1988,8 @@
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_10",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_3a3c546b665f"
     },
     {
       "name": "Village_10_Cabin_2",
@@ -1948,7 +2009,8 @@
       "light_energy": 2.4,
       "yaw_rad": 2.37,
       "settlement_id": "Village_10",
-      "role": "village_cabin"
+      "role": "village_cabin",
+      "id": "obj_011202308e19"
     },
     {
       "name": "Forest_Tree_1",
@@ -1970,7 +2032,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_5e1c4956e037"
     },
     {
       "name": "Forest_Tree_2",
@@ -1992,7 +2055,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_c934f4c2505e"
     },
     {
       "name": "Forest_Tree_3",
@@ -2014,7 +2078,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 5,
-      "tree_variant_name": "DEAD_TREE"
+      "tree_variant_name": "DEAD_TREE",
+      "id": "obj_edadc31a95e0"
     },
     {
       "name": "Forest_Tree_4",
@@ -2036,7 +2101,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_0f087e10ed44"
     },
     {
       "name": "Forest_Tree_5",
@@ -2058,7 +2124,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_19f662f5f83f"
     },
     {
       "name": "Forest_Tree_6",
@@ -2080,7 +2147,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_6eea68af6681"
     },
     {
       "name": "Forest_Tree_7",
@@ -2102,7 +2170,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_c71a45affcca"
     },
     {
       "name": "Forest_Tree_8",
@@ -2124,7 +2193,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_aeb4915e9886"
     },
     {
       "name": "Forest_Tree_9",
@@ -2146,7 +2216,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 5,
-      "tree_variant_name": "DEAD_TREE"
+      "tree_variant_name": "DEAD_TREE",
+      "id": "obj_b42141a149de"
     },
     {
       "name": "Forest_Tree_10",
@@ -2168,7 +2239,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_53f9a744a28a"
     },
     {
       "name": "Forest_Tree_11",
@@ -2190,7 +2262,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 2,
-      "tree_variant_name": "BIRCH"
+      "tree_variant_name": "BIRCH",
+      "id": "obj_b9ab69eef173"
     },
     {
       "name": "Forest_Tree_12",
@@ -2212,7 +2285,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_b5bc053598d0"
     },
     {
       "name": "Forest_Tree_13",
@@ -2234,7 +2308,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_43f9153bfaec"
     },
     {
       "name": "Forest_Tree_14",
@@ -2256,7 +2331,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_76aa08513ba9"
     },
     {
       "name": "Forest_Tree_15",
@@ -2278,7 +2354,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 4,
-      "tree_variant_name": "CHERRY_BLOSSOM"
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_afa0604608ff"
     },
     {
       "name": "Forest_Tree_16",
@@ -2300,7 +2377,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_91959f8110f8"
     },
     {
       "name": "Forest_Tree_17",
@@ -2322,7 +2400,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_fde037efbf80"
     },
     {
       "name": "Forest_Tree_18",
@@ -2344,7 +2423,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_5bc752546a2a"
     },
     {
       "name": "Forest_Tree_19",
@@ -2366,7 +2446,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_a2e36f04588c"
     },
     {
       "name": "Forest_Tree_20",
@@ -2388,7 +2469,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 2,
-      "tree_variant_name": "BIRCH"
+      "tree_variant_name": "BIRCH",
+      "id": "obj_b19505099f5e"
     },
     {
       "name": "Forest_Tree_21",
@@ -2410,7 +2492,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 2,
-      "tree_variant_name": "BIRCH"
+      "tree_variant_name": "BIRCH",
+      "id": "obj_daf95d61f886"
     },
     {
       "name": "Forest_Tree_22",
@@ -2432,7 +2515,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_f76b883de9ad"
     },
     {
       "name": "Forest_Tree_23",
@@ -2454,7 +2538,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_7df81e603d62"
     },
     {
       "name": "Forest_Tree_24",
@@ -2476,7 +2561,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_c31b80d6f2db"
     },
     {
       "name": "Forest_Tree_25",
@@ -2498,7 +2584,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 2,
-      "tree_variant_name": "BIRCH"
+      "tree_variant_name": "BIRCH",
+      "id": "obj_4180a08db0a3"
     },
     {
       "name": "Forest_Tree_26",
@@ -2520,7 +2607,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_7153482ac5be"
     },
     {
       "name": "Forest_Tree_27",
@@ -2542,7 +2630,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_0a816e47d840"
     },
     {
       "name": "Forest_Tree_28",
@@ -2564,7 +2653,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_3269e9381964"
     },
     {
       "name": "Forest_Tree_29",
@@ -2586,7 +2676,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_d393fcb2c2fe"
     },
     {
       "name": "Forest_Tree_30",
@@ -2608,7 +2699,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 4,
-      "tree_variant_name": "CHERRY_BLOSSOM"
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_526043d1ea76"
     },
     {
       "name": "Forest_Tree_31",
@@ -2630,7 +2722,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_9f8fad4468dc"
     },
     {
       "name": "Forest_Tree_32",
@@ -2652,7 +2745,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_7defe3cbc5b7"
     },
     {
       "name": "Forest_Tree_33",
@@ -2674,7 +2768,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_db6fff920e52"
     },
     {
       "name": "Forest_Tree_34",
@@ -2696,7 +2791,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_475ca5445493"
     },
     {
       "name": "Forest_Tree_35",
@@ -2718,7 +2814,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_c3ff7b035abb"
     },
     {
       "name": "Forest_Tree_36",
@@ -2740,7 +2837,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_153f3485f2b0"
     },
     {
       "name": "Forest_Tree_37",
@@ -2762,7 +2860,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_cdb2cb32af9d"
     },
     {
       "name": "Forest_Tree_38",
@@ -2784,7 +2883,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_8008e971f74d"
     },
     {
       "name": "Forest_Tree_39",
@@ -2806,7 +2906,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_d12a4a2e3907"
     },
     {
       "name": "Forest_Tree_40",
@@ -2828,7 +2929,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_245b065dbd62"
     },
     {
       "name": "Forest_Tree_41",
@@ -2850,7 +2952,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_bf4d00be7dd0"
     },
     {
       "name": "Forest_Tree_42",
@@ -2872,7 +2975,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_7b567850b068"
     },
     {
       "name": "Forest_Tree_43",
@@ -2894,7 +2998,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 4,
-      "tree_variant_name": "CHERRY_BLOSSOM"
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_576bce7f6a65"
     },
     {
       "name": "Forest_Tree_44",
@@ -2916,7 +3021,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_917f9fde7cd0"
     },
     {
       "name": "Forest_Tree_45",
@@ -2938,7 +3044,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 4,
-      "tree_variant_name": "CHERRY_BLOSSOM"
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_65c4d8940913"
     },
     {
       "name": "Forest_Tree_46",
@@ -2960,7 +3067,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_8ac885f20171"
     },
     {
       "name": "Forest_Tree_47",
@@ -2982,7 +3090,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_6b749eb97e45"
     },
     {
       "name": "Forest_Tree_48",
@@ -3004,7 +3113,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 2,
-      "tree_variant_name": "BIRCH"
+      "tree_variant_name": "BIRCH",
+      "id": "obj_f6297a89142b"
     },
     {
       "name": "Forest_Tree_49",
@@ -3026,7 +3136,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_af00c6dd5b8d"
     },
     {
       "name": "Forest_Tree_50",
@@ -3048,7 +3159,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 2,
-      "tree_variant_name": "BIRCH"
+      "tree_variant_name": "BIRCH",
+      "id": "obj_cefb71f94547"
     },
     {
       "name": "Forest_Tree_51",
@@ -3070,7 +3182,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_428acb45887c"
     },
     {
       "name": "Forest_Tree_52",
@@ -3092,7 +3205,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_2b5146e32d70"
     },
     {
       "name": "Forest_Tree_53",
@@ -3114,7 +3228,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_975dd3af5539"
     },
     {
       "name": "Forest_Tree_54",
@@ -3136,7 +3251,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 2,
-      "tree_variant_name": "BIRCH"
+      "tree_variant_name": "BIRCH",
+      "id": "obj_e5199fc47939"
     },
     {
       "name": "Forest_Tree_55",
@@ -3158,7 +3274,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 5,
-      "tree_variant_name": "DEAD_TREE"
+      "tree_variant_name": "DEAD_TREE",
+      "id": "obj_8ef9b965007b"
     },
     {
       "name": "Forest_Tree_56",
@@ -3180,7 +3297,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_e93c061dd5b9"
     },
     {
       "name": "Forest_Tree_57",
@@ -3202,7 +3320,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 2,
-      "tree_variant_name": "BIRCH"
+      "tree_variant_name": "BIRCH",
+      "id": "obj_12a87b42a244"
     },
     {
       "name": "Forest_Tree_58",
@@ -3224,7 +3343,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_cfdc4db6f786"
     },
     {
       "name": "Forest_Tree_59",
@@ -3246,7 +3366,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_e02cd9388985"
     },
     {
       "name": "Forest_Tree_60",
@@ -3268,7 +3389,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 4,
-      "tree_variant_name": "CHERRY_BLOSSOM"
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_170009488ef4"
     },
     {
       "name": "Forest_Tree_61",
@@ -3290,7 +3412,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_cea65c79c94c"
     },
     {
       "name": "Forest_Tree_62",
@@ -3312,7 +3435,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 4,
-      "tree_variant_name": "CHERRY_BLOSSOM"
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_4e65d069a4d5"
     },
     {
       "name": "Forest_Tree_63",
@@ -3334,7 +3458,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_c05e2690f348"
     },
     {
       "name": "Forest_Tree_64",
@@ -3356,7 +3481,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_e2e56bdd57a4"
     },
     {
       "name": "Forest_Tree_65",
@@ -3378,7 +3504,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_ca3144844cee"
     },
     {
       "name": "Forest_Tree_66",
@@ -3400,7 +3527,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_e4349de71d5e"
     },
     {
       "name": "Forest_Tree_67",
@@ -3422,7 +3550,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 2,
-      "tree_variant_name": "BIRCH"
+      "tree_variant_name": "BIRCH",
+      "id": "obj_224fa8c39960"
     },
     {
       "name": "Forest_Tree_68",
@@ -3444,7 +3573,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_0b590f8f63d2"
     },
     {
       "name": "Forest_Tree_69",
@@ -3466,7 +3596,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_e80c5f315195"
     },
     {
       "name": "Forest_Tree_70",
@@ -3488,7 +3619,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_345983f26761"
     },
     {
       "name": "Forest_Tree_71",
@@ -3510,7 +3642,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_72db512ef89a"
     },
     {
       "name": "Forest_Tree_72",
@@ -3532,7 +3665,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_e5e6f49a3fc0"
     },
     {
       "name": "Forest_Tree_73",
@@ -3554,7 +3688,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_76fe1c3fbc85"
     },
     {
       "name": "Forest_Tree_74",
@@ -3576,7 +3711,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 2,
-      "tree_variant_name": "BIRCH"
+      "tree_variant_name": "BIRCH",
+      "id": "obj_3f631cbc256c"
     },
     {
       "name": "Forest_Tree_75",
@@ -3598,7 +3734,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 4,
-      "tree_variant_name": "CHERRY_BLOSSOM"
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_93ab7a55f282"
     },
     {
       "name": "Forest_Tree_76",
@@ -3620,7 +3757,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 2,
-      "tree_variant_name": "BIRCH"
+      "tree_variant_name": "BIRCH",
+      "id": "obj_d836945e9236"
     },
     {
       "name": "Forest_Tree_77",
@@ -3642,7 +3780,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_f21fd708c493"
     },
     {
       "name": "Forest_Tree_78",
@@ -3664,7 +3803,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_f354aa7e0426"
     },
     {
       "name": "Forest_Tree_79",
@@ -3686,7 +3826,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_c1635155deb7"
     },
     {
       "name": "Forest_Tree_80",
@@ -3708,7 +3849,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_300d7dff5973"
     },
     {
       "name": "Forest_Tree_81",
@@ -3730,7 +3872,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 5,
-      "tree_variant_name": "DEAD_TREE"
+      "tree_variant_name": "DEAD_TREE",
+      "id": "obj_9d017f05e2f8"
     },
     {
       "name": "Forest_Tree_82",
@@ -3752,7 +3895,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_e0064a21f153"
     },
     {
       "name": "Forest_Tree_83",
@@ -3774,7 +3918,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 5,
-      "tree_variant_name": "DEAD_TREE"
+      "tree_variant_name": "DEAD_TREE",
+      "id": "obj_7539df43da7d"
     },
     {
       "name": "Forest_Tree_84",
@@ -3796,7 +3941,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 3,
-      "tree_variant_name": "WILLOW"
+      "tree_variant_name": "WILLOW",
+      "id": "obj_dab0361dfaa9"
     },
     {
       "name": "Forest_Tree_85",
@@ -3818,7 +3964,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_d18f52bc26b1"
     },
     {
       "name": "Forest_Tree_86",
@@ -3840,7 +3987,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_9be40fd83d05"
     },
     {
       "name": "Forest_Tree_87",
@@ -3862,7 +4010,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_682cd8f0b762"
     },
     {
       "name": "Forest_Tree_88",
@@ -3884,7 +4033,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 1,
-      "tree_variant_name": "PINE"
+      "tree_variant_name": "PINE",
+      "id": "obj_3bfdc85edde0"
     },
     {
       "name": "Forest_Tree_89",
@@ -3906,7 +4056,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 0,
-      "tree_variant_name": "OAK"
+      "tree_variant_name": "OAK",
+      "id": "obj_83cafd35cbd7"
     },
     {
       "name": "Forest_Tree_90",
@@ -3928,7 +4079,8 @@
       "settlement_id": "Wildland_Forest",
       "role": "forest_tree",
       "tree_variant": 4,
-      "tree_variant_name": "CHERRY_BLOSSOM"
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_6f69c515bf3b"
     },
     {
       "name": "River_Bridge_1",
@@ -3948,7 +4100,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.8608,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_5f7b2a675606"
     },
     {
       "name": "River_Bridge_2",
@@ -3968,7 +4121,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.8608,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_a84f61d10bcb"
     },
     {
       "name": "River_Bridge_3",
@@ -3988,7 +4142,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.8608,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_d8db5a1d7d46"
     },
     {
       "name": "River_Bridge_4",
@@ -4008,7 +4163,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.8608,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_eaf0cf2a3158"
     },
     {
       "name": "River_Bridge_5",
@@ -4028,7 +4184,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.8608,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_4fad57e875cc"
     },
     {
       "name": "River_Bridge_6",
@@ -4048,7 +4205,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_db7f929cf00d"
     },
     {
       "name": "River_Bridge_7",
@@ -4068,7 +4226,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_2f372ff77e7c"
     },
     {
       "name": "River_Bridge_8",
@@ -4088,7 +4247,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_0d13c277007b"
     },
     {
       "name": "River_Bridge_9",
@@ -4108,7 +4268,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_a05cfa88c4e1"
     },
     {
       "name": "River_Bridge_10",
@@ -4128,7 +4289,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_305816dacbb2"
     },
     {
       "name": "River_Bridge_11",
@@ -4148,7 +4310,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_9c501417b9ce"
     },
     {
       "name": "River_Bridge_12",
@@ -4168,7 +4331,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_c9f9f1ac9db4"
     },
     {
       "name": "River_Bridge_13",
@@ -4188,7 +4352,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_244ac2d1fb9e"
     },
     {
       "name": "River_Bridge_14",
@@ -4208,7 +4373,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_a62eff807ba4"
     },
     {
       "name": "River_Bridge_15",
@@ -4228,7 +4394,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_3586c6ed0627"
     },
     {
       "name": "River_Bridge_16",
@@ -4248,7 +4415,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_76756fb05aae"
     },
     {
       "name": "River_Bridge_17",
@@ -4268,7 +4436,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_a5e3f3f30847"
     },
     {
       "name": "River_Bridge_18",
@@ -4288,7 +4457,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_d1fd050e5883"
     },
     {
       "name": "River_Bridge_19",
@@ -4308,7 +4478,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_8d110fa29c9c"
     },
     {
       "name": "River_Bridge_20",
@@ -4328,7 +4499,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_6b5a082ca0af"
     },
     {
       "name": "River_Bridge_21",
@@ -4348,7 +4520,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_491d493039eb"
     },
     {
       "name": "River_Bridge_22",
@@ -4368,7 +4541,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_f1de58fb35b8"
     },
     {
       "name": "River_Bridge_23",
@@ -4388,7 +4562,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_9cf75f643462"
     },
     {
       "name": "River_Bridge_24",
@@ -4408,7 +4583,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_833a9af177a5"
     },
     {
       "name": "River_Bridge_25",
@@ -4428,7 +4604,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_5f185911c26a"
     },
     {
       "name": "River_Bridge_26",
@@ -4448,7 +4625,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_96647a2a15f1"
     },
     {
       "name": "River_Bridge_27",
@@ -4468,7 +4646,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_fb1c46f0a422"
     },
     {
       "name": "River_Bridge_28",
@@ -4488,7 +4667,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_a9a8036a31fd"
     },
     {
       "name": "River_Bridge_29",
@@ -4508,7 +4688,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_cd81fc876afa"
     },
     {
       "name": "River_Bridge_30",
@@ -4528,7 +4709,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_275116717aa5"
     },
     {
       "name": "River_Bridge_31",
@@ -4548,7 +4730,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_64fa0bdc2b4f"
     },
     {
       "name": "River_Bridge_32",
@@ -4568,7 +4751,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_0c71f4fdaf62"
     },
     {
       "name": "River_Bridge_33",
@@ -4588,7 +4772,8 @@
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_411c0c33b9ea"
     },
     {
       "name": "River_Bridge_34",
@@ -4608,7 +4793,8 @@
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_ee65b0afac78"
     },
     {
       "name": "River_Bridge_35",
@@ -4628,7 +4814,8 @@
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_41074a1c7053"
     },
     {
       "name": "River_Bridge_36",
@@ -4648,7 +4835,8 @@
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_f5c869d07af3"
     },
     {
       "name": "River_Bridge_37",
@@ -4668,7 +4856,8 @@
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_f18c5b62efb7"
     },
     {
       "name": "River_Bridge_38",
@@ -4688,7 +4877,8 @@
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_fa18e341067a"
     },
     {
       "name": "River_Bridge_39",
@@ -4708,7 +4898,8 @@
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_10f3be500392"
     },
     {
       "name": "River_Bridge_40",
@@ -4728,7 +4919,8 @@
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_2a921578e897"
     },
     {
       "name": "River_Bridge_41",
@@ -4748,7 +4940,8 @@
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_4425bf3e695f"
     },
     {
       "name": "River_Bridge_42",
@@ -4768,7 +4961,8 @@
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_d7a994775f87"
     },
     {
       "name": "River_Bridge_43",
@@ -4788,7 +4982,8 @@
       "light_energy": 4.2,
       "yaw_rad": 1.0039,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_0754993638de"
     },
     {
       "name": "River_Bridge_44",
@@ -4808,7 +5003,8 @@
       "light_energy": 4.2,
       "yaw_rad": 1.0039,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_4307af97be15"
     },
     {
       "name": "River_Bridge_45",
@@ -4828,7 +5024,8 @@
       "light_energy": 4.2,
       "yaw_rad": 1.0039,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_fe20fc7be7dd"
     },
     {
       "name": "River_Bridge_46",
@@ -4848,7 +5045,8 @@
       "light_energy": 4.2,
       "yaw_rad": 2.0564,
       "settlement_id": "Regional_Transport",
-      "role": "river_crossing_bridge"
+      "role": "river_crossing_bridge",
+      "id": "obj_27125bd5eac2"
     },
     {
       "name": "EndCap_NavBeacon_South_1",
@@ -4868,7 +5066,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_South",
-      "role": "navigation_beacon"
+      "role": "navigation_beacon",
+      "id": "obj_be5c334f0835"
     },
     {
       "name": "EndCap_NavBeacon_South_2",
@@ -4888,7 +5087,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_South",
-      "role": "navigation_beacon"
+      "role": "navigation_beacon",
+      "id": "obj_fc4454cc6b27"
     },
     {
       "name": "EndCap_NavBeacon_South_3",
@@ -4908,7 +5108,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_South",
-      "role": "navigation_beacon"
+      "role": "navigation_beacon",
+      "id": "obj_335b44ce406a"
     },
     {
       "name": "EndCap_NavBeacon_South_4",
@@ -4928,7 +5129,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_South",
-      "role": "navigation_beacon"
+      "role": "navigation_beacon",
+      "id": "obj_b4d2ce2e7c26"
     },
     {
       "name": "EndCap_NavBeacon_North_1",
@@ -4948,7 +5150,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_North",
-      "role": "navigation_beacon"
+      "role": "navigation_beacon",
+      "id": "obj_2fe48aa6dec2"
     },
     {
       "name": "EndCap_NavBeacon_North_2",
@@ -4968,7 +5171,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_North",
-      "role": "navigation_beacon"
+      "role": "navigation_beacon",
+      "id": "obj_652bac90a1e7"
     },
     {
       "name": "EndCap_NavBeacon_North_3",
@@ -4988,7 +5192,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_North",
-      "role": "navigation_beacon"
+      "role": "navigation_beacon",
+      "id": "obj_c5dc22dd3640"
     },
     {
       "name": "EndCap_NavBeacon_North_4",
@@ -5008,7 +5213,8 @@
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_North",
-      "role": "navigation_beacon"
+      "role": "navigation_beacon",
+      "id": "obj_4304db69040c"
     },
     {
       "name": "Spawn_Showcase_Campfire",
@@ -5028,7 +5234,8 @@
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
-      "role": "object_catalog_example"
+      "role": "object_catalog_example",
+      "id": "obj_60e14e846018"
     },
     {
       "name": "Spawn_Showcase_Lamp_Post",
@@ -5048,7 +5255,8 @@
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
-      "role": "object_catalog_example"
+      "role": "object_catalog_example",
+      "id": "obj_607253b2d916"
     },
     {
       "name": "Spawn_Showcase_Beacon_Lantern",
@@ -5068,7 +5276,8 @@
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
-      "role": "object_catalog_example"
+      "role": "object_catalog_example",
+      "id": "obj_f63ccc099492"
     },
     {
       "name": "Spawn_Showcase_Arched_Bridge",
@@ -5088,7 +5297,8 @@
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
-      "role": "object_catalog_example"
+      "role": "object_catalog_example",
+      "id": "obj_67bd622952c7"
     },
     {
       "name": "Spawn_Showcase_Bonfire",
@@ -5108,7 +5318,8 @@
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
-      "role": "object_catalog_example"
+      "role": "object_catalog_example",
+      "id": "obj_2caea1e9250b"
     },
     {
       "name": "Spawn_Showcase_Colony_House",
@@ -5128,7 +5339,8 @@
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
-      "role": "object_catalog_example"
+      "role": "object_catalog_example",
+      "id": "obj_63a5375709b3"
     },
     {
       "name": "Spawn_Showcase_Foliage_Tree",
@@ -5148,7 +5360,8 @@
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
-      "role": "object_catalog_example"
+      "role": "object_catalog_example",
+      "id": "obj_b10590a82dbd"
     },
     {
       "name": "Spawn_Showcase_Windmill",
@@ -5168,7 +5381,8 @@
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
-      "role": "object_catalog_example"
+      "role": "object_catalog_example",
+      "id": "obj_9a9b816c05f6"
     },
     {
       "name": "Spawn_Showcase_Oak_Tree",
@@ -5189,7 +5403,8 @@
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
       "role": "object_catalog_example",
-      "tree_variant": 0
+      "tree_variant": 0,
+      "id": "obj_55fd486f486d"
     },
     {
       "name": "Spawn_Showcase_Pine_Tree",
@@ -5210,7 +5425,8 @@
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
       "role": "object_catalog_example",
-      "tree_variant": 1
+      "tree_variant": 1,
+      "id": "obj_b7ee0b78ec60"
     },
     {
       "name": "Spawn_Showcase_Birch_Tree",
@@ -5231,7 +5447,8 @@
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
       "role": "object_catalog_example",
-      "tree_variant": 2
+      "tree_variant": 2,
+      "id": "obj_8035e09e450a"
     },
     {
       "name": "Spawn_Showcase_Willow_Tree",
@@ -5252,7 +5469,8 @@
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
       "role": "object_catalog_example",
-      "tree_variant": 3
+      "tree_variant": 3,
+      "id": "obj_0c7a5d86e095"
     },
     {
       "name": "Spawn_Showcase_Cherry_Blossom_Tree",
@@ -5273,7 +5491,8 @@
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
       "role": "object_catalog_example",
-      "tree_variant": 4
+      "tree_variant": 4,
+      "id": "obj_8d2d5f1221ae"
     },
     {
       "name": "Spawn_Showcase_Dead_Tree",
@@ -5294,7 +5513,4817 @@
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
       "role": "object_catalog_example",
-      "tree_variant": 5
+      "tree_variant": 5,
+      "id": "obj_cea2fa2138c1"
     }
-  ]
+  ],
+  "placed_objects": [
+    {
+      "name": "Spawn_Welcoming_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.25,
+      "v": 0.5,
+      "theta": -1.5708,
+      "z": 0.0,
+      "elevation": 2.0,
+      "light_color": [
+        1.0,
+        0.58,
+        0.2
+      ],
+      "light_range": 45.0,
+      "light_energy": 6.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Clearance",
+      "role": "spawn_landmark",
+      "id": "obj_162014263ced"
+    },
+    {
+      "name": "Spawn_Ranger_Cabin",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.248,
+      "v": 0.504,
+      "theta": -1.58336,
+      "z": 72.0,
+      "elevation": 2.1,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 0.35,
+      "settlement_id": "Spawn_Clearance",
+      "role": "spawn_ranger_cabin",
+      "id": "obj_f60368ea20cb"
+    },
+    {
+      "name": "Grand_City_Center_Central_Beacon",
+      "object_type": 2,
+      "object_type_name": "BEACON_LANTERN",
+      "u": 0.35938,
+      "v": 0.3125,
+      "theta": -0.88357,
+      "z": -3375.0,
+      "elevation": 35.52,
+      "light_color": [
+        0.2,
+        0.88,
+        1.0
+      ],
+      "light_range": 58.0,
+      "light_energy": 6.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Grand_City_Center",
+      "role": "city_central_beacon",
+      "id": "obj_6f8e39b1b52a"
+    },
+    {
+      "name": "Grand_City_Center_StreetLamp_1",
+      "object_type": 1,
+      "object_type_name": "LAMP_POST",
+      "u": 0.3457,
+      "v": 0.3125,
+      "theta": -0.96948,
+      "z": -3375.0,
+      "elevation": 34.46,
+      "light_color": [
+        1.0,
+        0.92,
+        0.78
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Grand_City_Center",
+      "role": "street_lamp",
+      "id": "obj_e23ecf4d708f"
+    },
+    {
+      "name": "Grand_City_Center_StreetLamp_2",
+      "object_type": 1,
+      "object_type_name": "LAMP_POST",
+      "u": 0.37305,
+      "v": 0.3125,
+      "theta": -0.79767,
+      "z": -3375.0,
+      "elevation": 47.04,
+      "light_color": [
+        1.0,
+        0.92,
+        0.78
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Grand_City_Center",
+      "role": "street_lamp",
+      "id": "obj_44ece1844c70"
+    },
+    {
+      "name": "Grand_City_Center_StreetLamp_3",
+      "object_type": 1,
+      "object_type_name": "LAMP_POST",
+      "u": 0.35938,
+      "v": 0.28516,
+      "theta": -0.88357,
+      "z": -3867.19,
+      "elevation": 28.0,
+      "light_color": [
+        1.0,
+        0.92,
+        0.78
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Grand_City_Center",
+      "role": "street_lamp",
+      "id": "obj_7d3e2427b1d6"
+    },
+    {
+      "name": "Grand_City_Center_StreetLamp_4",
+      "object_type": 1,
+      "object_type_name": "LAMP_POST",
+      "u": 0.35938,
+      "v": 0.33984,
+      "theta": -0.88357,
+      "z": -2882.81,
+      "elevation": 39.87,
+      "light_color": [
+        1.0,
+        0.92,
+        0.78
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Grand_City_Center",
+      "role": "street_lamp",
+      "id": "obj_976a0862dbd4"
+    },
+    {
+      "name": "Grand_City_Center_Townhouse_2",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.36963,
+      "v": 0.29199,
+      "theta": -0.81915,
+      "z": -3744.14,
+      "elevation": 37.09,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 1.5708,
+      "settlement_id": "Grand_City_Center",
+      "role": "city_residence",
+      "id": "obj_0dc5a1e1b6f5"
+    },
+    {
+      "name": "Grand_City_Center_Townhouse_3",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.34912,
+      "v": 0.33301,
+      "theta": -0.948,
+      "z": -3005.86,
+      "elevation": 31.77,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 3.1416,
+      "settlement_id": "Grand_City_Center",
+      "role": "city_residence",
+      "id": "obj_212e4d13b16c"
+    },
+    {
+      "name": "Village_1_Central_Bonfire",
+      "object_type": 4,
+      "object_type_name": "BONFIRE",
+      "u": 0.28125,
+      "v": 0.40625,
+      "theta": -1.37445,
+      "z": -1687.5,
+      "elevation": 28.5,
+      "light_color": [
+        1.0,
+        0.48,
+        0.12
+      ],
+      "light_range": 80.0,
+      "light_energy": 8.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_1",
+      "role": "village_bonfire",
+      "id": "obj_b3c92b30489d"
+    },
+    {
+      "name": "Village_1_Perimeter_Campfire_1",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.29625,
+      "v": 0.41825,
+      "theta": -1.2802,
+      "z": -1471.5,
+      "elevation": 37.11,
+      "light_color": [
+        1.0,
+        0.6,
+        0.22
+      ],
+      "light_range": 38.0,
+      "light_energy": 5.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_1",
+      "role": "village_perimeter_fire",
+      "id": "obj_601bac181020"
+    },
+    {
+      "name": "Village_1_Perimeter_Campfire_2",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.26725,
+      "v": 0.39525,
+      "theta": -1.46241,
+      "z": -1885.5,
+      "elevation": 15.56,
+      "light_color": [
+        1.0,
+        0.58,
+        0.2
+      ],
+      "light_range": 36.0,
+      "light_energy": 4.8,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_1",
+      "role": "village_perimeter_fire",
+      "id": "obj_bb5878aeb6a1"
+    },
+    {
+      "name": "Village_1_Cabin_1",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.27125,
+      "v": 0.39825,
+      "theta": -1.43728,
+      "z": -1831.5,
+      "elevation": 22.89,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 0.3,
+      "settlement_id": "Village_1",
+      "role": "village_cabin",
+      "id": "obj_b01289afeec6"
+    },
+    {
+      "name": "Village_1_Cabin_4",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.29325,
+      "v": 0.41525,
+      "theta": -1.29905,
+      "z": -1525.5,
+      "elevation": 37.18,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 5.01,
+      "settlement_id": "Village_1",
+      "role": "village_cabin",
+      "id": "obj_5795f87521c0"
+    },
+    {
+      "name": "Village_1_Windmill",
+      "object_type": 7,
+      "object_type_name": "WINDMILL",
+      "u": 0.30525,
+      "v": 0.42625,
+      "theta": -1.22365,
+      "z": -1327.5,
+      "elevation": 40.0,
+      "light_color": [
+        1.0,
+        0.88,
+        0.6
+      ],
+      "light_range": 16.0,
+      "light_energy": 2.8,
+      "yaw_rad": 0.75,
+      "settlement_id": "Village_1",
+      "role": "agricultural_windmill",
+      "id": "obj_c87fafa9443e"
+    },
+    {
+      "name": "Village_2_Hearth_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.47656,
+      "v": 0.625,
+      "theta": -0.14726,
+      "z": 2250.0,
+      "elevation": 29.57,
+      "light_color": [
+        1.0,
+        0.58,
+        0.2
+      ],
+      "light_range": 42.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_2",
+      "role": "village_hearth",
+      "id": "obj_42f69011a4df"
+    },
+    {
+      "name": "Village_2_Communal_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.48556,
+      "v": 0.617,
+      "theta": -0.09071,
+      "z": 2106.0,
+      "elevation": 32.56,
+      "light_color": [
+        1.0,
+        0.55,
+        0.18
+      ],
+      "light_range": 36.0,
+      "light_energy": 4.8,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_2",
+      "role": "village_communal_fire",
+      "id": "obj_c45dc0eb57bc"
+    },
+    {
+      "name": "Village_2_Outpost_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.46856,
+      "v": 0.634,
+      "theta": -0.19753,
+      "z": 2412.0,
+      "elevation": 36.57,
+      "light_color": [
+        1.0,
+        0.6,
+        0.22
+      ],
+      "light_range": 34.0,
+      "light_energy": 4.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_2",
+      "role": "village_outpost_fire",
+      "id": "obj_ecc20ade378b"
+    },
+    {
+      "name": "Village_2_Cabin_1",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.46856,
+      "v": 0.619,
+      "theta": -0.19753,
+      "z": 2142.0,
+      "elevation": 32.78,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 0.8,
+      "settlement_id": "Village_2",
+      "role": "village_cabin",
+      "id": "obj_882bb3509c12"
+    },
+    {
+      "name": "Village_3_Hearth_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.83594,
+      "v": 0.3125,
+      "theta": 2.11076,
+      "z": -3375.0,
+      "elevation": 28.86,
+      "light_color": [
+        1.0,
+        0.58,
+        0.2
+      ],
+      "light_range": 42.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_3",
+      "role": "village_hearth",
+      "id": "obj_f78548794ddd"
+    },
+    {
+      "name": "Village_3_Communal_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.84494,
+      "v": 0.3045,
+      "theta": 2.16731,
+      "z": -3519.0,
+      "elevation": 36.85,
+      "light_color": [
+        1.0,
+        0.55,
+        0.18
+      ],
+      "light_range": 36.0,
+      "light_energy": 4.8,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_3",
+      "role": "village_communal_fire",
+      "id": "obj_625c2fe1cc75"
+    },
+    {
+      "name": "Village_3_Outpost_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.82794,
+      "v": 0.3215,
+      "theta": 2.06049,
+      "z": -3213.0,
+      "elevation": 24.01,
+      "light_color": [
+        1.0,
+        0.6,
+        0.22
+      ],
+      "light_range": 34.0,
+      "light_energy": 4.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_3",
+      "role": "village_outpost_fire",
+      "id": "obj_1735f229ec2e"
+    },
+    {
+      "name": "Village_3_Cabin_1",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.82794,
+      "v": 0.3065,
+      "theta": 2.06049,
+      "z": -3483.0,
+      "elevation": 24.34,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 0.8,
+      "settlement_id": "Village_3",
+      "role": "village_cabin",
+      "id": "obj_06d768984000"
+    },
+    {
+      "name": "Village_4_Central_Bonfire",
+      "object_type": 4,
+      "object_type_name": "BONFIRE",
+      "u": 0.52344,
+      "v": 0.90625,
+      "theta": 0.14726,
+      "z": 7312.5,
+      "elevation": 31.22,
+      "light_color": [
+        1.0,
+        0.48,
+        0.12
+      ],
+      "light_range": 80.0,
+      "light_energy": 8.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_4",
+      "role": "village_bonfire",
+      "id": "obj_1d574071acef"
+    },
+    {
+      "name": "Village_4_Perimeter_Campfire_1",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.53844,
+      "v": 0.91825,
+      "theta": 0.24151,
+      "z": 7528.5,
+      "elevation": 34.97,
+      "light_color": [
+        1.0,
+        0.6,
+        0.22
+      ],
+      "light_range": 38.0,
+      "light_energy": 5.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_4",
+      "role": "village_perimeter_fire",
+      "id": "obj_f196904c9a6c"
+    },
+    {
+      "name": "Village_4_Perimeter_Campfire_2",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.50944,
+      "v": 0.89525,
+      "theta": 0.0593,
+      "z": 7114.5,
+      "elevation": 22.42,
+      "light_color": [
+        1.0,
+        0.58,
+        0.2
+      ],
+      "light_range": 36.0,
+      "light_energy": 4.8,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_4",
+      "role": "village_perimeter_fire",
+      "id": "obj_1c37732ea604"
+    },
+    {
+      "name": "Village_4_Cabin_2",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.53444,
+      "v": 0.89925,
+      "theta": 0.21638,
+      "z": 7186.5,
+      "elevation": 34.29,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 1.87,
+      "settlement_id": "Village_4",
+      "role": "village_cabin",
+      "id": "obj_e692c71b655d"
+    },
+    {
+      "name": "Village_4_Cabin_3",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.51444,
+      "v": 0.91625,
+      "theta": 0.09071,
+      "z": 7492.5,
+      "elevation": 39.6,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 3.44,
+      "settlement_id": "Village_4",
+      "role": "village_cabin",
+      "id": "obj_dc0d1349fcb4"
+    },
+    {
+      "name": "Village_4_Cabin_4",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.53544,
+      "v": 0.91525,
+      "theta": 0.22266,
+      "z": 7474.5,
+      "elevation": 32.47,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 5.01,
+      "settlement_id": "Village_4",
+      "role": "village_cabin",
+      "id": "obj_cb09013067f6"
+    },
+    {
+      "name": "Village_4_Windmill",
+      "object_type": 7,
+      "object_type_name": "WINDMILL",
+      "u": 0.54744,
+      "v": 0.92625,
+      "theta": 0.29806,
+      "z": 7672.5,
+      "elevation": 37.53,
+      "light_color": [
+        1.0,
+        0.88,
+        0.6
+      ],
+      "light_range": 16.0,
+      "light_energy": 2.8,
+      "yaw_rad": 0.75,
+      "settlement_id": "Village_4",
+      "role": "agricultural_windmill",
+      "id": "obj_45b2e5a0fa20"
+    },
+    {
+      "name": "Village_5_Hearth_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.3125,
+      "v": 0.57812,
+      "theta": -1.1781,
+      "z": 1406.25,
+      "elevation": 26.34,
+      "light_color": [
+        1.0,
+        0.58,
+        0.2
+      ],
+      "light_range": 42.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_5",
+      "role": "village_hearth",
+      "id": "obj_c3ea64b64a8d"
+    },
+    {
+      "name": "Village_5_Communal_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.3215,
+      "v": 0.57012,
+      "theta": -1.12155,
+      "z": 1262.25,
+      "elevation": 26.35,
+      "light_color": [
+        1.0,
+        0.55,
+        0.18
+      ],
+      "light_range": 36.0,
+      "light_energy": 4.8,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_5",
+      "role": "village_communal_fire",
+      "id": "obj_8689a282e116"
+    },
+    {
+      "name": "Village_5_Outpost_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.3045,
+      "v": 0.58713,
+      "theta": -1.22836,
+      "z": 1568.25,
+      "elevation": 35.18,
+      "light_color": [
+        1.0,
+        0.6,
+        0.22
+      ],
+      "light_range": 34.0,
+      "light_energy": 4.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_5",
+      "role": "village_outpost_fire",
+      "id": "obj_978d448ba123"
+    },
+    {
+      "name": "Village_5_Cabin_1",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.3045,
+      "v": 0.57212,
+      "theta": -1.22836,
+      "z": 1298.25,
+      "elevation": 24.14,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 0.8,
+      "settlement_id": "Village_5",
+      "role": "village_cabin",
+      "id": "obj_e6e9eb3b5573"
+    },
+    {
+      "name": "Village_5_Cabin_2",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.3215,
+      "v": 0.58413,
+      "theta": -1.12155,
+      "z": 1514.25,
+      "elevation": 25.83,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 2.37,
+      "settlement_id": "Village_5",
+      "role": "village_cabin",
+      "id": "obj_f965b266497c"
+    },
+    {
+      "name": "Village_6_Hearth_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.67188,
+      "v": 0.67188,
+      "theta": 1.07992,
+      "z": 3093.75,
+      "elevation": 23.35,
+      "light_color": [
+        1.0,
+        0.58,
+        0.2
+      ],
+      "light_range": 42.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_6",
+      "role": "village_hearth",
+      "id": "obj_55f1766275f2"
+    },
+    {
+      "name": "Village_6_Communal_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.68088,
+      "v": 0.66387,
+      "theta": 1.13647,
+      "z": 2949.75,
+      "elevation": 25.37,
+      "light_color": [
+        1.0,
+        0.55,
+        0.18
+      ],
+      "light_range": 36.0,
+      "light_energy": 4.8,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_6",
+      "role": "village_communal_fire",
+      "id": "obj_68c1d7f5316a"
+    },
+    {
+      "name": "Village_6_Outpost_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.66387,
+      "v": 0.68088,
+      "theta": 1.02966,
+      "z": 3255.75,
+      "elevation": 31.29,
+      "light_color": [
+        1.0,
+        0.6,
+        0.22
+      ],
+      "light_range": 34.0,
+      "light_energy": 4.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_6",
+      "role": "village_outpost_fire",
+      "id": "obj_ec1183636f7a"
+    },
+    {
+      "name": "Village_6_Cabin_1",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.66387,
+      "v": 0.66587,
+      "theta": 1.02966,
+      "z": 2985.75,
+      "elevation": 31.09,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 0.8,
+      "settlement_id": "Village_6",
+      "role": "village_cabin",
+      "id": "obj_53ea1add6b3c"
+    },
+    {
+      "name": "Village_7_Central_Bonfire",
+      "object_type": 4,
+      "object_type_name": "BONFIRE",
+      "u": 0.16406,
+      "v": 0.15625,
+      "theta": -2.11076,
+      "z": -6187.5,
+      "elevation": 42.74,
+      "light_color": [
+        1.0,
+        0.48,
+        0.12
+      ],
+      "light_range": 80.0,
+      "light_energy": 8.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_7",
+      "role": "village_bonfire",
+      "id": "obj_c2de336e6cb6"
+    },
+    {
+      "name": "Village_7_Perimeter_Campfire_1",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.17906,
+      "v": 0.16825,
+      "theta": -2.01651,
+      "z": -5971.5,
+      "elevation": 40.13,
+      "light_color": [
+        1.0,
+        0.6,
+        0.22
+      ],
+      "light_range": 38.0,
+      "light_energy": 5.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_7",
+      "role": "village_perimeter_fire",
+      "id": "obj_317974e1f3a1"
+    },
+    {
+      "name": "Village_7_Perimeter_Campfire_2",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.15006,
+      "v": 0.14525,
+      "theta": -2.19872,
+      "z": -6385.5,
+      "elevation": 26.43,
+      "light_color": [
+        1.0,
+        0.58,
+        0.2
+      ],
+      "light_range": 36.0,
+      "light_energy": 4.8,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_7",
+      "role": "village_perimeter_fire",
+      "id": "obj_35fa790d2e72"
+    },
+    {
+      "name": "Village_7_Cabin_1",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.15406,
+      "v": 0.14825,
+      "theta": -2.17359,
+      "z": -6331.5,
+      "elevation": 22.52,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 0.3,
+      "settlement_id": "Village_7",
+      "role": "village_cabin",
+      "id": "obj_930a704bec0e"
+    },
+    {
+      "name": "Village_7_Cabin_2",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.17506,
+      "v": 0.14925,
+      "theta": -2.04164,
+      "z": -6313.5,
+      "elevation": 55.03,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 1.87,
+      "settlement_id": "Village_7",
+      "role": "village_cabin",
+      "id": "obj_a7bb3ec47295"
+    },
+    {
+      "name": "Village_7_Cabin_3",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.15506,
+      "v": 0.16625,
+      "theta": -2.16731,
+      "z": -6007.5,
+      "elevation": 54.52,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 3.44,
+      "settlement_id": "Village_7",
+      "role": "village_cabin",
+      "id": "obj_5a795ac4b899"
+    },
+    {
+      "name": "Village_7_Cabin_4",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.17606,
+      "v": 0.16525,
+      "theta": -2.03536,
+      "z": -6025.5,
+      "elevation": 39.52,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 5.01,
+      "settlement_id": "Village_7",
+      "role": "village_cabin",
+      "id": "obj_fc078630a53d"
+    },
+    {
+      "name": "Village_7_Windmill",
+      "object_type": 7,
+      "object_type_name": "WINDMILL",
+      "u": 0.18806,
+      "v": 0.17625,
+      "theta": -1.95996,
+      "z": -5827.5,
+      "elevation": 39.52,
+      "light_color": [
+        1.0,
+        0.88,
+        0.6
+      ],
+      "light_range": 16.0,
+      "light_energy": 2.8,
+      "yaw_rad": 0.75,
+      "settlement_id": "Village_7",
+      "role": "agricultural_windmill",
+      "id": "obj_24f7b23e54fd"
+    },
+    {
+      "name": "Village_8_Hearth_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.52344,
+      "v": 0.125,
+      "theta": 0.14726,
+      "z": -6750.0,
+      "elevation": 47.45,
+      "light_color": [
+        1.0,
+        0.58,
+        0.2
+      ],
+      "light_range": 42.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_8",
+      "role": "village_hearth",
+      "id": "obj_ffb7de37672e"
+    },
+    {
+      "name": "Village_8_Communal_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.53244,
+      "v": 0.117,
+      "theta": 0.20381,
+      "z": -6894.0,
+      "elevation": 43.89,
+      "light_color": [
+        1.0,
+        0.55,
+        0.18
+      ],
+      "light_range": 36.0,
+      "light_energy": 4.8,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_8",
+      "role": "village_communal_fire",
+      "id": "obj_b25416932cb4"
+    },
+    {
+      "name": "Village_8_Outpost_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.51544,
+      "v": 0.134,
+      "theta": 0.097,
+      "z": -6588.0,
+      "elevation": 42.28,
+      "light_color": [
+        1.0,
+        0.6,
+        0.22
+      ],
+      "light_range": 34.0,
+      "light_energy": 4.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_8",
+      "role": "village_outpost_fire",
+      "id": "obj_a4abb1887f02"
+    },
+    {
+      "name": "Village_8_Cabin_1",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.51544,
+      "v": 0.119,
+      "theta": 0.097,
+      "z": -6858.0,
+      "elevation": 39.72,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 0.8,
+      "settlement_id": "Village_8",
+      "role": "village_cabin",
+      "id": "obj_450058e6b9c0"
+    },
+    {
+      "name": "Village_8_Cabin_2",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.53244,
+      "v": 0.131,
+      "theta": 0.20381,
+      "z": -6642.0,
+      "elevation": 44.7,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 2.37,
+      "settlement_id": "Village_8",
+      "role": "village_cabin",
+      "id": "obj_f38dfb0572ad"
+    },
+    {
+      "name": "Village_9_Hearth_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.67188,
+      "v": 0.79688,
+      "theta": 1.07992,
+      "z": 5343.75,
+      "elevation": 42.54,
+      "light_color": [
+        1.0,
+        0.58,
+        0.2
+      ],
+      "light_range": 42.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_9",
+      "role": "village_hearth",
+      "id": "obj_05d0174526c8"
+    },
+    {
+      "name": "Village_9_Communal_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.68088,
+      "v": 0.78887,
+      "theta": 1.13647,
+      "z": 5199.75,
+      "elevation": 44.19,
+      "light_color": [
+        1.0,
+        0.55,
+        0.18
+      ],
+      "light_range": 36.0,
+      "light_energy": 4.8,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_9",
+      "role": "village_communal_fire",
+      "id": "obj_f8753c17d2d5"
+    },
+    {
+      "name": "Village_9_Outpost_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.66387,
+      "v": 0.80588,
+      "theta": 1.02966,
+      "z": 5505.75,
+      "elevation": 33.65,
+      "light_color": [
+        1.0,
+        0.6,
+        0.22
+      ],
+      "light_range": 34.0,
+      "light_energy": 4.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_9",
+      "role": "village_outpost_fire",
+      "id": "obj_ef23b822a89b"
+    },
+    {
+      "name": "Village_9_Cabin_1",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.66387,
+      "v": 0.79087,
+      "theta": 1.02966,
+      "z": 5235.75,
+      "elevation": 39.94,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 0.8,
+      "settlement_id": "Village_9",
+      "role": "village_cabin",
+      "id": "obj_070523155dfe"
+    },
+    {
+      "name": "Village_9_Cabin_2",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.68088,
+      "v": 0.80288,
+      "theta": 1.13647,
+      "z": 5451.75,
+      "elevation": 47.62,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 2.37,
+      "settlement_id": "Village_9",
+      "role": "village_cabin",
+      "id": "obj_e65cd55b0d4f"
+    },
+    {
+      "name": "Village_10_Hearth_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.5,
+      "v": 0.4375,
+      "theta": 0.0,
+      "z": -1125.0,
+      "elevation": 29.24,
+      "light_color": [
+        1.0,
+        0.58,
+        0.2
+      ],
+      "light_range": 42.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_10",
+      "role": "village_hearth",
+      "id": "obj_29b6505a6ca0"
+    },
+    {
+      "name": "Village_10_Communal_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.509,
+      "v": 0.4295,
+      "theta": 0.05655,
+      "z": -1269.0,
+      "elevation": 36.27,
+      "light_color": [
+        1.0,
+        0.55,
+        0.18
+      ],
+      "light_range": 36.0,
+      "light_energy": 4.8,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_10",
+      "role": "village_communal_fire",
+      "id": "obj_6d86e59b0e6c"
+    },
+    {
+      "name": "Village_10_Outpost_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.492,
+      "v": 0.4465,
+      "theta": -0.05027,
+      "z": -963.0,
+      "elevation": 29.7,
+      "light_color": [
+        1.0,
+        0.6,
+        0.22
+      ],
+      "light_range": 34.0,
+      "light_energy": 4.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "Village_10",
+      "role": "village_outpost_fire",
+      "id": "obj_a7a6b4384b82"
+    },
+    {
+      "name": "Village_10_Cabin_1",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.492,
+      "v": 0.4315,
+      "theta": -0.05027,
+      "z": -1233.0,
+      "elevation": 29.82,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 0.8,
+      "settlement_id": "Village_10",
+      "role": "village_cabin",
+      "id": "obj_3a3c546b665f"
+    },
+    {
+      "name": "Village_10_Cabin_2",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.509,
+      "v": 0.4435,
+      "theta": 0.05655,
+      "z": -1017.0,
+      "elevation": 23.44,
+      "light_color": [
+        1.0,
+        0.85,
+        0.55
+      ],
+      "light_range": 14.0,
+      "light_energy": 2.4,
+      "yaw_rad": 2.37,
+      "settlement_id": "Village_10",
+      "role": "village_cabin",
+      "id": "obj_011202308e19"
+    },
+    {
+      "name": "Forest_Tree_1",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.11795,
+      "v": 0.40022,
+      "theta": -2.40052,
+      "z": -1796.03,
+      "elevation": 44.37,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.1334,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_5e1c4956e037"
+    },
+    {
+      "name": "Forest_Tree_2",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.00151,
+      "v": 0.78422,
+      "theta": -3.13212,
+      "z": 5116.05,
+      "elevation": 48.52,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 1.1741,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_c934f4c2505e"
+    },
+    {
+      "name": "Forest_Tree_3",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.03049,
+      "v": 0.90647,
+      "theta": -2.95004,
+      "z": 7316.53,
+      "elevation": 33.44,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.014,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 5,
+      "tree_variant_name": "DEAD_TREE",
+      "id": "obj_edadc31a95e0"
+    },
+    {
+      "name": "Forest_Tree_4",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.3189,
+      "v": 0.1744,
+      "theta": -1.13791,
+      "z": -5860.79,
+      "elevation": 27.17,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.7812,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_0f087e10ed44"
+    },
+    {
+      "name": "Forest_Tree_5",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.39035,
+      "v": 0.8435,
+      "theta": -0.68893,
+      "z": 6183.03,
+      "elevation": 48.21,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.194,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_19f662f5f83f"
+    },
+    {
+      "name": "Forest_Tree_6",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.65996,
+      "v": 0.48378,
+      "theta": 1.00505,
+      "z": -292.03,
+      "elevation": 39.51,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.4584,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_6eea68af6681"
+    },
+    {
+      "name": "Forest_Tree_7",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.65321,
+      "v": 0.94257,
+      "theta": 0.96263,
+      "z": 7966.18,
+      "elevation": 41.54,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.0507,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_c71a45affcca"
+    },
+    {
+      "name": "Forest_Tree_8",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.20571,
+      "v": 0.05986,
+      "theta": -1.84905,
+      "z": -7922.47,
+      "elevation": 56.28,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.1166,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_aeb4915e9886"
+    },
+    {
+      "name": "Forest_Tree_9",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.24728,
+      "v": 0.16486,
+      "theta": -1.58788,
+      "z": -6032.61,
+      "elevation": 47.91,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 1.6933,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 5,
+      "tree_variant_name": "DEAD_TREE",
+      "id": "obj_b42141a149de"
+    },
+    {
+      "name": "Forest_Tree_10",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.88176,
+      "v": 0.15888,
+      "theta": 2.39869,
+      "z": -6140.22,
+      "elevation": 70.43,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.4218,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_53f9a744a28a"
+    },
+    {
+      "name": "Forest_Tree_11",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.63069,
+      "v": 0.57721,
+      "theta": 0.82114,
+      "z": 1389.81,
+      "elevation": 36.78,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.3714,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 2,
+      "tree_variant_name": "BIRCH",
+      "id": "obj_b9ab69eef173"
+    },
+    {
+      "name": "Forest_Tree_12",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.18324,
+      "v": 0.45144,
+      "theta": -1.99024,
+      "z": -874.06,
+      "elevation": 44.5,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.6513,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_b5bc053598d0"
+    },
+    {
+      "name": "Forest_Tree_13",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.03836,
+      "v": 0.30267,
+      "theta": -2.90058,
+      "z": -3551.88,
+      "elevation": 49.22,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.5181,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_43f9153bfaec"
+    },
+    {
+      "name": "Forest_Tree_14",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.6599,
+      "v": 0.06509,
+      "theta": 1.00465,
+      "z": -7828.43,
+      "elevation": 30.91,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.3877,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_76aa08513ba9"
+    },
+    {
+      "name": "Forest_Tree_15",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.42574,
+      "v": 0.8867,
+      "theta": -0.46658,
+      "z": 6960.6,
+      "elevation": 56.88,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 6.2045,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 4,
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_afa0604608ff"
+    },
+    {
+      "name": "Forest_Tree_16",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.56847,
+      "v": 0.29689,
+      "theta": 0.43024,
+      "z": -3655.96,
+      "elevation": 41.48,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 1.8387,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_91959f8110f8"
+    },
+    {
+      "name": "Forest_Tree_17",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.9727,
+      "v": 0.34538,
+      "theta": 2.97006,
+      "z": -2783.21,
+      "elevation": 52.57,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.1645,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_fde037efbf80"
+    },
+    {
+      "name": "Forest_Tree_18",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.22311,
+      "v": 0.78157,
+      "theta": -1.73972,
+      "z": 5068.2,
+      "elevation": 73.25,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.9831,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_5bc752546a2a"
+    },
+    {
+      "name": "Forest_Tree_19",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.17139,
+      "v": 0.94703,
+      "theta": -2.06475,
+      "z": 8046.63,
+      "elevation": 58.32,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.5648,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_a2e36f04588c"
+    },
+    {
+      "name": "Forest_Tree_20",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.35956,
+      "v": 0.72923,
+      "theta": -0.88242,
+      "z": 4126.13,
+      "elevation": 40.78,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.6522,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 2,
+      "tree_variant_name": "BIRCH",
+      "id": "obj_b19505099f5e"
+    },
+    {
+      "name": "Forest_Tree_21",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.94422,
+      "v": 0.89811,
+      "theta": 2.79109,
+      "z": 7166.05,
+      "elevation": 47.98,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.1805,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 2,
+      "tree_variant_name": "BIRCH",
+      "id": "obj_daf95d61f886"
+    },
+    {
+      "name": "Forest_Tree_22",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.58776,
+      "v": 0.26609,
+      "theta": 0.55141,
+      "z": -4210.39,
+      "elevation": 41.6,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.9495,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_f76b883de9ad"
+    },
+    {
+      "name": "Forest_Tree_23",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.2908,
+      "v": 0.83503,
+      "theta": -1.31446,
+      "z": 6030.58,
+      "elevation": 60.12,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.177,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_7df81e603d62"
+    },
+    {
+      "name": "Forest_Tree_24",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.35504,
+      "v": 0.69144,
+      "theta": -0.91082,
+      "z": 3445.9,
+      "elevation": 40.79,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.4218,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_c31b80d6f2db"
+    },
+    {
+      "name": "Forest_Tree_25",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.25088,
+      "v": 0.33401,
+      "theta": -1.56525,
+      "z": -2987.9,
+      "elevation": 37.35,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.4473,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 2,
+      "tree_variant_name": "BIRCH",
+      "id": "obj_4180a08db0a3"
+    },
+    {
+      "name": "Forest_Tree_26",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.09502,
+      "v": 0.66049,
+      "theta": -2.54453,
+      "z": 2888.88,
+      "elevation": 42.29,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.8677,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_7153482ac5be"
+    },
+    {
+      "name": "Forest_Tree_27",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.84315,
+      "v": 0.433,
+      "theta": 2.15609,
+      "z": -1206.04,
+      "elevation": 34.41,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.8451,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_0a816e47d840"
+    },
+    {
+      "name": "Forest_Tree_28",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.46939,
+      "v": 0.88757,
+      "theta": -0.19231,
+      "z": 6976.2,
+      "elevation": 26.67,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.9403,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_3269e9381964"
+    },
+    {
+      "name": "Forest_Tree_29",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.08708,
+      "v": 0.80091,
+      "theta": -2.59446,
+      "z": 5416.4,
+      "elevation": 63.12,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.5593,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_d393fcb2c2fe"
+    },
+    {
+      "name": "Forest_Tree_30",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.60994,
+      "v": 0.66914,
+      "theta": 0.69078,
+      "z": 3044.45,
+      "elevation": 46.89,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.0182,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 4,
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_526043d1ea76"
+    },
+    {
+      "name": "Forest_Tree_31",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.84048,
+      "v": 0.90987,
+      "theta": 2.13931,
+      "z": 7377.67,
+      "elevation": 40.39,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.3691,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_9f8fad4468dc"
+    },
+    {
+      "name": "Forest_Tree_32",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.05652,
+      "v": 0.15581,
+      "theta": -2.78649,
+      "z": -6195.37,
+      "elevation": 31.6,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.1046,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_7defe3cbc5b7"
+    },
+    {
+      "name": "Forest_Tree_33",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.51346,
+      "v": 0.70268,
+      "theta": 0.0846,
+      "z": 3648.16,
+      "elevation": 45.27,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.9294,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_db6fff920e52"
+    },
+    {
+      "name": "Forest_Tree_34",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.936,
+      "v": 0.61849,
+      "theta": 2.73945,
+      "z": 2132.89,
+      "elevation": 42.94,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.3951,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_475ca5445493"
+    },
+    {
+      "name": "Forest_Tree_35",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.39408,
+      "v": 0.61425,
+      "theta": -0.66549,
+      "z": 2056.56,
+      "elevation": 39.68,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 6.182,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_c3ff7b035abb"
+    },
+    {
+      "name": "Forest_Tree_36",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.85608,
+      "v": 0.8661,
+      "theta": 2.2373,
+      "z": 6589.88,
+      "elevation": 40.57,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.4566,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_153f3485f2b0"
+    },
+    {
+      "name": "Forest_Tree_37",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.95366,
+      "v": 0.69641,
+      "theta": 2.85045,
+      "z": 3535.45,
+      "elevation": 49.99,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.006,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_cdb2cb32af9d"
+    },
+    {
+      "name": "Forest_Tree_38",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.68089,
+      "v": 0.84744,
+      "theta": 1.13659,
+      "z": 6253.89,
+      "elevation": 26.96,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.4976,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_8008e971f74d"
+    },
+    {
+      "name": "Forest_Tree_39",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.78463,
+      "v": 0.50235,
+      "theta": 1.78836,
+      "z": 42.26,
+      "elevation": 49.99,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.954,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_d12a4a2e3907"
+    },
+    {
+      "name": "Forest_Tree_40",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.05244,
+      "v": 0.60873,
+      "theta": -2.81213,
+      "z": 1957.15,
+      "elevation": 44.32,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.5697,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_245b065dbd62"
+    },
+    {
+      "name": "Forest_Tree_41",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.78605,
+      "v": 0.25341,
+      "theta": 1.79733,
+      "z": -4438.61,
+      "elevation": 65.63,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.8007,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_bf4d00be7dd0"
+    },
+    {
+      "name": "Forest_Tree_42",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.63039,
+      "v": 0.36619,
+      "theta": 0.81925,
+      "z": -2408.52,
+      "elevation": 62.23,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.3328,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_7b567850b068"
+    },
+    {
+      "name": "Forest_Tree_43",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.5105,
+      "v": 0.09576,
+      "theta": 0.06596,
+      "z": -7276.35,
+      "elevation": 47.46,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.0252,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 4,
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_576bce7f6a65"
+    },
+    {
+      "name": "Forest_Tree_44",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.30521,
+      "v": 0.80236,
+      "theta": -1.2239,
+      "z": 5442.48,
+      "elevation": 58.33,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.9443,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_917f9fde7cd0"
+    },
+    {
+      "name": "Forest_Tree_45",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.6636,
+      "v": 0.16266,
+      "theta": 1.02796,
+      "z": -6072.09,
+      "elevation": 32.12,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 6.1371,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 4,
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_65c4d8940913"
+    },
+    {
+      "name": "Forest_Tree_46",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.90179,
+      "v": 0.20474,
+      "theta": 2.52452,
+      "z": -5314.7,
+      "elevation": 64.5,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 1.8791,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_8ac885f20171"
+    },
+    {
+      "name": "Forest_Tree_47",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.30239,
+      "v": 0.70705,
+      "theta": -1.24164,
+      "z": 3726.97,
+      "elevation": 46.42,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.8336,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_6b749eb97e45"
+    },
+    {
+      "name": "Forest_Tree_48",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.55184,
+      "v": 0.06583,
+      "theta": 0.32573,
+      "z": -7815.02,
+      "elevation": 35.01,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.0435,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 2,
+      "tree_variant_name": "BIRCH",
+      "id": "obj_f6297a89142b"
+    },
+    {
+      "name": "Forest_Tree_49",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.30395,
+      "v": 0.61465,
+      "theta": -1.23179,
+      "z": 2063.62,
+      "elevation": 39.49,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 6.1908,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_af00c6dd5b8d"
+    },
+    {
+      "name": "Forest_Tree_50",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.7102,
+      "v": 0.69888,
+      "theta": 1.32075,
+      "z": 3579.9,
+      "elevation": 44.08,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.0903,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 2,
+      "tree_variant_name": "BIRCH",
+      "id": "obj_cefb71f94547"
+    },
+    {
+      "name": "Forest_Tree_51",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.87367,
+      "v": 0.41496,
+      "theta": 2.34787,
+      "z": -1530.78,
+      "elevation": 28.3,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 6.2086,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_428acb45887c"
+    },
+    {
+      "name": "Forest_Tree_52",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.9467,
+      "v": 0.45451,
+      "theta": 2.80668,
+      "z": -818.89,
+      "elevation": 33.87,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 1.5106,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_2b5146e32d70"
+    },
+    {
+      "name": "Forest_Tree_53",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.72152,
+      "v": 0.79003,
+      "theta": 1.39184,
+      "z": 5220.57,
+      "elevation": 37.79,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.2564,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_975dd3af5539"
+    },
+    {
+      "name": "Forest_Tree_54",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.90619,
+      "v": 0.66481,
+      "theta": 2.55219,
+      "z": 2966.61,
+      "elevation": 60.55,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.2288,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 2,
+      "tree_variant_name": "BIRCH",
+      "id": "obj_e5199fc47939"
+    },
+    {
+      "name": "Forest_Tree_55",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.41183,
+      "v": 0.35061,
+      "theta": -0.55401,
+      "z": -2689.11,
+      "elevation": 38.89,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.9383,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 5,
+      "tree_variant_name": "DEAD_TREE",
+      "id": "obj_8ef9b965007b"
+    },
+    {
+      "name": "Forest_Tree_56",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.88207,
+      "v": 0.13557,
+      "theta": 2.4006,
+      "z": -6559.67,
+      "elevation": 66.93,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 1.7516,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_e93c061dd5b9"
+    },
+    {
+      "name": "Forest_Tree_57",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.02967,
+      "v": 0.67724,
+      "theta": -2.95515,
+      "z": 3190.32,
+      "elevation": 40.61,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.5889,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 2,
+      "tree_variant_name": "BIRCH",
+      "id": "obj_12a87b42a244"
+    },
+    {
+      "name": "Forest_Tree_58",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.1995,
+      "v": 0.45017,
+      "theta": -1.8881,
+      "z": -896.97,
+      "elevation": 32.75,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.4163,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_cfdc4db6f786"
+    },
+    {
+      "name": "Forest_Tree_59",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.57789,
+      "v": 0.86784,
+      "theta": 0.48942,
+      "z": 6621.18,
+      "elevation": 36.76,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.3545,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_e02cd9388985"
+    },
+    {
+      "name": "Forest_Tree_60",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.31091,
+      "v": 0.05218,
+      "theta": -1.18808,
+      "z": -8060.76,
+      "elevation": 46.73,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.9579,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 4,
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_170009488ef4"
+    },
+    {
+      "name": "Forest_Tree_61",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.15433,
+      "v": 0.74801,
+      "theta": -2.1719,
+      "z": 4464.13,
+      "elevation": 67.49,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.8059,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_cea65c79c94c"
+    },
+    {
+      "name": "Forest_Tree_62",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.85219,
+      "v": 0.33638,
+      "theta": 2.21289,
+      "z": -2945.15,
+      "elevation": 29.02,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.2716,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 4,
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_4e65d069a4d5"
+    },
+    {
+      "name": "Forest_Tree_63",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.10435,
+      "v": 0.16581,
+      "theta": -2.48592,
+      "z": -6015.46,
+      "elevation": 43.44,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.899,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_c05e2690f348"
+    },
+    {
+      "name": "Forest_Tree_64",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.61962,
+      "v": 0.43376,
+      "theta": 0.7516,
+      "z": -1192.35,
+      "elevation": 31.61,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.094,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_e2e56bdd57a4"
+    },
+    {
+      "name": "Forest_Tree_65",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.9212,
+      "v": 0.91888,
+      "theta": 2.64645,
+      "z": 7539.77,
+      "elevation": 39.14,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.1127,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_ca3144844cee"
+    },
+    {
+      "name": "Forest_Tree_66",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.45117,
+      "v": 0.60205,
+      "theta": -0.3068,
+      "z": 1836.97,
+      "elevation": 47.82,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.0023,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_e4349de71d5e"
+    },
+    {
+      "name": "Forest_Tree_67",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.15192,
+      "v": 0.64071,
+      "theta": -2.18705,
+      "z": 2532.77,
+      "elevation": 46.68,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 1.8654,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 2,
+      "tree_variant_name": "BIRCH",
+      "id": "obj_224fa8c39960"
+    },
+    {
+      "name": "Forest_Tree_68",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.56788,
+      "v": 0.18813,
+      "theta": 0.42648,
+      "z": -5613.71,
+      "elevation": 44.45,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.3169,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_0b590f8f63d2"
+    },
+    {
+      "name": "Forest_Tree_69",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.68934,
+      "v": 0.05388,
+      "theta": 1.18967,
+      "z": -8030.18,
+      "elevation": 49.64,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.6006,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_e80c5f315195"
+    },
+    {
+      "name": "Forest_Tree_70",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.02367,
+      "v": 0.20139,
+      "theta": -2.99286,
+      "z": -5375.03,
+      "elevation": 30.72,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.1101,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_345983f26761"
+    },
+    {
+      "name": "Forest_Tree_71",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.45575,
+      "v": 0.78043,
+      "theta": -0.278,
+      "z": 5047.8,
+      "elevation": 31.82,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.8706,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_72db512ef89a"
+    },
+    {
+      "name": "Forest_Tree_72",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.03422,
+      "v": 0.3678,
+      "theta": -2.9266,
+      "z": -2379.65,
+      "elevation": 38.51,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.2506,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_e5e6f49a3fc0"
+    },
+    {
+      "name": "Forest_Tree_73",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.73196,
+      "v": 0.33985,
+      "theta": 1.45743,
+      "z": -2882.73,
+      "elevation": 43.78,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 6.0688,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_76fe1c3fbc85"
+    },
+    {
+      "name": "Forest_Tree_74",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.45751,
+      "v": 0.44388,
+      "theta": -0.26697,
+      "z": -1010.08,
+      "elevation": 46.33,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.1054,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 2,
+      "tree_variant_name": "BIRCH",
+      "id": "obj_3f631cbc256c"
+    },
+    {
+      "name": "Forest_Tree_75",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.54013,
+      "v": 0.8541,
+      "theta": 0.25215,
+      "z": 6373.75,
+      "elevation": 29.21,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.9274,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 4,
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_93ab7a55f282"
+    },
+    {
+      "name": "Forest_Tree_76",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.93034,
+      "v": 0.59984,
+      "theta": 2.70392,
+      "z": 1797.14,
+      "elevation": 45.62,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.6047,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 2,
+      "tree_variant_name": "BIRCH",
+      "id": "obj_d836945e9236"
+    },
+    {
+      "name": "Forest_Tree_77",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.65959,
+      "v": 0.52159,
+      "theta": 1.00274,
+      "z": 388.55,
+      "elevation": 39.18,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.718,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_f21fd708c493"
+    },
+    {
+      "name": "Forest_Tree_78",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.19391,
+      "v": 0.18698,
+      "theta": -1.92321,
+      "z": -5634.28,
+      "elevation": 49.29,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.6906,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_f354aa7e0426"
+    },
+    {
+      "name": "Forest_Tree_79",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.80409,
+      "v": 0.27172,
+      "theta": 1.91067,
+      "z": -4109.01,
+      "elevation": 62.54,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.5399,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_c1635155deb7"
+    },
+    {
+      "name": "Forest_Tree_80",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.2186,
+      "v": 0.26315,
+      "theta": -1.76808,
+      "z": -4263.25,
+      "elevation": 38.23,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.097,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_300d7dff5973"
+    },
+    {
+      "name": "Forest_Tree_81",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.75346,
+      "v": 0.54468,
+      "theta": 1.59251,
+      "z": 804.16,
+      "elevation": 48.73,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.3295,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 5,
+      "tree_variant_name": "DEAD_TREE",
+      "id": "obj_9d017f05e2f8"
+    },
+    {
+      "name": "Forest_Tree_82",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.95353,
+      "v": 0.93992,
+      "theta": 2.84962,
+      "z": 7918.55,
+      "elevation": 31.12,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.23,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_e0064a21f153"
+    },
+    {
+      "name": "Forest_Tree_83",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.76446,
+      "v": 0.1372,
+      "theta": 1.66165,
+      "z": -6530.35,
+      "elevation": 68.55,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.7454,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 5,
+      "tree_variant_name": "DEAD_TREE",
+      "id": "obj_7539df43da7d"
+    },
+    {
+      "name": "Forest_Tree_84",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.03571,
+      "v": 0.08406,
+      "theta": -2.91722,
+      "z": -7486.86,
+      "elevation": 31.01,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.5756,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 3,
+      "tree_variant_name": "WILLOW",
+      "id": "obj_dab0361dfaa9"
+    },
+    {
+      "name": "Forest_Tree_85",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.70447,
+      "v": 0.23917,
+      "theta": 1.28474,
+      "z": -4695.0,
+      "elevation": 47.19,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 3.3858,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_d18f52bc26b1"
+    },
+    {
+      "name": "Forest_Tree_86",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.77761,
+      "v": 0.16304,
+      "theta": 1.74424,
+      "z": -6065.24,
+      "elevation": 77.24,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.7829,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_9be40fd83d05"
+    },
+    {
+      "name": "Forest_Tree_87",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.93699,
+      "v": 0.17724,
+      "theta": 2.74566,
+      "z": -5809.73,
+      "elevation": 58.54,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 0.2972,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_682cd8f0b762"
+    },
+    {
+      "name": "Forest_Tree_88",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.63021,
+      "v": 0.32965,
+      "theta": 0.81815,
+      "z": -3066.26,
+      "elevation": 54.04,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 2.5811,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 1,
+      "tree_variant_name": "PINE",
+      "id": "obj_3bfdc85edde0"
+    },
+    {
+      "name": "Forest_Tree_89",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.70931,
+      "v": 0.454,
+      "theta": 1.31513,
+      "z": -828.02,
+      "elevation": 45.7,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 5.9286,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 0,
+      "tree_variant_name": "OAK",
+      "id": "obj_83cafd35cbd7"
+    },
+    {
+      "name": "Forest_Tree_90",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.58694,
+      "v": 0.12522,
+      "theta": 0.54626,
+      "z": -6745.99,
+      "elevation": 31.93,
+      "light_color": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "light_range": 0.0,
+      "light_energy": 0.0,
+      "yaw_rad": 4.9259,
+      "settlement_id": "Wildland_Forest",
+      "role": "forest_tree",
+      "tree_variant": 4,
+      "tree_variant_name": "CHERRY_BLOSSOM",
+      "id": "obj_6f69c515bf3b"
+    },
+    {
+      "name": "River_Bridge_1",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.35059,
+      "v": 0.32422,
+      "theta": -0.9388,
+      "z": -3164.06,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.8608,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_5f7b2a675606"
+    },
+    {
+      "name": "River_Bridge_2",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.35156,
+      "v": 0.3252,
+      "theta": -0.93266,
+      "z": -3146.48,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.8608,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_a84f61d10bcb"
+    },
+    {
+      "name": "River_Bridge_3",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.34912,
+      "v": 0.32812,
+      "theta": -0.948,
+      "z": -3093.75,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.8608,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_d8db5a1d7d46"
+    },
+    {
+      "name": "River_Bridge_4",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.35156,
+      "v": 0.32812,
+      "theta": -0.93266,
+      "z": -3093.75,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.8608,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_eaf0cf2a3158"
+    },
+    {
+      "name": "River_Bridge_5",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.34521,
+      "v": 0.32324,
+      "theta": -0.97254,
+      "z": -3181.64,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.8608,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_4fad57e875cc"
+    },
+    {
+      "name": "River_Bridge_6",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.35742,
+      "v": 0.32812,
+      "theta": -0.89584,
+      "z": -3093.75,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_db7f929cf00d"
+    },
+    {
+      "name": "River_Bridge_7",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.34082,
+      "v": 0.42969,
+      "theta": -1.00016,
+      "z": -1265.62,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_2f372ff77e7c"
+    },
+    {
+      "name": "River_Bridge_8",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.33838,
+      "v": 0.43164,
+      "theta": -1.0155,
+      "z": -1230.47,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_0d13c277007b"
+    },
+    {
+      "name": "River_Bridge_9",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.33691,
+      "v": 0.43359,
+      "theta": -1.0247,
+      "z": -1195.31,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_a05cfa88c4e1"
+    },
+    {
+      "name": "River_Bridge_10",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.33984,
+      "v": 0.43359,
+      "theta": -1.00629,
+      "z": -1195.31,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_305816dacbb2"
+    },
+    {
+      "name": "River_Bridge_11",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.33447,
+      "v": 0.44531,
+      "theta": -1.04004,
+      "z": -984.38,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_9c501417b9ce"
+    },
+    {
+      "name": "River_Bridge_12",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.3335,
+      "v": 0.44336,
+      "theta": -1.04617,
+      "z": -1019.53,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_c9f9f1ac9db4"
+    },
+    {
+      "name": "River_Bridge_13",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.3335,
+      "v": 0.44531,
+      "theta": -1.04617,
+      "z": -984.38,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_244ac2d1fb9e"
+    },
+    {
+      "name": "River_Bridge_14",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.33252,
+      "v": 0.45703,
+      "theta": -1.05231,
+      "z": -773.44,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_a62eff807ba4"
+    },
+    {
+      "name": "River_Bridge_15",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.33398,
+      "v": 0.45703,
+      "theta": -1.04311,
+      "z": -773.44,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_3586c6ed0627"
+    },
+    {
+      "name": "River_Bridge_16",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.33057,
+      "v": 0.46875,
+      "theta": -1.06458,
+      "z": -562.5,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_76756fb05aae"
+    },
+    {
+      "name": "River_Bridge_17",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.33398,
+      "v": 0.46875,
+      "theta": -1.04311,
+      "z": -562.5,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_a5e3f3f30847"
+    },
+    {
+      "name": "River_Bridge_18",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32861,
+      "v": 0.48047,
+      "theta": -1.07685,
+      "z": -351.56,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_d1fd050e5883"
+    },
+    {
+      "name": "River_Bridge_19",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32764,
+      "v": 0.47656,
+      "theta": -1.08299,
+      "z": -421.88,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_8d110fa29c9c"
+    },
+    {
+      "name": "River_Bridge_20",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32764,
+      "v": 0.48047,
+      "theta": -1.08299,
+      "z": -351.56,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_6b5a082ca0af"
+    },
+    {
+      "name": "River_Bridge_21",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32617,
+      "v": 0.49219,
+      "theta": -1.09219,
+      "z": -140.62,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_491d493039eb"
+    },
+    {
+      "name": "River_Bridge_22",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32812,
+      "v": 0.49219,
+      "theta": -1.07992,
+      "z": -140.62,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_f1de58fb35b8"
+    },
+    {
+      "name": "River_Bridge_23",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32422,
+      "v": 0.50391,
+      "theta": -1.10447,
+      "z": 70.31,
+      "elevation": 2.07,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_9cf75f643462"
+    },
+    {
+      "name": "River_Bridge_24",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32812,
+      "v": 0.50391,
+      "theta": -1.07992,
+      "z": 70.31,
+      "elevation": 2.08,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_833a9af177a5"
+    },
+    {
+      "name": "River_Bridge_25",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32227,
+      "v": 0.51562,
+      "theta": -1.11674,
+      "z": 281.25,
+      "elevation": 3.98,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_5f185911c26a"
+    },
+    {
+      "name": "River_Bridge_26",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32178,
+      "v": 0.50977,
+      "theta": -1.11981,
+      "z": 175.78,
+      "elevation": 2.64,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_96647a2a15f1"
+    },
+    {
+      "name": "River_Bridge_27",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32178,
+      "v": 0.51562,
+      "theta": -1.11981,
+      "z": 281.25,
+      "elevation": 3.93,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_fb1c46f0a422"
+    },
+    {
+      "name": "River_Bridge_28",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32031,
+      "v": 0.52734,
+      "theta": -1.12901,
+      "z": 492.19,
+      "elevation": 8.46,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_a9a8036a31fd"
+    },
+    {
+      "name": "River_Bridge_29",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32227,
+      "v": 0.52734,
+      "theta": -1.11674,
+      "z": 492.19,
+      "elevation": 8.17,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_cd81fc876afa"
+    },
+    {
+      "name": "River_Bridge_30",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.31836,
+      "v": 0.53906,
+      "theta": -1.14128,
+      "z": 703.12,
+      "elevation": 14.31,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_275116717aa5"
+    },
+    {
+      "name": "River_Bridge_31",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.32227,
+      "v": 0.53906,
+      "theta": -1.11674,
+      "z": 703.12,
+      "elevation": 13.42,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_64fa0bdc2b4f"
+    },
+    {
+      "name": "River_Bridge_32",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.31592,
+      "v": 0.54297,
+      "theta": -1.15662,
+      "z": 773.44,
+      "elevation": 15.81,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_0c71f4fdaf62"
+    },
+    {
+      "name": "River_Bridge_33",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.31592,
+      "v": 0.55078,
+      "theta": -1.15662,
+      "z": 914.06,
+      "elevation": 19.25,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -0.2416,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_411c0c33b9ea"
+    },
+    {
+      "name": "River_Bridge_34",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.34424,
+      "v": 0.29785,
+      "theta": -0.97868,
+      "z": -3638.67,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -2.0911,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_ee65b0afac78"
+    },
+    {
+      "name": "River_Bridge_35",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.3457,
+      "v": 0.29688,
+      "theta": -0.96948,
+      "z": -3656.25,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -2.0911,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_41074a1c7053"
+    },
+    {
+      "name": "River_Bridge_36",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.33936,
+      "v": 0.29395,
+      "theta": -1.00936,
+      "z": -3708.98,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -2.0911,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_f5c869d07af3"
+    },
+    {
+      "name": "River_Bridge_37",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.33691,
+      "v": 0.29199,
+      "theta": -1.0247,
+      "z": -3744.14,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -2.0911,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_f18c5b62efb7"
+    },
+    {
+      "name": "River_Bridge_38",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.33984,
+      "v": 0.29199,
+      "theta": -1.00629,
+      "z": -3744.14,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -2.0911,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_fa18e341067a"
+    },
+    {
+      "name": "River_Bridge_39",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.3335,
+      "v": 0.29395,
+      "theta": -1.04617,
+      "z": -3708.98,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -2.0911,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_10f3be500392"
+    },
+    {
+      "name": "River_Bridge_40",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.16943,
+      "v": 0.15527,
+      "theta": -2.07701,
+      "z": -6205.08,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -2.0911,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_2a921578e897"
+    },
+    {
+      "name": "River_Bridge_41",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.16992,
+      "v": 0.15527,
+      "theta": -2.07394,
+      "z": -6205.08,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -2.0911,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_4425bf3e695f"
+    },
+    {
+      "name": "River_Bridge_42",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.1626,
+      "v": 0.15234,
+      "theta": -2.11996,
+      "z": -6257.81,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": -2.0911,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_d7a994775f87"
+    },
+    {
+      "name": "River_Bridge_43",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.3833,
+      "v": 0.33984,
+      "theta": -0.73324,
+      "z": -2882.81,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": 1.0039,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_0754993638de"
+    },
+    {
+      "name": "River_Bridge_44",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.38672,
+      "v": 0.3418,
+      "theta": -0.71177,
+      "z": -2847.66,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": 1.0039,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_4307af97be15"
+    },
+    {
+      "name": "River_Bridge_45",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.39258,
+      "v": 0.34668,
+      "theta": -0.67495,
+      "z": -2759.77,
+      "elevation": 20.85,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": 1.0039,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_fe20fc7be7dd"
+    },
+    {
+      "name": "River_Bridge_46",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.66455,
+      "v": 0.80078,
+      "theta": 1.0339,
+      "z": 5414.06,
+      "elevation": 17.66,
+      "light_color": [
+        1.0,
+        0.9,
+        0.72
+      ],
+      "light_range": 38.0,
+      "light_energy": 4.2,
+      "yaw_rad": 2.0564,
+      "settlement_id": "Regional_Transport",
+      "role": "river_crossing_bridge",
+      "id": "obj_27125bd5eac2"
+    },
+    {
+      "name": "EndCap_NavBeacon_South_1",
+      "object_type": 2,
+      "object_type_name": "BEACON_LANTERN",
+      "u": 0.125,
+      "v": 0.03,
+      "theta": -2.35619,
+      "z": -8460.0,
+      "elevation": 44.79,
+      "light_color": [
+        0.2,
+        0.88,
+        1.0
+      ],
+      "light_range": 45.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "EndCap_South",
+      "role": "navigation_beacon",
+      "id": "obj_be5c334f0835"
+    },
+    {
+      "name": "EndCap_NavBeacon_South_2",
+      "object_type": 2,
+      "object_type_name": "BEACON_LANTERN",
+      "u": 0.375,
+      "v": 0.03,
+      "theta": -0.7854,
+      "z": -8460.0,
+      "elevation": 52.96,
+      "light_color": [
+        0.2,
+        0.88,
+        1.0
+      ],
+      "light_range": 45.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "EndCap_South",
+      "role": "navigation_beacon",
+      "id": "obj_fc4454cc6b27"
+    },
+    {
+      "name": "EndCap_NavBeacon_South_3",
+      "object_type": 2,
+      "object_type_name": "BEACON_LANTERN",
+      "u": 0.625,
+      "v": 0.03,
+      "theta": 0.7854,
+      "z": -8460.0,
+      "elevation": 30.9,
+      "light_color": [
+        0.2,
+        0.88,
+        1.0
+      ],
+      "light_range": 45.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "EndCap_South",
+      "role": "navigation_beacon",
+      "id": "obj_335b44ce406a"
+    },
+    {
+      "name": "EndCap_NavBeacon_South_4",
+      "object_type": 2,
+      "object_type_name": "BEACON_LANTERN",
+      "u": 0.875,
+      "v": 0.03,
+      "theta": 2.35619,
+      "z": -8460.0,
+      "elevation": 50.97,
+      "light_color": [
+        0.2,
+        0.88,
+        1.0
+      ],
+      "light_range": 45.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "EndCap_South",
+      "role": "navigation_beacon",
+      "id": "obj_b4d2ce2e7c26"
+    },
+    {
+      "name": "EndCap_NavBeacon_North_1",
+      "object_type": 2,
+      "object_type_name": "BEACON_LANTERN",
+      "u": 0.125,
+      "v": 0.97,
+      "theta": -2.35619,
+      "z": 8460.0,
+      "elevation": 50.49,
+      "light_color": [
+        0.2,
+        0.88,
+        1.0
+      ],
+      "light_range": 45.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "EndCap_North",
+      "role": "navigation_beacon",
+      "id": "obj_2fe48aa6dec2"
+    },
+    {
+      "name": "EndCap_NavBeacon_North_2",
+      "object_type": 2,
+      "object_type_name": "BEACON_LANTERN",
+      "u": 0.375,
+      "v": 0.97,
+      "theta": -0.7854,
+      "z": 8460.0,
+      "elevation": 56.0,
+      "light_color": [
+        0.2,
+        0.88,
+        1.0
+      ],
+      "light_range": 45.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "EndCap_North",
+      "role": "navigation_beacon",
+      "id": "obj_652bac90a1e7"
+    },
+    {
+      "name": "EndCap_NavBeacon_North_3",
+      "object_type": 2,
+      "object_type_name": "BEACON_LANTERN",
+      "u": 0.625,
+      "v": 0.97,
+      "theta": 0.7854,
+      "z": 8460.0,
+      "elevation": 38.3,
+      "light_color": [
+        0.2,
+        0.88,
+        1.0
+      ],
+      "light_range": 45.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "EndCap_North",
+      "role": "navigation_beacon",
+      "id": "obj_c5dc22dd3640"
+    },
+    {
+      "name": "EndCap_NavBeacon_North_4",
+      "object_type": 2,
+      "object_type_name": "BEACON_LANTERN",
+      "u": 0.875,
+      "v": 0.97,
+      "theta": 2.35619,
+      "z": 8460.0,
+      "elevation": 43.11,
+      "light_color": [
+        0.2,
+        0.88,
+        1.0
+      ],
+      "light_range": 45.0,
+      "light_energy": 5.5,
+      "yaw_rad": 0.0,
+      "settlement_id": "EndCap_North",
+      "role": "navigation_beacon",
+      "id": "obj_4304db69040c"
+    },
+    {
+      "name": "Spawn_Showcase_Campfire",
+      "object_type": 0,
+      "object_type_name": "CAMPFIRE",
+      "u": 0.2791009,
+      "v": 0.41469444,
+      "theta": -1.38795,
+      "z": -1535.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "id": "obj_60e14e846018"
+    },
+    {
+      "name": "Spawn_Showcase_Lamp_Post",
+      "object_type": 1,
+      "object_type_name": "LAMP_POST",
+      "u": 0.28053329,
+      "v": 0.41469444,
+      "theta": -1.37895,
+      "z": -1535.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "id": "obj_607253b2d916"
+    },
+    {
+      "name": "Spawn_Showcase_Beacon_Lantern",
+      "object_type": 2,
+      "object_type_name": "BEACON_LANTERN",
+      "u": 0.28196569,
+      "v": 0.41469444,
+      "theta": -1.36995,
+      "z": -1535.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "id": "obj_f63ccc099492"
+    },
+    {
+      "name": "Spawn_Showcase_Arched_Bridge",
+      "object_type": 3,
+      "object_type_name": "BRIDGE",
+      "u": 0.28339808,
+      "v": 0.41469444,
+      "theta": -1.36095,
+      "z": -1535.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "id": "obj_67bd622952c7"
+    },
+    {
+      "name": "Spawn_Showcase_Bonfire",
+      "object_type": 4,
+      "object_type_name": "BONFIRE",
+      "u": 0.2791009,
+      "v": 0.41669444,
+      "theta": -1.38795,
+      "z": -1499.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "id": "obj_2caea1e9250b"
+    },
+    {
+      "name": "Spawn_Showcase_Colony_House",
+      "object_type": 5,
+      "object_type_name": "HOUSE",
+      "u": 0.28053329,
+      "v": 0.41669444,
+      "theta": -1.37895,
+      "z": -1499.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "id": "obj_63a5375709b3"
+    },
+    {
+      "name": "Spawn_Showcase_Foliage_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.28196569,
+      "v": 0.41669444,
+      "theta": -1.36995,
+      "z": -1499.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "id": "obj_b10590a82dbd"
+    },
+    {
+      "name": "Spawn_Showcase_Windmill",
+      "object_type": 7,
+      "object_type_name": "WINDMILL",
+      "u": 0.28339808,
+      "v": 0.41669444,
+      "theta": -1.36095,
+      "z": -1499.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "id": "obj_9a9b816c05f6"
+    },
+    {
+      "name": "Spawn_Showcase_Oak_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.2791009,
+      "v": 0.41869444,
+      "theta": -1.38795,
+      "z": -1463.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 0,
+      "id": "obj_55fd486f486d"
+    },
+    {
+      "name": "Spawn_Showcase_Pine_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.28053329,
+      "v": 0.41869444,
+      "theta": -1.37895,
+      "z": -1463.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 1,
+      "id": "obj_b7ee0b78ec60"
+    },
+    {
+      "name": "Spawn_Showcase_Birch_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.28196569,
+      "v": 0.41869444,
+      "theta": -1.36995,
+      "z": -1463.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 2,
+      "id": "obj_8035e09e450a"
+    },
+    {
+      "name": "Spawn_Showcase_Willow_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.28339808,
+      "v": 0.41869444,
+      "theta": -1.36095,
+      "z": -1463.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 3,
+      "id": "obj_0c7a5d86e095"
+    },
+    {
+      "name": "Spawn_Showcase_Cherry_Blossom_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.2791009,
+      "v": 0.42069444,
+      "theta": -1.38795,
+      "z": -1427.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 4,
+      "id": "obj_8d2d5f1221ae"
+    },
+    {
+      "name": "Spawn_Showcase_Dead_Tree",
+      "object_type": 6,
+      "object_type_name": "TREE",
+      "u": 0.28053329,
+      "v": 0.42069444,
+      "theta": -1.37895,
+      "z": -1427.5,
+      "elevation": 29.43,
+      "light_color": [
+        1.0,
+        0.82,
+        0.54
+      ],
+      "light_range": 18.0,
+      "light_energy": 2.0,
+      "yaw_rad": 0.0,
+      "settlement_id": "Spawn_Showcase",
+      "role": "object_catalog_example",
+      "tree_variant": 5,
+      "id": "obj_cea2fa2138c1"
+    }
+  ],
+  "total_placed_objects": 220
 }

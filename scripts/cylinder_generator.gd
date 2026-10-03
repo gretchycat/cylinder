@@ -9,45 +9,45 @@ const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 @export_category("Cylinder Dimensions (8 km dia x 18 km length)")
 @export var radius: float = 4000.0: # 8 km diameter = 4 km radius
 	set(val):
-		radius = max(val, 10.0)
-		if is_inside_tree() and Engine.is_editor_hint():
+		radius = val
+		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
 			generate_cylinder()
 
 @export var cylinder_length: float = 18000.0: # 18 km length
 	set(val):
-		cylinder_length = max(val, 20.0)
-		if is_inside_tree() and Engine.is_editor_hint():
+		cylinder_length = val
+		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
 			generate_cylinder()
 
 @export_category("Mesh Tessellation")
 @export var radial_segments: int = 144:
 	set(val):
 		radial_segments = clampi(val, 16, 256)
-		if is_inside_tree() and Engine.is_editor_hint():
+		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
 			generate_cylinder()
 
 @export var length_segments: int = 180: # 180 segments along 18 km = 100m per segment
 	set(val):
 		length_segments = clampi(val, 4, 360)
-		if is_inside_tree() and Engine.is_editor_hint():
+		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
 			generate_cylinder()
 
 @export var include_end_caps: bool = true:
 	set(val):
 		include_end_caps = val
-		if is_inside_tree() and Engine.is_editor_hint():
+		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
 			generate_cylinder()
 
 @export var end_cap_rings: int = 32: # Concentric structural rings on each hemispherical end cap
 	set(val):
 		end_cap_rings = clampi(val, 8, 64)
-		if is_inside_tree() and Engine.is_editor_hint():
+		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
 			generate_cylinder()
 
 @export var end_cap_dish_depth: float = 4000.0: # Hemispherical dome radius depth (4 km)
 	set(val):
 		end_cap_dish_depth = max(val, 0.0)
-		if is_inside_tree() and Engine.is_editor_hint():
+		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
 			generate_cylinder()
 
 @export_category("Terrain & Elevation Maps")
@@ -56,7 +56,7 @@ const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 		elevation_variance = max(val, 0.0)
 		if terrain_manager:
 			terrain_manager.elevation_variance = elevation_variance
-		if is_inside_tree() and Engine.is_editor_hint():
+		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
 			generate_cylinder()
 
 @export var water_level: float = 20.0: # 20 m from elevation 0
@@ -64,27 +64,29 @@ const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 		water_level = max(val, 0.0)
 		if terrain_manager:
 			terrain_manager.water_level = water_level
-		if is_inside_tree() and Engine.is_editor_hint():
+		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
 			generate_cylinder()
 
-@export_file var elevation_map_path: String = "res://assets/maps/default/elevation_map.png":
+var elevation_map_path: String = "":
 	set(val):
 		elevation_map_path = val
-		if terrain_manager and is_inside_tree():
-			terrain_manager.load_elevation_from_image(elevation_map_path)
+		if terrain_manager and is_inside_tree() and not _is_initializing_terrain:
+			terrain_manager.load_elevation(elevation_map_path)
 			generate_cylinder()
 
-@export_file var terrain_map_path: String = "res://assets/maps/default/terrain_map.png":
+var terrain_map_path: String = "":
 	set(val):
 		terrain_map_path = val
-		if terrain_manager and is_inside_tree():
-			terrain_manager.load_terrain_from_image(terrain_map_path)
+		if terrain_manager and is_inside_tree() and not _is_initializing_terrain:
+			terrain_manager.load_terrain(terrain_map_path)
 			generate_cylinder()
 
 @export var map_package: String = "res://assets/maps/default":
 	set(val):
+		if map_package == val:
+			return
 		map_package = val
-		if is_inside_tree():
+		if is_inside_tree() and not _is_initializing_terrain:
 			load_map_package(map_package)
 
 @export_category("Atmospheric Aerial Perspective (8 km Distance Haze)")
@@ -113,6 +115,7 @@ const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 
 var terrain_manager: TerrainManagerClass
 var active_map_config: Dictionary = {}
+var map_load_error: String = ""
 
 var mesh_instance: MeshInstance3D
 var water_mesh_instance: MeshInstance3D
@@ -126,67 +129,79 @@ func _ready() -> void:
 	add_to_group("cylinder_world")
 	if not terrain_manager:
 		_initialize_terrain_manager()
-	generate_cylinder()
+	else:
+		generate_cylinder()
 	var light_bar = get_tree().get_first_node_in_group("light_bar")
 	if light_bar and light_bar.has_method("_apply_lut_to_materials"):
 		light_bar._apply_lut_to_materials()
 
 func _initialize_terrain_manager() -> void:
-	if _is_initializing_terrain:
-		return
-	_is_initializing_terrain = true
-	if not map_package.is_empty():
-		load_map_package(map_package)
-		_is_initializing_terrain = false
-		return
-	terrain_manager = TerrainManagerClass.new(512, 256, elevation_variance, water_level)
-	if FileAccess.file_exists(elevation_map_path) or FileAccess.file_exists(ProjectSettings.globalize_path(elevation_map_path)):
-		terrain_manager.load_elevation_from_png(elevation_map_path)
-	if FileAccess.file_exists(terrain_map_path) or FileAccess.file_exists(ProjectSettings.globalize_path(terrain_map_path)):
-		terrain_manager.load_terrain_from_png(terrain_map_path)
-	_is_initializing_terrain = false
+	load_map_package(MapConfigClass.active_map() if not Engine.is_editor_hint() else map_package)
 
-## Load an arbitrary map package from assets/maps/<mapname>/
+## Stage layers before changing active state. A malformed layer preserves the world.
 func load_map_package(package_path_or_name: String) -> bool:
 	var cfg = MapConfigClass.load_map_config(package_path_or_name)
 	if cfg.is_empty():
+		map_load_error = MapConfigClass.last_error
+		push_error(map_load_error)
 		return false
+	if cfg.map_directory != MapConfigClass.active_map_assets_validated_directory:
+		var asset_error = MapConfigClass.validate_assets(cfg)
+		if not asset_error.is_empty():
+			map_load_error = asset_error
+			push_error(map_load_error)
+			return false
+	var staged = MapConfigClass.take_active_map_terrain(cfg.map_directory) as TerrainManagerClass
+	if not staged:
+		staged = TerrainManagerClass.new()
+		staged.configure(cfg)
+		if not staged.load_layers(MapConfigClass.get_elevation_map_path(cfg), MapConfigClass.get_terrain_map_path(cfg)):
+			map_load_error = staged.last_error
+			push_error(map_load_error)
+			return false
+	map_load_error = ""
+	_is_initializing_terrain = true
+	map_package = package_path_or_name
 	active_map_config = cfg
-
-	var geom = cfg.get("geometry", {})
-	var r = radius
-	var clen = cylinder_length
-	var elev_v = elevation_variance
-	var w_lvl = water_level
-	if geom is Dictionary:
-		r = float(geom.get("cylinder_radius_m", radius))
-		clen = float(geom.get("cylinder_length_m", cylinder_length))
-		elev_v = float(geom.get("elevation_variance_m", elevation_variance))
-		w_lvl = float(geom.get("water_sea_level_m", water_level))
-
+	terrain_manager = staged
+	radius = cfg.geometry.cylinder_radius_m
+	cylinder_length = cfg.geometry.cylinder_length_m
+	elevation_variance = cfg.geometry.elevation_variance_m
+	water_level = cfg.geometry.water_sea_level_m
 	elevation_map_path = MapConfigClass.get_elevation_map_path(cfg)
 	terrain_map_path = MapConfigClass.get_terrain_map_path(cfg)
-
-	if not terrain_manager:
-		terrain_manager = TerrainManagerClass.new(512, 256, elev_v, w_lvl)
-	else:
-		terrain_manager.elevation_variance = elev_v
-		terrain_manager.water_level = w_lvl
-
-	if FileAccess.file_exists(elevation_map_path) or FileAccess.file_exists(ProjectSettings.globalize_path(elevation_map_path)):
-		terrain_manager.load_elevation_from_image(elevation_map_path)
-	if FileAccess.file_exists(terrain_map_path) or FileAccess.file_exists(ProjectSettings.globalize_path(terrain_map_path)):
-		terrain_manager.load_terrain_from_image(terrain_map_path)
-
-	radius = r
-	cylinder_length = clen
-	elevation_variance = elev_v
-	water_level = w_lvl
-
+	radial_segments = int(cfg.rendering.radial_segments)
+	length_segments = int(cfg.rendering.length_segments)
+	end_cap_rings = int(cfg.rendering.end_cap_rings)
+	end_cap_dish_depth = cfg.rendering.end_cap_dish_depth_m
+	include_end_caps = cfg.rendering.include_end_caps
+	air_color = MapConfigClass.color(cfg.environment.air_color)
+	air_density = cfg.environment.air_density
+	air_distance_min = cfg.environment.air_distance_min
+	air_distance_max = cfg.environment.air_distance_max
+	_is_initializing_terrain = false
 	if is_inside_tree() and not _is_generating:
+		apply_environment()
+		for group in active_map_config.simulation:
+			var node = get_tree().get_first_node_in_group(group)
+			if node:
+				preload("res://scripts/map_runtime.gd").configure_node(node, group, active_map_config)
+				if node.has_method("map_changed"):
+					node.map_changed()
 		generate_cylinder()
-
 	return true
+
+func apply_environment() -> void:
+	var env_node = get_parent().get_node_or_null("WorldEnvironment")
+	if env_node and env_node.environment:
+		var env = env_node.environment
+		var values: Dictionary = active_map_config.environment
+		env.background_color = MapConfigClass.color(values.sky_color)
+		env.ambient_light_color = MapConfigClass.color(values.ambient_color)
+		env.ambient_light_energy = values.ambient_energy
+		env.fog_light_color = MapConfigClass.color(values.air_color)
+		env.fog_depth_begin = values.air_distance_min
+		env.fog_depth_end = values.air_distance_max
 
 func get_elevation_at(theta: float, z: float) -> float:
 	if not terrain_manager:
@@ -275,7 +290,7 @@ func find_safe_spawn_point(preferred_theta: float = -PI * 0.5, preferred_z: floa
 	# 1. Test preferred location first
 	var pref_elev = get_elevation_at(preferred_theta, preferred_z)
 	var pref_type = get_terrain_type_at(preferred_theta, preferred_z)
-	if pref_elev >= required_elevation and pref_type != TerrainManagerClass.TerrainType.WATER:
+	if pref_elev >= required_elevation:
 		return _build_spawn_info(preferred_theta, preferred_z, pref_elev, pref_type)
 
 	# 2. Search grid for nearest terrain cell above sea level
@@ -285,7 +300,7 @@ func find_safe_spawn_point(preferred_theta: float = -PI * 0.5, preferred_z: floa
 	var terr_data = terrain_manager.terrain_data
 
 	if elev_data.is_empty():
-		return _build_spawn_info(preferred_theta, preferred_z, water_level + 5.0, TerrainManagerClass.TerrainType.GRASS)
+		return _build_spawn_info(preferred_theta, preferred_z, water_level + 5.0, -1)
 
 	var target_u = fposmod(preferred_theta, TAU) / TAU
 	var target_v = clampf((preferred_z + cylinder_length * 0.5) / maxf(cylinder_length, 1.0), 0.0, 1.0)
@@ -296,7 +311,7 @@ func find_safe_spawn_point(preferred_theta: float = -PI * 0.5, preferred_z: floa
 	var best_y: int = -1
 	var best_dist_sq: float = INF
 	var best_elev: float = 0.0
-	var best_type: int = TerrainManagerClass.TerrainType.GRASS
+	var best_type: int = -1
 
 	var max_ring = maxi(grid_u, grid_v)
 	var found_in_ring = false
@@ -311,8 +326,8 @@ func find_safe_spawn_point(preferred_theta: float = -PI * 0.5, preferred_z: floa
 				if y >= 0 and y < grid_v:
 					var idx = y * grid_u + x
 					var e = elev_data[idx]
-					var t = terr_data[idx] if idx < terr_data.size() else 3
-					if e >= required_elevation and t != TerrainManagerClass.TerrainType.WATER:
+					var t = terrain_manager.get_terrain_type(float(x) / grid_u * TAU, (float(y) / (grid_v - 1) - 0.5) * cylinder_length, cylinder_length)
+					if e >= required_elevation:
 						var dz = (float(y - cy) / float(grid_v - 1)) * cylinder_length
 						var du = absf(float(x - cx) / float(grid_u))
 						if du > 0.5: du = 1.0 - du
@@ -335,8 +350,8 @@ func find_safe_spawn_point(preferred_theta: float = -PI * 0.5, preferred_z: floa
 				if y >= 0 and y < grid_v:
 					var idx = y * grid_u + x
 					var e = elev_data[idx]
-					var t = terr_data[idx] if idx < terr_data.size() else 3
-					if e >= required_elevation and t != TerrainManagerClass.TerrainType.WATER:
+					var t = terrain_manager.get_terrain_type(float(x) / grid_u * TAU, (float(y) / (grid_v - 1) - 0.5) * cylinder_length, cylinder_length)
+					if e >= required_elevation:
 						var dz = (float(y - cy) / float(grid_v - 1)) * cylinder_length
 						var du = absf(float(x - cx) / float(grid_u))
 						if du > 0.5: du = 1.0 - du
@@ -373,7 +388,7 @@ func find_safe_spawn_point(preferred_theta: float = -PI * 0.5, preferred_z: floa
 	var fall_y = highest_idx / grid_u
 	var fall_theta = (float(fall_x) / float(grid_u)) * TAU
 	var fall_z = (float(fall_y) / float(grid_v - 1) - 0.5) * cylinder_length
-	return _build_spawn_info(fall_theta, fall_z, highest_elev, TerrainManagerClass.TerrainType.GRASS)
+	return _build_spawn_info(fall_theta, fall_z, highest_elev, -1)
 
 func _build_spawn_info(theta: float, z: float, elev: float, terrain_type: int) -> Dictionary:
 	var surface_r = radius - elev
@@ -468,39 +483,34 @@ func _update_terrain_material_textures(mat: ShaderMaterial = null) -> void:
 		mat = surface_material as ShaderMaterial
 	if not mat:
 		return
+	preload("res://scripts/map_runtime.gd").shader_parameters(mat, active_map_config)
 
-	var terrain_names := ["grass", "sand", "dirt", "farmland", "rocks", "concrete", "road"]
-	var custom_textures: Dictionary = active_map_config.get("terrain_textures", {}) as Dictionary
-	for terrain_name in terrain_names:
-		var defaults: Array[String] = []
-		for variation in range(3):
-			defaults.append("res://assets/textures/terrain/%s_%d.png" % [terrain_name, variation])
-		var map_paths = custom_textures.get(terrain_name, []) as Array
-		for variation in range(3):
-			var uniform_name = "tex_%s_%d" % [terrain_name, variation]
-			var texture_path = str(map_paths[variation]) if variation < map_paths.size() else defaults[variation]
-			texture_path = MapConfigClass.resolve_map_asset_path(active_map_config, texture_path)
-			mat.set_shader_parameter(uniform_name, _load_texture_safe(texture_path))
-
-	var rib_path = str(custom_textures.get("end_cap_ribs", "res://assets/textures/terrain/end_cap_ribs.png"))
-	rib_path = MapConfigClass.resolve_map_asset_path(active_map_config, rib_path)
-	var rib_tex: Texture2D = _load_texture_safe(rib_path)
-	if rib_tex:
-		mat.set_shader_parameter("tex_end_cap_ribs", rib_tex)
-
-	var clutter_cover_path = str(custom_textures.get("clutter_cover_atlas", ""))
-	clutter_cover_path = MapConfigClass.resolve_map_asset_path(active_map_config, clutter_cover_path)
-	var clutter_cover_tex: Texture2D = _load_texture_safe(clutter_cover_path) if not clutter_cover_path.is_empty() else null
-	mat.set_shader_parameter("clutter_cover_enabled", clutter_cover_tex != null)
-	if clutter_cover_tex:
-		mat.set_shader_parameter("tex_clutter_cover_atlas", clutter_cover_tex)
-
-	if terrain_manager:
-		var terr_id_img = terrain_manager.create_terrain_type_id_image()
-		if terr_id_img:
-			var terr_tex = ImageTexture.create_from_image(terr_id_img)
-			mat.set_shader_parameter("terrain_map", terr_tex)
-			mat.set_shader_parameter("terrain_map_size", Vector2(terrain_manager.grid_u, terrain_manager.grid_v))
+	var images: Array[Image] = []
+	var tints = Image.create(256, 1, false, Image.FORMAT_RGBA8)
+	var parameters = Image.create(256, 1, false, Image.FORMAT_RGBAF)
+	var resolution = int(active_map_config.rendering.biome_texture_resolution)
+	for biome in active_map_config.biomes.values():
+		var img = MapAssetLoaderClass.load_image(MapConfigClass.resolve_map_asset_path(active_map_config, biome.texture))
+		if img == null:
+			push_error("Missing biome texture: " + str(biome.texture))
+			return
+		img.convert(Image.FORMAT_RGBA8)
+		img.resize(resolution, resolution, Image.INTERPOLATE_LANCZOS)
+		img.generate_mipmaps()
+		var id = int(biome.raster_id)
+		tints.set_pixel(id, 0, MapConfigClass.color(biome.tint))
+		parameters.set_pixel(id, 0, Color(images.size(), biome.texture_size_m, biome.roughness, 1))
+		images.append(img)
+	var textures = Texture2DArray.new()
+	textures.create_from_images(images)
+	mat.set_shader_parameter("biome_textures", textures)
+	mat.set_shader_parameter("biome_tints", ImageTexture.create_from_image(tints))
+	mat.set_shader_parameter("biome_parameters", ImageTexture.create_from_image(parameters))
+	mat.set_shader_parameter("tex_end_cap_ribs", _load_texture_safe(MapConfigClass.resolve_map_asset_path(active_map_config, active_map_config.rendering.end_cap_texture)))
+	mat.set_shader_parameter("end_cap_tint", MapConfigClass.color(active_map_config.rendering.end_cap_tint))
+	mat.set_shader_parameter("terrain_map", ImageTexture.create_from_image(terrain_manager.create_terrain_type_id_image()))
+	mat.set_shader_parameter("terrain_map_size", Vector2(terrain_manager.terrain_grid_u, terrain_manager.terrain_grid_v))
+	mat.set_shader_parameter("deep_water_color", MapConfigClass.color(active_map_config.environment.water.deep_color))
 
 	mat.set_shader_parameter("cylinder_radius", radius)
 	mat.set_shader_parameter("cylinder_length", cylinder_length)
@@ -510,7 +520,7 @@ func _update_terrain_material_textures(mat: ShaderMaterial = null) -> void:
 	mat.set_shader_parameter("air_density", air_density)
 	mat.set_shader_parameter("air_distance_min", air_distance_min)
 	mat.set_shader_parameter("air_distance_max", air_distance_max)
-	mat.set_shader_parameter("cloud_coverage", 0.55)
+	mat.set_shader_parameter("cloud_coverage", active_map_config.simulation.weather_system.cloud_coverage)
 
 func _create_terrain_material() -> ShaderMaterial:
 	var shader = load("res://assets/shaders/cylinder_terrain.gdshader")
@@ -518,6 +528,7 @@ func _create_terrain_material() -> ShaderMaterial:
 		return null
 	var mat = ShaderMaterial.new()
 	mat.shader = shader
+	preload("res://scripts/map_runtime.gd").shader_parameters(mat, active_map_config)
 	_update_terrain_material_textures(mat)
 	return mat
 
@@ -527,7 +538,9 @@ func _create_water_material() -> ShaderMaterial:
 		return null
 	var mat = ShaderMaterial.new()
 	mat.shader = shader
+	preload("res://scripts/map_runtime.gd").shader_parameters(mat, active_map_config)
 	mat.render_priority = 1
+	preload("res://scripts/map_runtime.gd").shader_parameters(mat, active_map_config)
 	mat.set_shader_parameter("cylinder_radius", radius - water_level)
 	mat.set_shader_parameter("cylinder_length", cylinder_length)
 	mat.set_shader_parameter("water_level", water_level)
@@ -536,7 +549,7 @@ func _create_water_material() -> ShaderMaterial:
 	mat.set_shader_parameter("air_density", air_density)
 	mat.set_shader_parameter("air_distance_min", air_distance_min)
 	mat.set_shader_parameter("air_distance_max", air_distance_max)
-	mat.set_shader_parameter("cloud_coverage", 0.55)
+	mat.set_shader_parameter("cloud_coverage", active_map_config.simulation.weather_system.cloud_coverage)
 	_update_water_material_textures(mat)
 	return mat
 
@@ -557,6 +570,7 @@ func _update_water_material_textures(mat: ShaderMaterial = null) -> void:
 		mat = water_material as ShaderMaterial
 	if not mat:
 		return
+	preload("res://scripts/map_runtime.gd").shader_parameters(mat, active_map_config)
 	mat.set_shader_parameter("cylinder_radius", radius - water_level)
 	mat.set_shader_parameter("cylinder_length", cylinder_length)
 	mat.set_shader_parameter("water_level", water_level)
@@ -566,21 +580,13 @@ func _update_water_material_textures(mat: ShaderMaterial = null) -> void:
 	mat.set_shader_parameter("air_distance_min", air_distance_min)
 	mat.set_shader_parameter("air_distance_max", air_distance_max)
 
-	var elev_tex: Texture2D = null
-	if ResourceLoader.exists(elevation_map_path):
-		elev_tex = load(elevation_map_path)
-	elif FileAccess.file_exists(elevation_map_path) or FileAccess.file_exists(ProjectSettings.globalize_path(elevation_map_path)):
-		var img = Image.load_from_file(elevation_map_path)
-		if not img:
-			img = Image.load_from_file(ProjectSettings.globalize_path(elevation_map_path))
-		if img:
-			elev_tex = ImageTexture.create_from_image(img)
-	if not elev_tex and terrain_manager:
-		var img = terrain_manager.create_elevation_image()
-		if img:
-			elev_tex = ImageTexture.create_from_image(img)
-	if elev_tex:
-		mat.set_shader_parameter("elevation_map", elev_tex)
+	for key in active_map_config.environment.water:
+		var value = active_map_config.environment.water[key]
+		if value is Array:
+			value = Vector3(value[0], value[1], value[2]) if value.size() == 3 else MapConfigClass.color(value)
+		mat.set_shader_parameter(key, value)
+	mat.set_shader_parameter("elevation_map", ImageTexture.create_from_image(terrain_manager.create_elevation_image()))
+	mat.set_shader_parameter("elevation_map_size", Vector2(terrain_manager.elevation_grid_u, terrain_manager.elevation_grid_v))
 
 func _build_terrain_mesh() -> void:
 	var st = SurfaceTool.new()
@@ -612,12 +618,18 @@ func _build_terrain_mesh() -> void:
 			var pos = Vector3(r_surface * cos_t, r_surface * sin_t, z)
 
 			# Approximate normal: points inward toward axis (-cos, -sin)
-			var normal = Vector3(-cos_t, -sin_t, 0.0).normalized()
+			var du = TAU / terrain_manager.elevation_grid_u
+			var sample_dz = cylinder_length / (terrain_manager.elevation_grid_v - 1)
+			var h_s = (terrain_manager.get_elevation(theta + du, z, cylinder_length) - terrain_manager.get_elevation(theta - du, z, cylinder_length)) / (2 * du * r_surface)
+			var z0 = maxf(z - sample_dz, -half_len)
+			var z1 = minf(z + sample_dz, half_len)
+			var h_z = (terrain_manager.get_elevation(theta, z1, cylinder_length) - terrain_manager.get_elevation(theta, z0, cylinder_length)) / (z1 - z0)
+			var normal = Vector3(-cos_t + h_s * sin_t, -sin_t - h_s * cos_t, -h_z).normalized()
 
 			st.set_normal(normal)
 			st.set_uv(Vector2(u_coord, v_coord))
 			# Pass elevation and terrain type through vertex COLOR attribute (0..7 normalized by 7.0)
-			st.set_color(Color(elev / max(elevation_variance, 0.1), float(t_type) / 7.0, 0.0, 1.0))
+			st.set_color(Color(elev / max(elevation_variance, 0.1), float(t_type) / 255.0, 0.0, 1.0))
 			st.add_vertex(pos)
 
 	var stride = radial_segments + 1
@@ -682,7 +694,7 @@ func _build_terrain_mesh() -> void:
 
 				st.set_normal(norm)
 				st.set_uv(uv_rib)
-				st.set_color(Color(alpha, float(t_type) / 7.0, 1.0, 1.0))
+				st.set_color(Color(alpha, float(t_type) / 255.0, 1.0, 1.0))
 				st.add_vertex(pos)
 
 		# Cap 1 Triangles: Clockwise from inside, matching the inward +Z normals.
@@ -753,7 +765,7 @@ func _build_terrain_mesh() -> void:
 
 				st.set_normal(norm)
 				st.set_uv(uv_rib)
-				st.set_color(Color(alpha, float(t_type) / 7.0, 1.0, 1.0))
+				st.set_color(Color(alpha, float(t_type) / 255.0, 1.0, 1.0))
 				st.add_vertex(pos)
 
 		# Cap 2 Triangles: Clockwise from inside, matching the inward -Z normals.
@@ -787,8 +799,8 @@ func _build_terrain_mesh() -> void:
 	var mesh = st.commit()
 	mesh_instance.mesh = mesh
 	mesh_instance.material_override = surface_material
-	mesh_instance.extra_cull_margin = 6000.0
-	mesh_instance.custom_aabb = AABB(Vector3(-4500.0, -4500.0, -14000.0), Vector3(9000.0, 9000.0, 28000.0))
+	mesh_instance.extra_cull_margin = 0.0
+	mesh_instance.custom_aabb = AABB(Vector3(-radius, -radius, -cylinder_length * 0.5 - end_cap_dish_depth), Vector3(radius * 2, radius * 2, cylinder_length + 2 * end_cap_dish_depth))
 
 	# Dedicated lightweight physics collision mesh (92% fewer collision triangles on mobile CPU)
 	_generate_physics_collision_shape()
@@ -848,5 +860,5 @@ func _build_water_mesh() -> void:
 	var w_mesh = water_st.commit()
 	water_mesh_instance.mesh = w_mesh
 	water_mesh_instance.material_override = water_material
-	water_mesh_instance.extra_cull_margin = 4000.0
-	water_mesh_instance.custom_aabb = AABB(Vector3(-4500.0, -4500.0, -10000.0), Vector3(9000.0, 9000.0, 20000.0))
+	water_mesh_instance.extra_cull_margin = 0.0
+	water_mesh_instance.custom_aabb = AABB(Vector3(-water_r, -water_r, -half_len), Vector3(water_r * 2, water_r * 2, cylinder_length))

@@ -1,9 +1,15 @@
 shader_type spatial;
 render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_lambert, specular_schlick_ggx, fog_disabled;
 
+uniform vec3 extinction_rgb;
+uniform vec4 reflection_color : source_color;
+uniform vec4 foam_color : source_color;
+uniform vec4 caustic_color : source_color;
+uniform vec4 overcast_color : source_color;
 uniform vec4 shallow_color : source_color = vec4(0.08, 0.55, 0.78, 0.38);
 uniform vec4 deep_color : source_color = vec4(0.015, 0.18, 0.38, 0.72);
 uniform sampler2D elevation_map : hint_default_black, filter_linear_mipmap, repeat_enable;
+uniform vec2 elevation_map_size;
 uniform float cylinder_radius = 3980.0;
 uniform float cylinder_length = 18000.0;
 uniform float water_level = 20.0;
@@ -108,7 +114,7 @@ void fragment() {
 	}
 
 	// Sample terrain elevation at this cylinder coordinate
-	float terrain_elev = texture(elevation_map, map_uv).r * max_elevation;
+	float terrain_elev = texture(elevation_map, vec2(map_uv.x + 0.5 / elevation_map_size.x, (clamp(map_uv.y, 0.0, 1.0) * (elevation_map_size.y - 1.0) + 0.5) / elevation_map_size.y)).r * max_elevation;
 
 	// Water volume definition: only exist in basins, lakes, and river channels below sea level
 	if (terrain_elev >= water_level + 0.15) {
@@ -163,7 +169,7 @@ void fragment() {
 	}
 
 	// Physical Beer-Lambert optical depth absorption
-	vec3 extinction = vec3(0.18, 0.05, 0.020);
+	vec3 extinction = extinction_rgb;
 	vec3 transmit = exp(-extinction * water_depth);
 	vec3 water_body = mix(deep_color.rgb, shallow_color.rgb, transmit.r);
 
@@ -180,12 +186,12 @@ void fragment() {
 	// Exact Schlick Fresnel reflection for water-air interface (R0 = 0.02)
 	float ndotv = clamp(dot(perturbed_normal, VIEW), 0.0, 1.0);
 	float fresnel = 0.02 + 0.98 * pow(1.0 - ndotv, 5.0);
-	vec3 sky_reflection = mix(air_color.rgb * 1.05, vec3(0.92, 0.96, 1.0), fresnel);
+	vec3 sky_reflection = mix(air_color.rgb * 1.05, reflection_color.rgb, fresnel);
 	vec3 final_color = mix(water_body, sky_reflection, fresnel * 0.35);
 
 	// Foam coloring
-	vec3 foam_color = vec3(0.94, 0.98, 1.0);
-	final_color = mix(final_color, foam_color, foam_mask * 0.75);
+	vec3 foam_rgb = foam_color.rgb;
+	final_color = mix(final_color, foam_rgb, foam_mask * 0.75);
 
 	// Surface water volume opacity (rich, visible water body when viewed from above)
 	float depth_ratio = 1.0 - exp(-water_depth * 0.22);
@@ -217,7 +223,7 @@ void fragment() {
 		float under_c1 = sin(surface_pos.x * 0.15 + TIME * 2.2 * wave_speed) * cos(surface_pos.y * 0.18 - TIME * 1.8 * wave_speed);
 		float under_c2 = cos(surface_pos.x * 0.28 - TIME * 1.5 * wave_speed) * sin(surface_pos.y * 0.24 + TIME * 2.4 * wave_speed);
 		float under_caustics = pow(clamp((under_c1 + under_c2) * 0.5 + 0.5, 0.0, 1.0), 2.5);
-		vec3 caustic_glow = vec3(0.35, 0.85, 1.0) * (under_caustics * 0.25 * clamp(axial_lum, 0.0, 1.5));
+		vec3 caustic_glow = caustic_color.rgb * (under_caustics * 0.25 * clamp(axial_lum, 0.0, 1.5));
 
 		final_color = air_color.rgb + caustic_glow;
 		final_alpha = 0.05;
@@ -236,7 +242,7 @@ void fragment() {
 	final_color = mix(final_color, target_air_color, fog_blend);
 	final_alpha = mix(final_alpha, 0.85, fog_blend * 0.50);
 
-	vec3 cool_overcast_tint = vec3(0.78, 0.88, 1.15);
+	vec3 cool_overcast_tint = overcast_color.rgb;
 	float blue_shift = smoothstep(0.35, 1.0, c_norm) * 0.75;
 	vec3 weather_modulation = mix(vec3(1.0), cool_overcast_tint, blue_shift) * weather_dim;
 

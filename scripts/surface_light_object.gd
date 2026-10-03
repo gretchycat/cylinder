@@ -38,6 +38,10 @@ const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 		if is_inside_tree() and object_type == ObjectType.TREE:
 			rebuild_object()
 
+var asset_id: String = ""
+var instance_id: String = ""
+var tint: Color = Color.WHITE
+
 @export_file var model_scene_path: String = ""
 
 @export var light_color: Color = Color(1.0, 0.58, 0.22):
@@ -49,9 +53,9 @@ const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 @export var light_energy: float = 5.5:
 	set(val):
 		light_energy = max(val, 0.0)
-		base_energy = light_energy
+		base_energy = light_energy * light_color.a
 		if omni_light:
-			omni_light.light_energy = light_energy
+			omni_light.light_energy = light_energy * light_color.a
 
 @export var light_range: float = 55.0:
 	set(val):
@@ -64,6 +68,7 @@ const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 var omni_light: OmniLight3D = null
 var flame_nodes: Array[Node3D] = []
 var flame_mats: Array[StandardMaterial3D] = []
+var rotor_hub_node: Node3D = null
 var base_energy: float = 5.5
 var flicker_time: float = 0.0
 var rng_offset: float = 0.0
@@ -103,6 +108,11 @@ func rebuild_object() -> void:
 
 	add_child(instance)
 	_setup_instance_bindings(instance)
+	if not omni_light and light_energy > 0:
+		omni_light = OmniLight3D.new()
+		instance.add_child(omni_light)
+		base_energy = light_energy * light_color.a
+	apply_appearance(instance)
 
 func _setup_instance_bindings(instance: Node3D) -> void:
 	# Helper to find nodes by name at any depth in the instance hierarchy.
@@ -116,8 +126,6 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 
 	match object_type:
 		ObjectType.CAMPFIRE:
-			if light_color == Color(1.0, 0.92, 0.78) or light_color == Color.WHITE:
-				light_color = Color(1.0, 0.55, 0.18)
 
 			omni_light = _find.call("CampfireLight") as OmniLight3D
 			var coals = _find.call("Coals") as MeshInstance3D
@@ -161,8 +169,6 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 				flame_mats.append(m)
 
 		ObjectType.BONFIRE:
-			if light_color == Color(1.0, 0.92, 0.78) or light_color == Color.WHITE:
-				light_color = Color(1.0, 0.48, 0.12)
 
 			omni_light = _find.call("BonfireLight") as OmniLight3D
 			var coals = _find.call("Coals") as MeshInstance3D
@@ -206,8 +212,6 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 				flame_mats.append(m)
 
 		ObjectType.LAMP_POST:
-			if light_color == Color(1.0, 0.58, 0.22) or light_color == Color.WHITE:
-				light_color = Color(1.0, 0.92, 0.78)
 
 			omni_light = _find.call("LampLight") as OmniLight3D
 			var lantern_head = _find.call("LanternHead") as MeshInstance3D
@@ -217,8 +221,6 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 				flame_mats.append(m)
 
 		ObjectType.BEACON_LANTERN:
-			if light_color == Color(1.0, 0.58, 0.22) or light_color == Color.WHITE:
-				light_color = Color(0.20, 0.88, 1.0)
 
 			omni_light = _find.call("BeaconLight") as OmniLight3D
 			var beacon = _find.call("Beacon") as MeshInstance3D
@@ -232,19 +234,47 @@ func _setup_instance_bindings(instance: Node3D) -> void:
 
 		ObjectType.WINDMILL:
 			omni_light = _find.call("LanternLight") as OmniLight3D
+			rotor_hub_node = _find.call("RotorHub") as Node3D
 
 		ObjectType.TREE:
 			enable_flicker = false
 
 	if omni_light:
-		if light_energy > 0.0:
-			base_energy = light_energy
-		else:
-			base_energy = omni_light.light_energy
+		base_energy = light_energy * light_color.a
 		omni_light.light_energy = base_energy
 		omni_light.light_color = light_color
 		if light_range > 0.0:
 			omni_light.omni_range = light_range
+
+
+func apply_appearance(instance: Node = null) -> void:
+	if instance == null:
+		instance = self
+	var meshes = instance.find_children("*", "MeshInstance3D", true, false)
+	if instance is MeshInstance3D:
+		meshes.append(instance)
+	for node in meshes:
+		var mesh_instance = node as MeshInstance3D
+		if not mesh_instance.mesh:
+			continue
+		for surface in mesh_instance.mesh.get_surface_count():
+			var source = mesh_instance.get_active_material(surface)
+			if source == null or source is BaseMaterial3D:
+				var material = source.duplicate() as BaseMaterial3D if source else StandardMaterial3D.new()
+				material.albedo_color *= tint
+				if material.emission_enabled:
+					material.emission *= light_color
+					material.emission_energy_multiplier *= light_color.a
+				if tint.a < 1:
+					material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				mesh_instance.set_surface_override_material(surface, material)
+		if mesh_instance.material_override is BaseMaterial3D:
+			mesh_instance.material_override = null
+	for light in instance.find_children("*", "Light3D", true, false):
+		light.light_color = light_color
+		light.light_energy = light_energy * light_color.a
+		if light is OmniLight3D:
+			light.omni_range = light_range
 
 
 static var global_active_light_distance: float = 3500.0
@@ -266,6 +296,9 @@ func set_surface_light_active(light: OmniLight3D, active: bool) -> void:
 		is_near_camera = true
 
 func _process(delta: float) -> void:
+	if rotor_hub_node and is_instance_valid(rotor_hub_node):
+		rotor_hub_node.rotate_object_local(Vector3.UP, delta * 0.7)
+
 	if not omni_light:
 		return
 

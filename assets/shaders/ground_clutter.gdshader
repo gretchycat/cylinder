@@ -20,6 +20,7 @@ uniform bool is_stone = false;
 uniform float cylinder_radius = 4000.0;
 uniform float water_level = 20.0;
 
+uniform vec4 deep_water_color : source_color;
 uniform vec4 air_color : source_color = vec4(0.52, 0.72, 0.88, 1.0);
 uniform float air_density : hint_range(0.0, 3.0) = 1.0;
 uniform float air_distance_min = 200.0;
@@ -31,7 +32,7 @@ varying float v_gradient_amount;
 varying vec4 v_instance_color;
 
 void vertex() {
-	v_instance_color = COLOR;
+	v_instance_color = INSTANCE_CUSTOM;
 	// Rotate only each flower's petal head around its own axis. The per-instance
 	// angle comes from MultiMesh custom data, so flowers still share one mesh.
 	if (is_flower && COLOR.a > 0.65) {
@@ -112,31 +113,9 @@ void fragment() {
 
 	vec4 col = mix(base_color, tip_color, v_gradient_amount);
 
-	// Instance color modulation
-	if (v_instance_color.a > 0.01) {
-		if (is_flower) {
-			// The vertex alpha channel identifies stem, center, and petal. Only
-			// petals inherit the instance hue; foliage stays green and the flower
-			// center stays golden yellow.
-			if (v_instance_color.a < 0.28) {
-				col.rgb = mix(vec3(0.12, 0.27, 0.10), vec3(0.25, 0.48, 0.18), v_gradient_amount);
-			} else if (v_instance_color.a < 0.65) {
-				col.rgb = mix(vec3(0.72, 0.38, 0.08), vec3(1.0, 0.78, 0.20), v_gradient_amount);
-			} else {
-				col.rgb = v_instance_color.rgb * mix(vec3(0.88), vec3(1.12), v_gradient_amount);
-			}
-		} else if (is_mushroom) {
-			// Stems remain a soft ivory; only the cap receives its selected
-			// instance palette color.
-			if (v_instance_color.a < 0.55) {
-				col.rgb = mix(vec3(0.58, 0.49, 0.36), vec3(0.88, 0.80, 0.65), v_gradient_amount);
-			} else {
-				col.rgb = v_instance_color.rgb * mix(vec3(0.86), vec3(1.12), v_gradient_amount);
-			}
-		} else {
-			// Vegetation/stone subtle tint variation
-			col.rgb *= v_instance_color.rgb;
-		}
+	col *= v_instance_color;
+	if (col.a * smooth_fade < dither_threshold) {
+		discard;
 	}
 
 	// Camera underwater check: looking through water column onto land/clutter
@@ -149,9 +128,9 @@ void fragment() {
 		// Water column depth attenuation and aquatic blue/cyan optical fog
 		float water_visibility = 180.0;
 		float water_fog = 1.0 - exp(-cam_dist / water_visibility);
-		vec3 deep_water_fog = vec3(0.015, 0.18, 0.38);
+		vec3 deep_water_fog = deep_water_color.rgb;
 		col.rgb = mix(col.rgb, deep_water_fog, water_fog * 0.94);
-		col.rgb = mix(col.rgb, vec3(0.03, 0.28, 0.48), 0.25);
+		col.rgb = mix(col.rgb, deep_water_color.rgb, 0.25);
 	} else {
 		// Atmospheric aerial distance perspective: harmonize with terrain depth haze
 		float air_factor = clamp((cam_dist - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);

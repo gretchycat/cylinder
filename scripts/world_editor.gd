@@ -12,31 +12,21 @@ var selected_index := 0
 var status := "Aim at a surface to place an object"
 
 func _ready() -> void:
-	var references = get_tree().get_first_node_in_group("reference_objects")
-	var config: Dictionary = references.active_map_config if references else Config.load_map_config("default")
-	var models: Dictionary = Config.get_object_catalog(config)
-	for key in models:
-		if not str(key).is_valid_int():
-			continue
-		var type_id := int(key)
-		# Map catalog IDs predate the runtime enum: 7 is Windmill, 8 is Forest.
-		var runtime_type := SurfaceLightObject.ObjectType.WINDMILL if type_id == 7 else type_id
-		if type_id == 8:
-			continue # Forest is a placement group, not an individual model.
-		_add_entry(config, models[key], runtime_type, -1)
-	var variants: Dictionary = models.get("tree_variants", {})
-	for key in variants:
-		_add_entry(config, variants[key], SurfaceLightObject.ObjectType.TREE, int(key))
+	reload_catalog()
 
-func _add_entry(config: Dictionary, entry: Dictionary, type_id: int, variant: int) -> void:
-	var path := Config.resolve_map_asset_path(config, str(entry.get("scene_path", "")))
-	if path.is_empty() or not ResourceLoader.exists(path):
+func reload_catalog() -> void:
+	catalog.clear()
+	selected_index = 0
+	var references = get_tree().get_first_node_in_group("reference_objects")
+	var config: Dictionary = references.active_map_config if references else Config.load_map_config(Config.active_map())
+	if config.is_empty():
 		return
-	var item := entry.duplicate(true)
-	item["path"] = path
-	item["type"] = type_id
-	item["variant"] = variant
-	catalog.append(item)
+	for id in config.objects.model_catalog:
+		var item: Dictionary = config.objects.model_catalog[id].duplicate(true)
+		item["id"] = id
+		item["path"] = Config.resolve_map_asset_path(config, item.scene_path)
+		item["type"] = int(item.behavior_type)
+		catalog.append(item)
 
 func current_object() -> Dictionary:
 	return catalog[selected_index] if not catalog.is_empty() else {}
@@ -109,12 +99,16 @@ func place() -> SurfaceLightObject:
 	var position: Vector3 = hit.position + normal * 0.03
 	var object := SurfaceLightObject.create_on_cylinder(
 		entry.type as SurfaceLightObject.ObjectType, atan2(position.y, position.x), position.z,
-		4000.0, 0.0, Color.WHITE, float(entry.get("light_range_m", 55.0)),
+		references.active_map_config.geometry.cylinder_radius_m, 0.0, Config.color(entry.light_color), float(entry.light_range_m),
 		0.0, normal, position, entry.variant, entry.path)
-	object.light_energy = float(entry.get("light_energy", 5.5))
+	object.asset_id = entry.id
+	object.instance_id = "object_%d" % Time.get_ticks_usec()
+	object.tint = Config.color(entry.tint)
+	object.light_color = Config.color(entry.light_color)
+	object.light_energy = float(entry.light_energy)
 	var color: Array = entry.get("light_color", [])
 	if color.size() >= 3:
-		object.light_color = Color(color[0], color[1], color[2])
+		object.light_color = Config.color(color)
 	object.enable_flicker = bool(entry.get("flicker", true))
 	object.name = str(entry.get("name", "Object")).replace(" ", "")
 	references.add_child(object)
@@ -142,5 +136,20 @@ func save_edits() -> Error:
 		status = "No object layer available"
 		return ERR_UNAVAILABLE
 	var error := Storage.save(references, "", player)
+	if error == OK:
+		var world = get_tree().get_first_node_in_group("cylinder_world")
+		if world:
+			world.load_map_package(references.active_map_config.map_directory)
+		Config.activate(references.active_map_config.map_directory)
 	status = "Saved — edits and default player location" if error == OK else "Could not save edits (%s)" % error_string(error)
 	return error
+
+func tint_target(appearance: Color, emission: Color) -> void:
+	var object = target_object(ray_hit())
+	if not object:
+		status = "Aim at an object to tint it"
+		return
+	object.tint = appearance
+	object.light_color = emission
+	object.rebuild_object()
+	status = "Tinted %s · Unsaved" % object.name

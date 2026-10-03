@@ -538,7 +538,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_override_font_sizes/font_size = 12
-text = "FLY: OFF"
+text = "FLY"
 
 [node name="FlashlightButton" type="Button" parent="UIRoot/TouchControls/DebugPanel/VBox/Grid"]
 custom_minimum_size = Vector2(100, 42)
@@ -546,7 +546,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_override_font_sizes/font_size = 12
-text = "LIGHT: OFF"
+text = "LIGHT"
 
 [node name="FlyUpButton" type="Button" parent="UIRoot/TouchControls/DebugPanel/VBox/Grid"]
 custom_minimum_size = Vector2(100, 42)
@@ -569,4 +569,4 @@ custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 focus_mode = 0
 toggle_mode = true
-text = "EDIT: OFF"
+text = "EDIT"

@@ -247,6 +247,7 @@ func _calculate_current_wind_speed_m_s() -> float:
 	return base_wind
 
 func _ready() -> void:
+	preload("res://scripts/map_runtime.gd").configure_node(self, "weather_system")
 	add_to_group("weather_system")
 	rng.randomize()
 	_sync_with_light_bar_time()
@@ -544,6 +545,7 @@ func _build_cloud_mesh() -> void:
 	if near_shader:
 		near_cloud_material = ShaderMaterial.new()
 		near_cloud_material.shader = near_shader
+		preload("res://scripts/map_runtime.gd").shader_parameters(near_cloud_material, preload("res://scripts/map_runtime.gd").document(self))
 		near_cloud_material.render_priority = 0
 		near_cloud_material.set_shader_parameter("cloud_noise_tex", noise_tex)
 		near_cloud_mesh_instance.material_override = near_cloud_material
@@ -644,6 +646,7 @@ func _build_rain_sheets() -> void:
 	if shader:
 		rain_sheet_material = ShaderMaterial.new()
 		rain_sheet_material.shader = shader
+		preload("res://scripts/map_runtime.gd").shader_parameters(rain_sheet_material, preload("res://scripts/map_runtime.gd").document(self))
 		rain_sheet_material.render_priority = 8
 		rain_sheet_material.set_shader_parameter("rain_alpha_multiplier", 0.0)
 		rain_sheets_mesh_instance.material_override = rain_sheet_material
@@ -763,7 +766,7 @@ func _generate_rain_streak_texture(density_tier: int) -> ImageTexture:
 				var px = (rx + dx) % width
 				# Rain streak alpha calibrated strictly to 25% to 35% range
 				var final_alpha = clampf(0.30 * v_factor * a_mod, 0.0, 1.0)
-				var streak_color = Color(0.12, 0.28, 0.58, final_alpha)
+				var streak_color = _map_color("rain_sheet") * Color(1,1,1,final_alpha)
 
 				var existing = img.get_pixel(px, py)
 				if existing.a > 0.0:
@@ -805,7 +808,7 @@ func _generate_snow_streak_texture(density_tier: int) -> ImageTexture:
 				if d <= radius:
 					var falloff = clampf(1.0 - (d / radius), 0.0, 1.0)
 					var alpha = falloff * 0.85 * a_mod
-					var flake_color = Color(0.96, 0.98, 1.0, alpha)
+					var flake_color = _map_color("snow_sheet") * Color(1,1,1,alpha)
 
 					var existing = img.get_pixel(px, py)
 					if existing.a > 0.0:
@@ -838,7 +841,7 @@ func _setup_weather_emitters() -> void:
 		var dust_mat = StandardMaterial3D.new()
 		dust_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		dust_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		dust_mat.albedo_color = Color(0.95, 0.90, 0.78, 0.25)
+		dust_mat.albedo_color = _map_color("dust")
 		dust_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 		dust_mat.billboard_keep_scale = true
 		dust_mat.render_priority = 10
@@ -869,7 +872,7 @@ func _setup_weather_emitters() -> void:
 		rain_p_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		rain_p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		rain_p_mat.albedo_texture = rain_tex
-		rain_p_mat.albedo_color = Color(0.9, 0.95, 1.0, 0.75)
+		rain_p_mat.albedo_color = _map_color("rain_particles")
 		rain_p_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 		rain_p_mat.billboard_keep_scale = true
 		rain_p_mat.render_priority = 9
@@ -904,7 +907,7 @@ func _setup_weather_emitters() -> void:
 		snow_p_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		snow_p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		snow_p_mat.albedo_texture = snow_tex
-		snow_p_mat.albedo_color = Color(1.0, 1.0, 1.0, 0.90)
+		snow_p_mat.albedo_color = _map_color("snow_particles")
 		snow_p_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 		snow_p_mat.billboard_keep_scale = true
 		snow_p_mat.render_priority = 9
@@ -1026,7 +1029,7 @@ func _update_dust_emitter() -> void:
 			return
 
 		var light_col = light_bar.current_avg_color if light_bar else Color.WHITE
-		var base_dust = Color(0.95, 0.98, 1.0) if is_snow_mode else Color(0.95, 0.90, 0.78)
+		var base_dust = _map_color("snow_dust") if is_snow_mode else _map_color("dust")
 		var lit_r = base_dust.r * light_col.r * effective_light
 		var lit_g = base_dust.g * light_col.g * effective_light
 		var lit_b = base_dust.b * light_col.b * effective_light
@@ -1101,7 +1104,7 @@ func _update_particle_positions() -> void:
 				if rain_particles.amount != target_rain_amount:
 					rain_particles.amount = target_rain_amount
 
-				var base_col = Color(0.90, 0.95, 1.0, 0.75)
+				var base_col = _map_color("rain_particles")
 				rain_mat.albedo_color = Color(
 					base_col.r * light_col.r * effective_light,
 					base_col.g * light_col.g * effective_light,
@@ -1126,7 +1129,7 @@ func _update_particle_positions() -> void:
 				if snow_particles.amount != target_snow_amount:
 					snow_particles.amount = target_snow_amount
 
-				var base_col = Color(1.0, 1.0, 1.0, 0.90)
+				var base_col = _map_color("snow_particles")
 				snow_mat.albedo_color = Color(
 					base_col.r * light_col.r * effective_light,
 					base_col.g * light_col.g * effective_light,
@@ -1394,3 +1397,15 @@ func _emit_weather_telemetry(delta: float = 0.016) -> void:
 		return
 	weather_telem_timer = 0.0
 	weather_updated.emit(get_telemetry())
+
+func _map_color(key: String) -> Color:
+	var doc: Dictionary = get_meta("map_document")
+	return preload("res://scripts/map_config.gd").color(doc.weather_palette[key])
+
+func map_changed() -> void:
+	if not is_weather_ready:
+		return
+	rain_texture_cache.clear()
+	snow_texture_cache.clear()
+	current_rendered_density_tier = -1
+	_warm_up_texture_caches()

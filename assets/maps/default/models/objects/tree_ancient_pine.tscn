@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c0anc_pin01"]
+
+[ext_resource type="PackedScene" path="res://assets/maps/default/models/objects/trees/pine.glb" id="1_tree_model"]
+
+[node name="TreeAncientPine" instance=ExtResource("1_tree_model")]
+scale = Vector3(4.8, 5.5, 4.8)

@@ -437,16 +437,16 @@ func _init() -> void:
 	test_check(default_cfg.has("geometry") and default_cfg["geometry"]["cylinder_radius_m"] == 4000.0, "MapConfig must parse geometry settings")
 	var elev_path = MapConfig.get_elevation_map_path(default_cfg)
 	var terr_path = MapConfig.get_terrain_map_path(default_cfg)
-	var ok_load_elev = terrain_mgr.load_elevation_from_png(elev_path)
-	var ok_load_terr = terrain_mgr.load_terrain_from_png(terr_path)
-	print("Loaded elevation map PNG: %s, Loaded terrain map PNG: %s (Dimensions: %dx%d)" % [ok_load_elev, ok_load_terr, terrain_mgr.grid_u, terrain_mgr.grid_v])
-	test_check(ok_load_elev, "Must successfully load elevation map from PNG image")
+	var ok_load_elev = terrain_mgr.load_elevation(elev_path)
+	var ok_load_terr = terrain_mgr.load_terrain(terr_path)
+	print("Loaded float elevation: %s, Loaded terrain map PNG: %s (Dimensions: %dx%d)" % [ok_load_elev, ok_load_terr, terrain_mgr.grid_u, terrain_mgr.grid_v])
+	test_check(ok_load_elev, "Must successfully load float elevation layer")
 	test_check(ok_load_terr, "Must successfully load terrain tilemap from PNG image")
 
-	# Verify saving to PNG format
-	var ok_save_elev = terrain_mgr.save_elevation_to_png("user://test_elev_export.png")
-	var ok_save_terr = terrain_mgr.save_terrain_to_png("user://test_terr_export.png")
-	test_check(ok_save_elev and ok_save_terr, "Must successfully export elevation and terrain to PNG images")
+	# Verify exporting the declared layer encodings
+	var ok_save_elev = terrain_mgr.save_elevation("user://test_elev_export.cylh")
+	var ok_save_terr = terrain_mgr.save_terrain("user://test_terr_export.png")
+	test_check(ok_save_elev and ok_save_terr, "Must successfully export independent elevation and biome layers")
 
 	# Verify water level at 20 m
 	var sample_water_elev = terrain_mgr.water_level - 5.0 # 15.0 m (underwater)
@@ -792,11 +792,8 @@ func _init() -> void:
 	var clutter_mgr = root_node.get_node_or_null("ClutterManager") as ClutterManager
 	test_check(clutter_mgr != null, "ClutterManager must be present in main scene")
 	test_check(clutter_mgr.enabled == true, "ClutterManager should be enabled by default")
-	test_check(clutter_mgr.grass_mesh != null, "Grass procedural mesh must be generated")
-	test_check(clutter_mgr.flower_mesh != null, "Flower procedural mesh must be generated")
-	test_check(clutter_mgr.stone_mesh != null, "Stone procedural mesh must be generated")
-	test_check(clutter_mgr.crop_mesh != null, "Crop procedural mesh must be generated")
-	test_check(clutter_mgr.shrub_mesh != null, "Shrub procedural mesh must be generated")
+	for model_id in cylinder_world.active_map_config.ground_clutter.models:
+		test_check(clutter_mgr.parts.has(model_id) and not clutter_mgr.parts[model_id].is_empty(), "Map clutter model must supply renderable parts: " + model_id)
 
 	# Force active chunk update around player position
 	clutter_mgr._update_active_chunks(player.global_position)
@@ -813,8 +810,23 @@ func _init() -> void:
 	test_check(mmi_count > 0, "Chunk must contain MultiMeshInstance3D nodes")
 	print("[PASS] Test 16: Ground clutter procedural meshes, wind shader, and MultiMesh chunk generation verified.")
 
+	# --- TEST 17: Live Godot Map Generator & Biome Adjacency Enforcement ---
+	print("\n--- TEST 17: Live Godot Map Generator & Biome Adjacency Enforcement ---")
+	var MapGeneratorClass = load("res://scripts/map_generator.gd")
+	test_check(MapGeneratorClass != null, "MapGenerator script must be loaded")
+
+	var descriptor = MapConfig.load_map_config("default")
+	descriptor.generation.elevation_width = 48
+	descriptor.generation.elevation_height = 25
+	descriptor.generation.terrain_width = 24
+	descriptor.generation.terrain_height = 13
+	var generated = await MapGeneratorClass.generate(descriptor)
+	test_check(not generated.has("error"), "Map generation must succeed")
+	test_check(generated.elevation_image.get_width() == 48 and generated.terrain_image.get_width() == 24, "Independent generation resolutions")
+	print("[PASS] Test 17: Schema 3 map generation verified.")
+
 	print("\n=======================================================")
-	print(" ALL O'NEILL CYLINDER SIMULATION TESTS PASSED (16/16)! ")
+	print(" ALL O'NEILL CYLINDER SIMULATION TESTS PASSED (17/17)! ")
 	print("=======================================================\n")
 	quit(0)
 

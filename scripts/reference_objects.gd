@@ -3,9 +3,9 @@ class_name ReferenceObjects
 extends Node3D
 
 @export_category("Cylinder Dimensions (8 km dia x 18 km length)")
-@export var cylinder_radius: float = 4000.0
-@export var cylinder_length: float = 18000.0
-@export var object_map_path: String = "res://assets/maps/default/object_map.json"
+var cylinder_radius: float = 0
+var cylinder_length: float = 0
+var object_map_path: String = ""
 
 const DebugConsole = preload("res://scripts/debug_console.gd")
 const MapConfigClass = preload("res://scripts/map_config.gd")
@@ -13,13 +13,27 @@ const EditStorage = preload("res://scripts/world_edit_storage.gd")
 
 var active_map_config: Dictionary = {}
 var surface_light_selection_timer: float = 0.0
+var placement_records: Array = []
+var live_placements: Dictionary = {}
+var placement_stream_timer: float = 0.0
+var placement_stream_center := Vector2.ZERO
+var has_placement_stream_center := false
+
+# Generated maps can contain thousands of placements. Keep the map data intact,
+# but instantiate only nearby objects so loading a map does not allocate every
+# imported model and light at once (particularly important on Android).
+const PLACEMENT_STREAM_RADIUS_M := 850.0
+const PLACEMENT_RETENTION_RADIUS_M := 1250.0
+const MAX_LIVE_PLACEMENTS := 256
+const PLACEMENTS_PER_TICK := 24
+const PLACEMENT_STREAM_INTERVAL := 0.2
 
 const MOBILE_LOCAL_LIGHT_BUDGET: int = 6
 const FORWARD_LIGHT_LOOKAHEAD_MULTIPLIER: float = 8.0
 
 func _ready() -> void:
 	add_to_group("reference_objects")
-	active_map_config = MapConfigClass.load_map_config("default")
+	active_map_config = MapConfigClass.load_map_config(MapConfigClass.active_map())
 	# Ensure DebugConsole exists in the scene
 	if not get_node_or_null("DebugConsole"):
 		var console_node = DebugConsole.new()
@@ -36,6 +50,10 @@ func _ready() -> void:
 	EditStorage.restore(self)
 
 func _process(delta: float) -> void:
+	placement_stream_timer += delta
+	if placement_stream_timer >= PLACEMENT_STREAM_INTERVAL:
+		placement_stream_timer = 0.0
+		_update_placement_streaming()
 	surface_light_selection_timer += delta
 	if surface_light_selection_timer < 0.05:
 		return
@@ -139,266 +157,204 @@ func _get_terrain_elevation(theta: float, z: float) -> float:
 func _get_model_path(type: SurfaceLightObject.ObjectType, tree_variant_idx: int = -1) -> String:
 	return MapConfigClass.get_object_model_path(active_map_config, int(type), tree_variant_idx)
 
+func clear_all_placed_objects() -> void:
+	placement_records.clear()
+	live_placements.clear()
+	has_placement_stream_center = false
+	var to_remove: Array[Node] = []
+	for child in get_children():
+		if child is CanvasLayer and child.name == "DebugConsole":
+			continue
+		to_remove.append(child)
+	for child in to_remove:
+		remove_child(child)
+		child.free() if not is_inside_tree() else child.queue_free()
+
+func load_object_map(path: String) -> void:
+	object_map_path = path
+	clear_all_placed_objects()
+	spawn_all_markers()
+
+func load_object_map_with_progress(path: String, progress_cb: Callable = Callable()) -> void:
+	object_map_path = path
+	clear_all_placed_objects()
+	await spawn_all_markers_with_progress(progress_cb)
+
 func spawn_all_markers() -> void:
-	var spawned_from_json = _load_and_spawn_from_json()
-	if not spawned_from_json:
-		DebugConsole.log("[ReferenceObjects] JSON load failed, using defaults")
-		_spawn_default_campfires()
-		_spawn_default_beacon_lanterns()
+	clear_all_placed_objects()
+	await _load_and_spawn_from_json()
+
+func spawn_all_markers_with_progress(progress_cb: Callable = Callable()) -> void:
+	clear_all_placed_objects()
+	await _load_and_spawn_from_json(progress_cb)
+
+func _load_and_spawn_from_json(progress_cb: Callable = Callable()) -> bool:
+	var world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
+	if world:
+		active_map_config = world.active_map_config
+		cylinder_radius = world.radius
+		cylinder_length = world.cylinder_length
+	if active_map_config.is_empty():
+		return false
+	object_map_path = MapConfigClass.get_object_map_path(active_map_config)
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(object_map_path))
+	if not data is Dictionary or not data.get("objects") is Array:
+		push_error("Map placements are missing or malformed: " + object_map_path)
+		return false
+	var catalog: Dictionary = active_map_config.objects.model_catalog
+	for i in data.objects.size():
+		if i % 32 == 0 and progress_cb.is_valid():
+			await progress_cb.call(0.05 + 0.9 * float(i) / maxf(data.objects.size(), 1), "Reading map placements")
+		var record: Variant = data.objects[i]
+		if not record is Dictionary:
+			push_error("Map placement %d is not an object" % i)
+			return false
+		if not catalog.has(record.get("asset")):
+			push_error("Unknown placement asset: " + str(record.get("asset")))
+			return false
+		placement_records.append(record.duplicate(true))
+	var spawn_points: Array = data.get("spawn_points", [])
+	if not spawn_points.is_empty() and spawn_points[0] is Dictionary:
+		placement_stream_center = Vector2(float(spawn_points[0].get("theta", 0.0)), float(spawn_points[0].get("z", 0.0)))
+		has_placement_stream_center = true
+	elif not placement_records.is_empty():
+		var first_position := _record_surface_position(placement_records[0])
+		placement_stream_center = first_position
+		has_placement_stream_center = true
 	else:
-		print("[ReferenceObjects] Loaded objects, count after load: ", get_child_count())
-		if get_child_count() == 0:
-			print("[ReferenceObjects] No objects spawned, adding debug campfire")
-			_spawn_default_campfires()
-			_spawn_default_beacon_lanterns()
-
-func _load_and_spawn_from_json() -> bool:
-	var target_path = object_map_path
-	var cyl_world = get_parent().get_node_or_null("CylinderWorld") if get_parent() else null
-	if not cyl_world and is_inside_tree():
-		cyl_world = get_tree().get_first_node_in_group("cylinder_world")
-	if cyl_world and "map_package" in cyl_world and not str(cyl_world.map_package).is_empty():
-		var cfg = MapConfig.load_map_config(cyl_world.map_package)
-		if not cfg.is_empty():
-			active_map_config = cfg
-			var cfg_obj_path = MapConfig.get_object_map_path(cfg)
-			if not cfg_obj_path.is_empty():
-				target_path = cfg_obj_path
-
-	var candidate_paths: Array[String] = [
-		target_path,
-		"res://assets/maps/default/object_map.json",
-		"res://assets/maps/object_map.json",
-		ProjectSettings.globalize_path(target_path),
-		ProjectSettings.globalize_path("res://assets/maps/default/object_map.json"),
-		ProjectSettings.globalize_path("res://assets/maps/object_map.json"),
-		"assets/maps/default/object_map.json",
-		"assets/maps/object_map.json"
-	]
-
-	var f: FileAccess = null
-	var resolved_path: String = ""
-	for p in candidate_paths:
-		if p.is_empty():
-			continue
-		f = FileAccess.open(p, FileAccess.READ)
-		if f != null:
-			resolved_path = p
-			break
-
-	if not f:
-		DebugConsole.log("[ReferenceObjects] Could not open object_map.json from any path!")
-		return false
-
-	var json_str = f.get_as_text()
-	f.close()
-
-	var json_inst = JSON.new()
-	var err = json_inst.parse(json_str)
-	if err != OK:
-		push_warning("ReferenceObjects: Failed to parse object_map.json (%s): %s" % [resolved_path, json_inst.get_error_message()])
-		return false
-
-	var data = json_inst.data
-	if not (data is Dictionary) or not data.has("objects"):
-		return false
-
-	var objects_arr = data["objects"] as Array
-	if objects_arr.is_empty():
-		return false
-
-	var spawned_count: int = 0
-	for obj in objects_arr:
-		if not (obj is Dictionary):
-			continue
-		var obj_type_int: int = int(obj.get("object_type", 0))
-		var obj_type: SurfaceLightObject.ObjectType = SurfaceLightObject.ObjectType.CAMPFIRE
-		if obj_type_int == 1:
-			obj_type = SurfaceLightObject.ObjectType.LAMP_POST
-		elif obj_type_int == 2:
-			obj_type = SurfaceLightObject.ObjectType.BEACON_LANTERN
-		elif obj_type_int == 3:
-			obj_type = SurfaceLightObject.ObjectType.BRIDGE
-		elif obj_type_int == 4:
-			obj_type = SurfaceLightObject.ObjectType.BONFIRE
-		elif obj_type_int == 5:
-			obj_type = SurfaceLightObject.ObjectType.HOUSE
-		elif obj_type_int == 6:
-			obj_type = SurfaceLightObject.ObjectType.TREE
-		elif obj_type_int == 7:
-			obj_type = SurfaceLightObject.ObjectType.WINDMILL
-		elif obj_type_int == 8:
-			obj_type = SurfaceLightObject.ObjectType.FOREST
-
-		var theta: float = float(obj.get("theta", 0.0))
-		var z: float = float(obj.get("z", 0.0))
-		var elev: float = float(obj.get("elevation", _get_terrain_elevation(theta, z)))
-		var actual_elev = _get_terrain_elevation(theta, z)
-		if actual_elev > 0.0:
-			elev = actual_elev
-
-		var col_arr = obj.get("light_color", [1.0, 0.58, 0.20])
-		var col = Color(col_arr[0], col_arr[1], col_arr[2]) if col_arr.size() >= 3 else Color.WHITE
-		var light_range: float = float(obj.get("light_range", 45.0))
-		var light_energy: float = float(obj.get("light_energy", 5.5))
-		var yaw_angle: float = float(obj.get("yaw_rad", 0.0))
-		var tree_variant_idx: int = int(obj.get("tree_variant", -1))
-
-		var custom_pos = Vector3.ZERO
-		if not cyl_world:
-			cyl_world = get_parent().get_node_or_null("CylinderWorld") if get_parent() else null
-		if not cyl_world:
-			cyl_world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
-		if cyl_world and cyl_world.has_method("get_surface_mesh_point_and_normal"):
-			var pt_info = cyl_world.get_surface_mesh_point_and_normal(theta, z)
-			if not pt_info.is_empty():
-				custom_pos = pt_info.get("position", Vector3.ZERO)
-				elev = pt_info.get("elevation", elev)
-
-		if obj_type == SurfaceLightObject.ObjectType.FOREST:
-			# Expected JSON fields: forest_radius (float), tree_count (int), optional tree_variants (array of ints)
-			var forest_radius = float(obj.get("forest_radius", 30.0))
-			var tree_count = int(obj.get("tree_count", 20))
-			var variant_list = obj.get("tree_variants", [])
-			for i in range(tree_count):
-				var angle_offset = randf_range(-PI, PI) * (forest_radius / cylinder_radius)
-				var dz = randf_range(-forest_radius, forest_radius)
-				var t_theta = theta + angle_offset
-				var t_z = z + dz
-				var t_variant_idx = -1
-				if variant_list.size() > 0:
-					t_variant_idx = int(variant_list[i % variant_list.size()])
-				else:
-					t_variant_idx = randi() % 6
-				var tree_inst = SurfaceLightObject.create_on_cylinder(
-					SurfaceLightObject.ObjectType.TREE,
-					t_theta,
-					t_z,
-					cylinder_radius,
-					_get_terrain_elevation(t_theta, t_z),
-					Color.WHITE,
-					45.0,
-					0.0,
-					Vector3.ZERO,
-					Vector3.ZERO,
-					t_variant_idx,
-					_get_model_path(SurfaceLightObject.ObjectType.TREE, t_variant_idx)
-				)
-				add_child(tree_inst)
-		else:
-			var inst = SurfaceLightObject.create_on_cylinder(
-				obj_type,
-				theta,
-				z,
-				cylinder_radius,
-				elev,
-				col,
-				light_range,
-				yaw_angle,
-				Vector3.ZERO,
-				custom_pos,
-				tree_variant_idx,
-				_get_model_path(obj_type, tree_variant_idx)
-			)
-			inst.light_energy = light_energy
-			inst.name = str(obj.get("name", "SurfaceLightObject"))
-			add_child(inst)
-			spawned_count += 1
-
-	DebugConsole.log("[ReferenceObjects] Successfully spawned %d objects from %s" % [spawned_count, resolved_path])
+		placement_stream_center = Vector2.ZERO
+		has_placement_stream_center = true
+	_update_placement_streaming(true)
+	if progress_cb.is_valid():
+		await progress_cb.call(1.0, "Map placements ready")
 	return true
 
-func _spawn_default_campfires() -> void:
-	var spawn_theta = -PI * 0.5
-	var spawn_z = 0.0
+func _record_surface_position(record: Dictionary) -> Vector2:
+	if record.has("theta") and record.has("z"):
+		return Vector2(float(record.theta), float(record.z))
+	var packed: Variant = record.get("transform", [])
+	if packed is Array and packed.size() >= 12:
+		var x := float(packed[9])
+		var y := float(packed[10])
+		return Vector2(atan2(y, x), float(packed[11]))
+	return Vector2.ZERO
 
-	var cyl_world = get_parent().get_node_or_null("CylinderWorld") if get_parent() else null
-	if not cyl_world:
-		cyl_world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
+func _surface_distance(a: Vector2, b: Vector2) -> float:
+	var arc := wrapf(a.x - b.x, -PI, PI) * maxf(cylinder_radius, 1.0)
+	return Vector2(arc, a.y - b.y).length()
 
-	if cyl_world and cyl_world.has_method("find_safe_spawn_point"):
-		var spawn_info = cyl_world.find_safe_spawn_point()
-		spawn_theta = spawn_info["theta"]
-		spawn_z = spawn_info["z"]
+func _player_surface_position() -> Vector2:
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	if not player:
+		return placement_stream_center
+	return Vector2(atan2(player.global_position.y, player.global_position.x), player.global_position.z)
 
-	var campfire_locs = [
-		{"theta": spawn_theta, "z": spawn_z - 16.0, "name": "Spawn_Welcoming_Campfire", "range": 45.0},
-		{"theta": spawn_theta + 0.22, "z": spawn_z - 180.0, "name": "Lakeside_Campfire", "range": 40.0},
-		{"theta": spawn_theta - 0.18, "z": spawn_z + 240.0, "name": "Meadow_Campfire", "range": 40.0},
-		{"theta": spawn_theta + 0.35, "z": -2500.0, "name": "South_Waystation_Campfire", "range": 45.0},
-		{"theta": spawn_theta - 0.25, "z": 2500.0, "name": "North_Waystation_Campfire", "range": 45.0},
-		{"theta": spawn_theta + 0.10, "z": -6500.0, "name": "South_Outpost_Campfire", "range": 50.0},
-		{"theta": spawn_theta - 0.10, "z": 6500.0, "name": "North_Outpost_Campfire", "range": 50.0},
-		{"theta": spawn_theta, "z": -8400.0, "name": "South_EndCap_Campfire", "range": 55.0},
-		{"theta": spawn_theta, "z": 8400.0, "name": "North_EndCap_Campfire", "range": 55.0}
-	]
+func _update_placement_streaming(force: bool = false) -> void:
+	if placement_records.is_empty() or active_map_config.is_empty():
+		return
+	var world := get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
+	var center := _player_surface_position() if get_tree().get_first_node_in_group("player") else placement_stream_center
+	if not force and has_placement_stream_center and _surface_distance(center, placement_stream_center) < 100.0:
+		center = placement_stream_center
+	placement_stream_center = center
+	has_placement_stream_center = true
+	var candidates: Array[Dictionary] = []
+	var removed_records: Array[Dictionary] = []
+	for record_variant in placement_records:
+		if not record_variant is Dictionary:
+			continue
+		var record: Dictionary = record_variant
+		var id := str(record.get("id", ""))
+		if id.is_empty():
+			continue
+		var distance := _surface_distance(_record_surface_position(record), center)
+		if live_placements.has(id):
+			var live: Node = live_placements[id]
+			if not is_instance_valid(live) or live.is_queued_for_deletion():
+				live_placements.erase(id)
+				if is_instance_valid(live) and live.is_queued_for_deletion():
+					removed_records.append(record)
+				continue
+			if distance > PLACEMENT_RETENTION_RADIUS_M:
+				_capture_live_placement(record, live)
+				live_placements.erase(id)
+				live.queue_free()
+			continue
+		if distance <= PLACEMENT_STREAM_RADIUS_M:
+			candidates.append({"record": record, "distance": distance})
+	for removed_record in removed_records:
+		placement_records.erase(removed_record)
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a.distance) < float(b.distance))
+	var spawned := 0
+	for candidate in candidates:
+		if live_placements.size() >= MAX_LIVE_PLACEMENTS or spawned >= PLACEMENTS_PER_TICK:
+			break
+		var record: Dictionary = candidate.record
+		var id := str(record.get("id", ""))
+		if live_placements.has(id):
+			continue
+		var instance = preload("res://scripts/map_object_factory.gd").create(active_map_config, record, world)
+		add_child(instance)
+		live_placements[id] = instance
+		spawned += 1
 
-	for loc in campfire_locs:
-		var theta: float = loc["theta"]
-		var z: float = loc["z"]
-		var elev = _get_terrain_elevation(theta, z)
-		var custom_pos = Vector3.ZERO
-		if cyl_world and cyl_world.has_method("get_surface_mesh_point_and_normal"):
-			var pt_info = cyl_world.get_surface_mesh_point_and_normal(theta, z)
-			if not pt_info.is_empty():
-				custom_pos = pt_info.get("position", Vector3.ZERO)
-				elev = pt_info.get("elevation", elev)
+func _capture_live_placement(record: Dictionary, object: Node) -> void:
+	if not object is SurfaceLightObject:
+		return
+	var packed: Array = []
+	var transform := (object as Node3D).global_transform
+	for vector in [transform.basis.x, transform.basis.y, transform.basis.z, transform.origin]:
+		packed.append_array([vector.x, vector.y, vector.z])
+	record["transform"] = packed
+	record["tint"] = MapConfigClass.rgba(object.tint)
+	record["light_color"] = MapConfigClass.rgba(object.light_color)
+	record["light_energy"] = object.light_energy
+	record["light_range_m"] = object.light_range
+	record["flicker"] = object.enable_flicker
+	record["name"] = str(object.name)
 
-		var fire = SurfaceLightObject.create_on_cylinder(
-			SurfaceLightObject.ObjectType.CAMPFIRE,
-			theta,
-			z,
-			cylinder_radius,
-			elev,
-			Color(1.0, 0.58, 0.20),
-			loc["range"],
-			0.0,
-			Vector3.ZERO,
-			custom_pos,
-			-1,
-			_get_model_path(SurfaceLightObject.ObjectType.CAMPFIRE)
-		)
-		fire.name = loc["name"]
-		add_child(fire)
+func get_all_placement_records() -> Array:
+	var known_ids: Dictionary = {}
+	var removed_records: Array[Dictionary] = []
+	for record_variant in placement_records:
+		if not record_variant is Dictionary:
+			continue
+		var record: Dictionary = record_variant
+		var id := str(record.get("id", ""))
+		known_ids[id] = true
+		if live_placements.has(id):
+			var object: Node = live_placements[id]
+			if is_instance_valid(object) and object.is_queued_for_deletion():
+				live_placements.erase(id)
+				removed_records.append(record)
+			elif is_instance_valid(object):
+				_capture_live_placement(record, object)
+	for record in removed_records:
+		placement_records.erase(record)
+	# Include objects added by the in-world editor since the map was loaded.
+	for child in get_children():
+		if not child is SurfaceLightObject or child.is_queued_for_deletion():
+			continue
+		var object := child as SurfaceLightObject
+		if known_ids.has(object.instance_id):
+			continue
+		var packed: Array = []
+		var transform := object.global_transform
+		for vector in [transform.basis.x, transform.basis.y, transform.basis.z, transform.origin]:
+			packed.append_array([vector.x, vector.y, vector.z])
+		placement_records.append({"id": object.instance_id, "asset": object.asset_id, "name": str(object.name), "transform": packed, "tint": MapConfigClass.rgba(object.tint), "light_color": MapConfigClass.rgba(object.light_color), "light_energy": object.light_energy, "light_range_m": object.light_range, "flicker": object.enable_flicker})
+		known_ids[object.instance_id] = true
+	return placement_records.duplicate(true)
 
-func _spawn_default_beacon_lanterns() -> void:
-	var spawn_theta = -PI * 0.5
-	var cyl_world = get_parent().get_node_or_null("CylinderWorld") if get_parent() else null
-	if not cyl_world:
-		cyl_world = get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
-
-	if cyl_world and cyl_world.has_method("find_safe_spawn_point"):
-		var spawn_info = cyl_world.find_safe_spawn_point()
-		spawn_theta = spawn_info["theta"]
-
-	var beacon_z_caps = [-8550.0, 8550.0]
-	for z_cap in beacon_z_caps:
-		for k in range(4):
-			var th = spawn_theta + float(k - 1.5) * 0.03
-			var el = _get_terrain_elevation(th, z_cap)
-			var custom_pos = Vector3.ZERO
-			if cyl_world and cyl_world.has_method("get_surface_mesh_point_and_normal"):
-				var pt_info = cyl_world.get_surface_mesh_point_and_normal(th, z_cap)
-				if not pt_info.is_empty():
-					custom_pos = pt_info.get("position", Vector3.ZERO)
-					el = pt_info.get("elevation", el)
-
-			var beacon = SurfaceLightObject.create_on_cylinder(
-				SurfaceLightObject.ObjectType.BEACON_LANTERN,
-				th,
-				z_cap,
-				cylinder_radius,
-				el,
-				Color(0.20, 0.88, 1.0),
-				40.0,
-				0.0,
-				Vector3.ZERO,
-				custom_pos,
-				-1,
-				_get_model_path(SurfaceLightObject.ObjectType.BEACON_LANTERN)
-			)
-			beacon.name = "EndCapBeacon_Z%d_%d" % [int(z_cap), k]
-			add_child(beacon)
+func replace_placement_records(records: Array) -> bool:
+	for record in records:
+		if not record is Dictionary or not active_map_config.objects.model_catalog.has(record.get("asset")):
+			return false
+	clear_all_placed_objects()
+	placement_records = records.duplicate(true)
+	has_placement_stream_center = false
+	_update_placement_streaming(true)
+	return true
 
 func spawn_light_emitter(
 	type: SurfaceLightObject.ObjectType,

@@ -64,8 +64,10 @@ func _ready() -> void:
 	editor_ui.editor.player = player
 	editor_ui.palette_visibility_changed.connect(_on_palette_visibility_changed)
 	edit_btn.toggled.connect(func(active: bool):
-		edit_btn.text = "EDIT: ON" if active else "EDIT: OFF"
+		edit_btn.text = "EDIT"
+		_update_toggle_button_style(edit_btn, active, Color(0.12, 0.68, 0.48, 0.9), Color(0.4, 1.0, 0.75, 1.0))
 		editor_ui.set_edit_mode(active))
+	_update_toggle_button_style(edit_btn, edit_btn.button_pressed, Color(0.12, 0.68, 0.48, 0.9), Color(0.4, 1.0, 0.75, 1.0))
 	visibility_changed.connect(_on_visibility_changed)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.035, 0.055, 0.09, 0.9)
@@ -376,8 +378,6 @@ func _on_jump_pressed() -> void:
 func _on_fly_pressed() -> void:
 	if player:
 		player.toggle_fly_mode()
-		if fly_btn:
-			fly_btn.text = "FLY: ON" if player.is_flying else "FLY: OFF"
 		_update_fly_buttons_visibility()
 
 func _on_sprint_pressed() -> void:
@@ -393,17 +393,60 @@ func _on_flashlight_pressed() -> void:
 
 func _update_flashlight_button() -> void:
 	if flashlight_btn and player:
-		flashlight_btn.text = "LIGHT: ON" if player.debug_flashlight_enabled else "LIGHT: OFF"
+		flashlight_btn.text = "LIGHT"
+		var light_on = player.debug_flashlight_enabled
+		_update_toggle_button_style(flashlight_btn, light_on, Color(0.88, 0.62, 0.10, 0.9), Color(1.0, 0.88, 0.35, 1.0))
 
 func _update_fly_buttons_visibility() -> void:
 	var flying = player.is_flying if player else false
 	if fly_btn:
-		fly_btn.text = "FLY: ON" if flying else "FLY: OFF"
+		fly_btn.text = "FLY"
+		_update_toggle_button_style(fly_btn, flying, Color(0.12, 0.52, 0.88, 0.9), Color(0.40, 0.88, 1.0, 1.0))
 	_update_flashlight_button()
 	if fly_up_btn:
 		fly_up_btn.disabled = not flying
 	if fly_down_btn:
 		fly_down_btn.disabled = not flying
+
+func _update_toggle_button_style(btn: Button, active: bool, active_bg: Color, active_border: Color) -> void:
+	if not btn:
+		return
+	if active:
+		var style = StyleBoxFlat.new()
+		style.bg_color = active_bg
+		style.set_border_width_all(2)
+		style.border_color = active_border
+		style.set_corner_radius_all(6)
+		style.content_margin_left = 6
+		style.content_margin_right = 6
+		style.content_margin_top = 4
+		style.content_margin_bottom = 4
+		btn.add_theme_stylebox_override("normal", style)
+		btn.add_theme_stylebox_override("hover", style)
+		btn.add_theme_stylebox_override("pressed", style)
+		btn.add_theme_stylebox_override("focus", style)
+		btn.add_theme_color_override("font_color", Color.WHITE)
+		btn.add_theme_color_override("font_hover_color", Color.WHITE)
+		btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+		btn.add_theme_color_override("font_focus_color", Color.WHITE)
+	else:
+		var style = StyleBoxFlat.new()
+		style.bg_color = Color(0.12, 0.16, 0.22, 0.75)
+		style.set_border_width_all(1)
+		style.border_color = Color(0.35, 0.45, 0.58, 0.6)
+		style.set_corner_radius_all(6)
+		style.content_margin_left = 6
+		style.content_margin_right = 6
+		style.content_margin_top = 4
+		style.content_margin_bottom = 4
+		btn.add_theme_stylebox_override("normal", style)
+		btn.add_theme_stylebox_override("hover", style)
+		btn.add_theme_stylebox_override("pressed", style)
+		btn.add_theme_stylebox_override("focus", style)
+		btn.add_theme_color_override("font_color", Color(0.85, 0.90, 0.95, 0.85))
+		btn.add_theme_color_override("font_hover_color", Color.WHITE)
+		btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+		btn.add_theme_color_override("font_focus_color", Color(0.85, 0.90, 0.95, 0.85))
 
 func _begin_joystick_tap(pos: Vector2) -> void:
 	joystick_press_position = pos

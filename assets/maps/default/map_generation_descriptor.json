@@ -1,0 +1,91 @@
+{
+  "descriptor_version": "1.0.0",
+  "map_name": "default_procedural",
+  "display_name": "O'Neill Cylinder Procedural World",
+  "description": "Map generation descriptor defining biome proportions, elevation profiles, hydrology rules, and natural object placement parameters.",
+  "author": "Habitat Architecture Systems",
+  "geometry": {
+    "cylinder_radius_m": 4000.0,
+    "cylinder_length_m": 18000.0,
+    "endcap_radius_m": 4000.0,
+    "elevation_variance_m": 100.0,
+    "water_sea_level_m": 20.0
+  },
+  "resolutions": {
+    "elevation_width": 1024,
+    "elevation_height": 512,
+    "terrain_width": 512,
+    "terrain_height": 256
+  },
+  "biome_proportions": {
+    "grassland": 0.20,
+    "flower_fields": 0.10,
+    "young_forest": 0.15,
+    "old_growth_forest": 0.15,
+    "swamp": 0.08,
+    "riverbank_wetlands": 0.05,
+    "coastal_beach": 0.05,
+    "rocky_fields": 0.08,
+    "mountain": 0.08,
+    "desert": 0.04,
+    "tundra_plateau": 0.02
+  },
+  "elevation_profile": {
+    "water_sea_level_m": 20.0,
+    "max_elevation_m": 100.0,
+    "water_area_ratio": 0.18,
+    "lowland_area_ratio": 0.45,
+    "highland_area_ratio": 0.25,
+    "mountain_area_ratio": 0.12,
+    "noise": {
+      "frequency": 0.005,
+      "octaves": 5,
+      "persistence": 0.5,
+      "lacunarity": 2.0
+    },
+    "massifs": [
+      {
+        "name": "South Alpine Massif",
+        "u": 0.18,
+        "v": 0.82,
+        "peak_elevation_m": 96.0,
+        "radius": 0.15
+      },
+      {
+        "name": "North Alpine Massif",
+        "u": 0.82,
+        "v": 0.18,
+        "peak_elevation_m": 98.0,
+        "radius": 0.15
+      }
+    ]
+  },
+  "hydrology_profile": {
+    "central_sea_enabled": true,
+    "central_sea_v_center": 0.5,
+    "central_sea_v_width": 0.14,
+    "central_sea_depth_m": 18.0,
+    "inland_lakes": [
+      {
+        "name": "Inland Freshwater Lake",
+        "u_center": 0.35,
+        "v_center": 0.22,
+        "depth_m": 9.0,
+        "radius": 0.08
+      }
+    ],
+    "rivers": [
+      {
+        "name": "Grand Trunk River",
+        "start": "Inland Lake",
+        "end": "Central Sea",
+        "guaranteed_channel_depth_m": 7.0
+      }
+    ]
+  },
+  "settlement_profile": {
+    "city_centers_count": 1,
+    "villages_count": 10,
+    "connect_roads": true
+  }
+}
