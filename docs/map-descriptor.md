@@ -48,7 +48,9 @@ not physical world dimensions. Mesh segments are independently map-configured.
   Material colors are never IDs.
 - `objects.model_catalog`: dictionary of stable asset IDs, each with name,
   scene path, behavior type/variant, RGBA tint, light RGBA,
-  energy, range and flicker. IDs do not encode behavior enum numbers.
+  energy, `light_range_m` and flicker. Placement-level `light_range_m`
+  overrides the catalog value; the obsolete `light_range` key is invalid.
+  IDs do not encode behavior enum numbers.
 - `ground_clutter`: view radius, chunk size, density multiplier and model catalog.
   Biome `clutter` rules select model IDs, density per square metre, scale range,
   and a color palette. Any palette may contain one or more RGBA stops; uniform
@@ -134,7 +136,9 @@ current authored placements. Object Save records transforms, tint, light setting
 instance/asset IDs and the editor's default player location in the map itself.
 There is no separate legacy snapshot format.
 
-Texture imports are limited to 8192×8192 and 64 MiB encoded; GLB imports to 64 MiB.
+Ground textures may be at most 8192 pixels on either side and 16,777,216 pixels
+total; editor imports are limited to 64 MiB encoded. This total-pixel ceiling
+keeps decoded texture memory bounded on mobile. GLB imports are limited to 64 MiB.
 Raster dimensions are 2..4096 with at most 4,194,304 samples per layer. Biome count
 is 1..256, and biome-count × terrain-samples may not exceed 16,777,216. Texture
 array layers are resized to the map's 16..512 `biome_texture_resolution`; imported
@@ -151,7 +155,10 @@ landing satisfying spawn clearance is rejected without activating it.
 Imported GLB scenes keep their materials and mesh hierarchy. Ground clutter
 instances mesh parts only (no per-clutter physics, animation or lights). Bundled
 procedural models are engine dependencies; imported models/textures are packaged.
-A `.cylmap` archive workflow is not part of this schema's editor implementation.
+Shader parameters in the map are applied to duplicated object materials, so one
+map's values do not mutate shared model resources. Runtime systems may subsequently
+override dynamic shader values. The implemented `.cylmap` import/export workflow
+is documented under User map library below; imports receive a new `world_id`.
 
 ## Verification
 
@@ -168,8 +175,9 @@ and overcast colors. Named light/weather palettes are editable in the map editor
 Placement records reference a catalog `asset`. Surface records use `theta`, `z`,
 `yaw_rad` and scale and follow sampled terrain at load. Edited placements save an
 explicit 12-number local transform (basis columns then origin); that transform
-takes precedence and remains fixed in metres when geometry changes. Appearance
-and light overrides are stored per instance. Ground-clutter palettes apply to
+takes precedence over `theta`/`z` and remains fixed in metres when geometry
+changes. Once an edit is saved as a transform, redundant `theta`/`z` fields are
+removed. Appearance and light overrides are stored per instance. Ground-clutter palettes apply to
 instanced mesh appearance; they do not instantiate light devices for every blade.
 
 The included full-resolution seed-42 check (1024×512 elevation, 512×256 biome

@@ -4,6 +4,11 @@ extends RefCounted
 ## Instantiate any imported Godot 3D scene, or wrap a directly imported Mesh
 ## (the default import mode for OBJ) in a MeshInstance3D.
 static var model_cache: Dictionary = {}
+const MAX_TEXTURE_DIMENSION := 8192
+const MAX_TEXTURE_PIXELS := 16777216
+
+static func texture_dimensions_allowed(dimensions: Vector2i) -> bool:
+	return dimensions.x > 0 and dimensions.y > 0 and dimensions.x <= MAX_TEXTURE_DIMENSION and dimensions.y <= MAX_TEXTURE_DIMENSION and dimensions.x * dimensions.y <= MAX_TEXTURE_PIXELS
 
 static func instantiate_model(path: String) -> Node3D:
 	if path.is_empty():
@@ -122,18 +127,18 @@ static func _image_dimensions(path: String) -> Vector2i:
 		return Vector2i(-1, -1)
 	return Vector2i.ZERO
 
-static func load_image(path: String, max_pixels: int = 16777216) -> Image:
+static func load_image(path: String, max_pixels: int = MAX_TEXTURE_PIXELS) -> Image:
 	if path.is_empty():
 		return null
 	if ResourceLoader.exists(path):
 		var resource = ResourceLoader.load(path)
 		if resource is Texture2D:
-			if max_pixels > 0 and resource.get_width() * resource.get_height() > max_pixels:
+			if not texture_dimensions_allowed(Vector2i(resource.get_width(), resource.get_height())) or (max_pixels > 0 and resource.get_width() * resource.get_height() > max_pixels):
 				return null
 			return resource.get_image()
 	if FileAccess.file_exists(path):
 		var dimensions = _image_dimensions(path)
-		if dimensions == Vector2i.ZERO or dimensions.x < 1 or dimensions.y < 1:
+		if not texture_dimensions_allowed(dimensions):
 			return null
 		if max_pixels > 0 and dimensions.x * dimensions.y > max_pixels:
 			return null

@@ -2,6 +2,10 @@ extends SceneTree
 const Config = preload("res://scripts/map_config.gd")
 const Generator = preload("res://scripts/map_generator.gd")
 const Terrain = preload("res://scripts/terrain_manager.gd")
+const Assets = preload("res://scripts/map_asset_loader.gd")
+const References = preload("res://scripts/reference_objects.gd")
+const SurfaceObject = preload("res://scripts/surface_light_object.gd")
+const ObjectFactory = preload("res://scripts/map_object_factory.gd")
 var failures = 0
 func check(ok: bool, message: String):
 	if not ok:
@@ -9,6 +13,32 @@ func check(ok: bool, message: String):
 		push_error(message)
 	else:
 		print("PASS: ", message)
+
+func write_bad_elevation(path: String, kind: String) -> void:
+	var file = FileAccess.open(path, FileAccess.WRITE)
+	match kind:
+		"magic":
+			file.store_buffer("NOPE".to_ascii_buffer())
+			file.store_32(2)
+			file.store_32(2)
+		"dimensions":
+			file.store_buffer("CYLH".to_ascii_buffer())
+			file.store_32(1)
+			file.store_32(2)
+		"truncated":
+			file.store_buffer("CYLH".to_ascii_buffer())
+			file.store_32(2)
+			file.store_32(2)
+			for i in 3:
+				file.store_float(0.5)
+		"sample":
+			file.store_buffer("CYLH".to_ascii_buffer())
+			file.store_32(2)
+			file.store_32(2)
+			file.store_float(NAN)
+			for i in 3:
+				file.store_float(0.5)
+	file.close()
 
 func _initialize():
 	_run.call_deferred()
@@ -22,6 +52,57 @@ func _run():
 	var tm = Terrain.new()
 	tm.configure(doc)
 	check(tm.load_layers(Config.get_elevation_map_path(doc), Config.get_terrain_map_path(doc)), "Current map layers load")
+	check(Terrain.read_elevation(Config.get_elevation_map_path(doc)) != null, "Static elevation image reader accepts CYLH")
+	var old_elevation: PackedFloat32Array = tm.elevation_data.duplicate()
+	var old_terrain: PackedByteArray = tm.terrain_data.duplicate()
+	var malformed_dir := "user://maps/elevation_reader_%d" % Time.get_ticks_usec()
+	DirAccess.make_dir_recursive_absolute(malformed_dir)
+	var malformed_paths := {
+		"missing": malformed_dir.path_join("missing.cylh"),
+		"magic": malformed_dir.path_join("magic.cylh"),
+		"dimensions": malformed_dir.path_join("dimensions.cylh"),
+		"truncated": malformed_dir.path_join("truncated.cylh"),
+		"sample": malformed_dir.path_join("sample.cylh")
+	}
+	for kind in ["magic", "dimensions", "truncated", "sample"]:
+		write_bad_elevation(malformed_paths[kind], kind)
+	for kind in malformed_paths:
+		check(Terrain.read_elevation(malformed_paths[kind]) == null and not Terrain.last_read_error.is_empty(), "Static elevation reader rejects " + kind + " data with a diagnostic")
+	check(not tm.load_layers(malformed_paths.truncated, Config.get_terrain_map_path(doc)) and tm.elevation_data == old_elevation and tm.terrain_data == old_terrain, "Invalid layer load preserves previously loaded terrain and elevation")
+	check(not tm.load_elevation(malformed_paths.sample) and tm.last_error.contains("normalized"), "Layer reader preserves the invalid-sample diagnostic")
+	check(Assets.texture_dimensions_allowed(Vector2i(8192,2048)), "Ground texture limit accepts 16,777,216 pixels within side bounds")
+	check(not Assets.texture_dimensions_allowed(Vector2i(4096,4097)) and not Assets.texture_dimensions_allowed(Vector2i(8193,1)), "Ground texture limit rejects excessive pixels or side length")
+	var moved_record := {"id":"move-check", "asset":"campfire", "theta":0.2, "z":-3000.0, "transform":[1,0,0,0,1,0,0,0,1,1200,400,250]}
+	var references = References.new()
+	var moved_surface := references._record_surface_position(moved_record)
+	check(is_equal_approx(moved_surface.x, atan2(400.0, 1200.0)) and is_equal_approx(moved_surface.y, 250.0), "Explicit placement transform takes precedence over stale surface coordinates")
+	var moved_object = SurfaceObject.new()
+	moved_object.transform = Transform3D(Basis.IDENTITY, Vector3(1200,400,250))
+	references._capture_live_placement(moved_record, moved_object)
+	check(not moved_record.has("theta") and not moved_record.has("z") and moved_record.transform[9] == 1200.0, "Saving an edited placement stores a local transform and removes redundant surface coordinates")
+	moved_object.free()
+	references.free()
+	var texture_pixel_overflow := doc.duplicate(true)
+	texture_pixel_overflow.schema_version = 3.5
+	check(not Config.validate(texture_pixel_overflow).is_empty(), "Fractional schema version is rejected")
+	var fractional_biome_id := doc.duplicate(true)
+	fractional_biome_id.biomes.grassland.raster_id = 1.5
+	check(not Config.validate(fractional_biome_id).is_empty(), "Fractional biome raster ID is rejected")
+	var fractional_rendering := doc.duplicate(true)
+	fractional_rendering.rendering.radial_segments = 32.5
+	check(not Config.validate(fractional_rendering).is_empty(), "Fractional mesh segment count is rejected")
+	check(Config.validate(doc).is_empty(), "Integral JSON floats in bundled schema remain valid")
+	var bundled_placements: Variant = JSON.parse_string(FileAccess.get_file_as_string(Config.get_object_map_path(doc)))
+	var bridge_override: Dictionary = {}
+	for record in bundled_placements.objects:
+		if record.get("name") == "River_Bridge_1":
+			bridge_override = record
+			break
+	check(not bridge_override.is_empty() and bridge_override.get("light_range_m") == 38.0 and not bridge_override.has("light_range"), "Bundled bridge uses canonical instance light range")
+	if not bridge_override.is_empty():
+		var bridge_instance = ObjectFactory.create(doc, bridge_override)
+		check(is_equal_approx(bridge_instance.light_range, 38.0), "Canonical per-instance light range is applied by the object factory")
+		bridge_instance.free()
 	doc.generation.elevation_width = 48
 	doc.generation.elevation_height = 25
 	doc.generation.terrain_width = 23

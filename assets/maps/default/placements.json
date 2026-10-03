@@ -15,7 +15,6 @@
         0.2,
         1
       ],
-      "light_range": 45.0,
       "light_energy": 6.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Clearance",
@@ -28,7 +27,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 45.0
     },
     {
       "name": "Spawn_Ranger_Cabin",
@@ -45,7 +45,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 0.35,
       "settlement_id": "Spawn_Clearance",
@@ -58,7 +57,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Grand_City_Center_Central_Beacon",
@@ -75,7 +75,6 @@
         1.0,
         1
       ],
-      "light_range": 58.0,
       "light_energy": 6.5,
       "yaw_rad": 0.0,
       "settlement_id": "Grand_City_Center",
@@ -88,7 +87,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 58.0
     },
     {
       "name": "Grand_City_Center_StreetLamp_1",
@@ -105,7 +105,6 @@
         0.78,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Grand_City_Center",
@@ -118,7 +117,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "Grand_City_Center_StreetLamp_2",
@@ -135,7 +135,6 @@
         0.78,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Grand_City_Center",
@@ -148,7 +147,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "Grand_City_Center_StreetLamp_3",
@@ -165,7 +165,6 @@
         0.78,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Grand_City_Center",
@@ -178,7 +177,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "Grand_City_Center_StreetLamp_4",
@@ -195,7 +195,6 @@
         0.78,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Grand_City_Center",
@@ -208,7 +207,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "Grand_City_Center_Townhouse_2",
@@ -225,7 +225,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 1.5708,
       "settlement_id": "Grand_City_Center",
@@ -238,7 +237,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Grand_City_Center_Townhouse_3",
@@ -255,7 +255,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 3.1416,
       "settlement_id": "Grand_City_Center",
@@ -268,7 +267,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_1_Central_Bonfire",
@@ -285,7 +285,6 @@
         0.12,
         1
       ],
-      "light_range": 80.0,
       "light_energy": 8.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_1",
@@ -298,7 +297,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 80.0
     },
     {
       "name": "Village_1_Perimeter_Campfire_1",
@@ -315,7 +315,6 @@
         0.22,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 5.0,
       "yaw_rad": 0.0,
       "settlement_id": "Village_1",
@@ -328,7 +327,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "Village_1_Perimeter_Campfire_2",
@@ -345,7 +345,6 @@
         0.2,
         1
       ],
-      "light_range": 36.0,
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_1",
@@ -358,7 +357,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 36.0
     },
     {
       "name": "Village_1_Cabin_1",
@@ -375,7 +375,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 0.3,
       "settlement_id": "Village_1",
@@ -388,7 +387,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_1_Cabin_4",
@@ -405,7 +405,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 5.01,
       "settlement_id": "Village_1",
@@ -418,7 +417,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_1_Windmill",
@@ -435,7 +435,6 @@
         0.6,
         1
       ],
-      "light_range": 16.0,
       "light_energy": 2.8,
       "yaw_rad": 0.75,
       "settlement_id": "Village_1",
@@ -448,7 +447,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 16.0
     },
     {
       "name": "Village_2_Hearth_Campfire",
@@ -465,7 +465,6 @@
         0.2,
         1
       ],
-      "light_range": 42.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_2",
@@ -478,7 +477,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 42.0
     },
     {
       "name": "Village_2_Communal_Campfire",
@@ -495,7 +495,6 @@
         0.18,
         1
       ],
-      "light_range": 36.0,
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_2",
@@ -508,7 +507,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 36.0
     },
     {
       "name": "Village_2_Outpost_Campfire",
@@ -525,7 +525,6 @@
         0.22,
         1
       ],
-      "light_range": 34.0,
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_2",
@@ -538,7 +537,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 34.0
     },
     {
       "name": "Village_2_Cabin_1",
@@ -555,7 +555,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_2",
@@ -568,7 +567,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_3_Hearth_Campfire",
@@ -585,7 +585,6 @@
         0.2,
         1
       ],
-      "light_range": 42.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_3",
@@ -598,7 +597,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 42.0
     },
     {
       "name": "Village_3_Communal_Campfire",
@@ -615,7 +615,6 @@
         0.18,
         1
       ],
-      "light_range": 36.0,
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_3",
@@ -628,7 +627,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 36.0
     },
     {
       "name": "Village_3_Outpost_Campfire",
@@ -645,7 +645,6 @@
         0.22,
         1
       ],
-      "light_range": 34.0,
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_3",
@@ -658,7 +657,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 34.0
     },
     {
       "name": "Village_3_Cabin_1",
@@ -675,7 +675,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_3",
@@ -688,7 +687,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_4_Central_Bonfire",
@@ -705,7 +705,6 @@
         0.12,
         1
       ],
-      "light_range": 80.0,
       "light_energy": 8.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_4",
@@ -718,7 +717,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 80.0
     },
     {
       "name": "Village_4_Perimeter_Campfire_1",
@@ -735,7 +735,6 @@
         0.22,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 5.0,
       "yaw_rad": 0.0,
       "settlement_id": "Village_4",
@@ -748,7 +747,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "Village_4_Perimeter_Campfire_2",
@@ -765,7 +765,6 @@
         0.2,
         1
       ],
-      "light_range": 36.0,
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_4",
@@ -778,7 +777,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 36.0
     },
     {
       "name": "Village_4_Cabin_2",
@@ -795,7 +795,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 1.87,
       "settlement_id": "Village_4",
@@ -808,7 +807,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_4_Cabin_3",
@@ -825,7 +825,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 3.44,
       "settlement_id": "Village_4",
@@ -838,7 +837,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_4_Cabin_4",
@@ -855,7 +855,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 5.01,
       "settlement_id": "Village_4",
@@ -868,7 +867,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_4_Windmill",
@@ -885,7 +885,6 @@
         0.6,
         1
       ],
-      "light_range": 16.0,
       "light_energy": 2.8,
       "yaw_rad": 0.75,
       "settlement_id": "Village_4",
@@ -898,7 +897,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 16.0
     },
     {
       "name": "Village_5_Hearth_Campfire",
@@ -915,7 +915,6 @@
         0.2,
         1
       ],
-      "light_range": 42.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_5",
@@ -928,7 +927,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 42.0
     },
     {
       "name": "Village_5_Communal_Campfire",
@@ -945,7 +945,6 @@
         0.18,
         1
       ],
-      "light_range": 36.0,
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_5",
@@ -958,7 +957,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 36.0
     },
     {
       "name": "Village_5_Outpost_Campfire",
@@ -975,7 +975,6 @@
         0.22,
         1
       ],
-      "light_range": 34.0,
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_5",
@@ -988,7 +987,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 34.0
     },
     {
       "name": "Village_5_Cabin_1",
@@ -1005,7 +1005,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_5",
@@ -1018,7 +1017,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_5_Cabin_2",
@@ -1035,7 +1035,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 2.37,
       "settlement_id": "Village_5",
@@ -1048,7 +1047,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_6_Hearth_Campfire",
@@ -1065,7 +1065,6 @@
         0.2,
         1
       ],
-      "light_range": 42.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_6",
@@ -1078,7 +1077,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 42.0
     },
     {
       "name": "Village_6_Communal_Campfire",
@@ -1095,7 +1095,6 @@
         0.18,
         1
       ],
-      "light_range": 36.0,
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_6",
@@ -1108,7 +1107,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 36.0
     },
     {
       "name": "Village_6_Outpost_Campfire",
@@ -1125,7 +1125,6 @@
         0.22,
         1
       ],
-      "light_range": 34.0,
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_6",
@@ -1138,7 +1137,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 34.0
     },
     {
       "name": "Village_6_Cabin_1",
@@ -1155,7 +1155,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_6",
@@ -1168,7 +1167,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_7_Central_Bonfire",
@@ -1185,7 +1185,6 @@
         0.12,
         1
       ],
-      "light_range": 80.0,
       "light_energy": 8.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_7",
@@ -1198,7 +1197,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 80.0
     },
     {
       "name": "Village_7_Perimeter_Campfire_1",
@@ -1215,7 +1215,6 @@
         0.22,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 5.0,
       "yaw_rad": 0.0,
       "settlement_id": "Village_7",
@@ -1228,7 +1227,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "Village_7_Perimeter_Campfire_2",
@@ -1245,7 +1245,6 @@
         0.2,
         1
       ],
-      "light_range": 36.0,
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_7",
@@ -1258,7 +1257,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 36.0
     },
     {
       "name": "Village_7_Cabin_1",
@@ -1275,7 +1275,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 0.3,
       "settlement_id": "Village_7",
@@ -1288,7 +1287,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_7_Cabin_2",
@@ -1305,7 +1305,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 1.87,
       "settlement_id": "Village_7",
@@ -1318,7 +1317,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_7_Cabin_3",
@@ -1335,7 +1335,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 3.44,
       "settlement_id": "Village_7",
@@ -1348,7 +1347,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_7_Cabin_4",
@@ -1365,7 +1365,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 5.01,
       "settlement_id": "Village_7",
@@ -1378,7 +1377,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_7_Windmill",
@@ -1395,7 +1395,6 @@
         0.6,
         1
       ],
-      "light_range": 16.0,
       "light_energy": 2.8,
       "yaw_rad": 0.75,
       "settlement_id": "Village_7",
@@ -1408,7 +1407,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 16.0
     },
     {
       "name": "Village_8_Hearth_Campfire",
@@ -1425,7 +1425,6 @@
         0.2,
         1
       ],
-      "light_range": 42.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_8",
@@ -1438,7 +1437,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 42.0
     },
     {
       "name": "Village_8_Communal_Campfire",
@@ -1455,7 +1455,6 @@
         0.18,
         1
       ],
-      "light_range": 36.0,
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_8",
@@ -1468,7 +1467,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 36.0
     },
     {
       "name": "Village_8_Outpost_Campfire",
@@ -1485,7 +1485,6 @@
         0.22,
         1
       ],
-      "light_range": 34.0,
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_8",
@@ -1498,7 +1497,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 34.0
     },
     {
       "name": "Village_8_Cabin_1",
@@ -1515,7 +1515,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_8",
@@ -1528,7 +1527,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_8_Cabin_2",
@@ -1545,7 +1545,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 2.37,
       "settlement_id": "Village_8",
@@ -1558,7 +1557,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_9_Hearth_Campfire",
@@ -1575,7 +1575,6 @@
         0.2,
         1
       ],
-      "light_range": 42.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_9",
@@ -1588,7 +1587,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 42.0
     },
     {
       "name": "Village_9_Communal_Campfire",
@@ -1605,7 +1605,6 @@
         0.18,
         1
       ],
-      "light_range": 36.0,
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_9",
@@ -1618,7 +1617,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 36.0
     },
     {
       "name": "Village_9_Outpost_Campfire",
@@ -1635,7 +1635,6 @@
         0.22,
         1
       ],
-      "light_range": 34.0,
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_9",
@@ -1648,7 +1647,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 34.0
     },
     {
       "name": "Village_9_Cabin_1",
@@ -1665,7 +1665,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_9",
@@ -1678,7 +1677,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_9_Cabin_2",
@@ -1695,7 +1695,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 2.37,
       "settlement_id": "Village_9",
@@ -1708,7 +1707,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_10_Hearth_Campfire",
@@ -1725,7 +1725,6 @@
         0.2,
         1
       ],
-      "light_range": 42.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_10",
@@ -1738,7 +1737,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 42.0
     },
     {
       "name": "Village_10_Communal_Campfire",
@@ -1755,7 +1755,6 @@
         0.18,
         1
       ],
-      "light_range": 36.0,
       "light_energy": 4.8,
       "yaw_rad": 0.0,
       "settlement_id": "Village_10",
@@ -1768,7 +1767,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 36.0
     },
     {
       "name": "Village_10_Outpost_Campfire",
@@ -1785,7 +1785,6 @@
         0.22,
         1
       ],
-      "light_range": 34.0,
       "light_energy": 4.5,
       "yaw_rad": 0.0,
       "settlement_id": "Village_10",
@@ -1798,7 +1797,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 34.0
     },
     {
       "name": "Village_10_Cabin_1",
@@ -1815,7 +1815,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 0.8,
       "settlement_id": "Village_10",
@@ -1828,7 +1827,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Village_10_Cabin_2",
@@ -1845,7 +1845,6 @@
         0.55,
         1
       ],
-      "light_range": 14.0,
       "light_energy": 2.4,
       "yaw_rad": 2.37,
       "settlement_id": "Village_10",
@@ -1858,7 +1857,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 14.0
     },
     {
       "name": "Forest_Tree_1",
@@ -1875,7 +1875,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.1334,
       "settlement_id": "Wildland_Forest",
@@ -1890,7 +1889,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_2",
@@ -1907,7 +1907,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 1.1741,
       "settlement_id": "Wildland_Forest",
@@ -1922,7 +1921,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_3",
@@ -1939,7 +1939,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.014,
       "settlement_id": "Wildland_Forest",
@@ -1954,7 +1953,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_4",
@@ -1971,7 +1971,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.7812,
       "settlement_id": "Wildland_Forest",
@@ -1986,7 +1985,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_5",
@@ -2003,7 +2003,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.194,
       "settlement_id": "Wildland_Forest",
@@ -2018,7 +2017,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_6",
@@ -2035,7 +2035,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.4584,
       "settlement_id": "Wildland_Forest",
@@ -2050,7 +2049,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_7",
@@ -2067,7 +2067,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.0507,
       "settlement_id": "Wildland_Forest",
@@ -2082,7 +2081,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_8",
@@ -2099,7 +2099,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.1166,
       "settlement_id": "Wildland_Forest",
@@ -2114,7 +2113,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_9",
@@ -2131,7 +2131,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 1.6933,
       "settlement_id": "Wildland_Forest",
@@ -2146,7 +2145,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_10",
@@ -2163,7 +2163,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.4218,
       "settlement_id": "Wildland_Forest",
@@ -2178,7 +2177,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_11",
@@ -2195,7 +2195,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.3714,
       "settlement_id": "Wildland_Forest",
@@ -2210,7 +2209,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_12",
@@ -2227,7 +2227,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.6513,
       "settlement_id": "Wildland_Forest",
@@ -2242,7 +2241,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_13",
@@ -2259,7 +2259,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.5181,
       "settlement_id": "Wildland_Forest",
@@ -2274,7 +2273,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_14",
@@ -2291,7 +2291,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.3877,
       "settlement_id": "Wildland_Forest",
@@ -2306,7 +2305,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_15",
@@ -2323,7 +2323,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 6.2045,
       "settlement_id": "Wildland_Forest",
@@ -2338,7 +2337,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_16",
@@ -2355,7 +2355,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 1.8387,
       "settlement_id": "Wildland_Forest",
@@ -2370,7 +2369,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_17",
@@ -2387,7 +2387,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.1645,
       "settlement_id": "Wildland_Forest",
@@ -2402,7 +2401,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_18",
@@ -2419,7 +2419,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.9831,
       "settlement_id": "Wildland_Forest",
@@ -2434,7 +2433,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_19",
@@ -2451,7 +2451,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.5648,
       "settlement_id": "Wildland_Forest",
@@ -2466,7 +2465,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_20",
@@ -2483,7 +2483,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.6522,
       "settlement_id": "Wildland_Forest",
@@ -2498,7 +2497,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_21",
@@ -2515,7 +2515,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.1805,
       "settlement_id": "Wildland_Forest",
@@ -2530,7 +2529,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_22",
@@ -2547,7 +2547,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.9495,
       "settlement_id": "Wildland_Forest",
@@ -2562,7 +2561,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_23",
@@ -2579,7 +2579,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.177,
       "settlement_id": "Wildland_Forest",
@@ -2594,7 +2593,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_24",
@@ -2611,7 +2611,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.4218,
       "settlement_id": "Wildland_Forest",
@@ -2626,7 +2625,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_25",
@@ -2643,7 +2643,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.4473,
       "settlement_id": "Wildland_Forest",
@@ -2658,7 +2657,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_26",
@@ -2675,7 +2675,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.8677,
       "settlement_id": "Wildland_Forest",
@@ -2690,7 +2689,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_27",
@@ -2707,7 +2707,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.8451,
       "settlement_id": "Wildland_Forest",
@@ -2722,7 +2721,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_28",
@@ -2739,7 +2739,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.9403,
       "settlement_id": "Wildland_Forest",
@@ -2754,7 +2753,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_29",
@@ -2771,7 +2771,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.5593,
       "settlement_id": "Wildland_Forest",
@@ -2786,7 +2785,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_30",
@@ -2803,7 +2803,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.0182,
       "settlement_id": "Wildland_Forest",
@@ -2818,7 +2817,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_31",
@@ -2835,7 +2835,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.3691,
       "settlement_id": "Wildland_Forest",
@@ -2850,7 +2849,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_32",
@@ -2867,7 +2867,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.1046,
       "settlement_id": "Wildland_Forest",
@@ -2882,7 +2881,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_33",
@@ -2899,7 +2899,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.9294,
       "settlement_id": "Wildland_Forest",
@@ -2914,7 +2913,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_34",
@@ -2931,7 +2931,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.3951,
       "settlement_id": "Wildland_Forest",
@@ -2946,7 +2945,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_35",
@@ -2963,7 +2963,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 6.182,
       "settlement_id": "Wildland_Forest",
@@ -2978,7 +2977,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_36",
@@ -2995,7 +2995,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.4566,
       "settlement_id": "Wildland_Forest",
@@ -3010,7 +3009,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_37",
@@ -3027,7 +3027,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.006,
       "settlement_id": "Wildland_Forest",
@@ -3042,7 +3041,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_38",
@@ -3059,7 +3059,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.4976,
       "settlement_id": "Wildland_Forest",
@@ -3074,7 +3073,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_39",
@@ -3091,7 +3091,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.954,
       "settlement_id": "Wildland_Forest",
@@ -3106,7 +3105,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_40",
@@ -3123,7 +3123,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.5697,
       "settlement_id": "Wildland_Forest",
@@ -3138,7 +3137,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_41",
@@ -3155,7 +3155,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.8007,
       "settlement_id": "Wildland_Forest",
@@ -3170,7 +3169,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_42",
@@ -3187,7 +3187,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.3328,
       "settlement_id": "Wildland_Forest",
@@ -3202,7 +3201,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_43",
@@ -3219,7 +3219,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.0252,
       "settlement_id": "Wildland_Forest",
@@ -3234,7 +3233,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_44",
@@ -3251,7 +3251,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.9443,
       "settlement_id": "Wildland_Forest",
@@ -3266,7 +3265,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_45",
@@ -3283,7 +3283,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 6.1371,
       "settlement_id": "Wildland_Forest",
@@ -3298,7 +3297,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_46",
@@ -3315,7 +3315,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 1.8791,
       "settlement_id": "Wildland_Forest",
@@ -3330,7 +3329,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_47",
@@ -3347,7 +3347,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.8336,
       "settlement_id": "Wildland_Forest",
@@ -3362,7 +3361,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_48",
@@ -3379,7 +3379,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.0435,
       "settlement_id": "Wildland_Forest",
@@ -3394,7 +3393,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_49",
@@ -3411,7 +3411,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 6.1908,
       "settlement_id": "Wildland_Forest",
@@ -3426,7 +3425,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_50",
@@ -3443,7 +3443,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.0903,
       "settlement_id": "Wildland_Forest",
@@ -3458,7 +3457,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_51",
@@ -3475,7 +3475,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 6.2086,
       "settlement_id": "Wildland_Forest",
@@ -3490,7 +3489,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_52",
@@ -3507,7 +3507,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 1.5106,
       "settlement_id": "Wildland_Forest",
@@ -3522,7 +3521,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_53",
@@ -3539,7 +3539,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.2564,
       "settlement_id": "Wildland_Forest",
@@ -3554,7 +3553,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_54",
@@ -3571,7 +3571,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.2288,
       "settlement_id": "Wildland_Forest",
@@ -3586,7 +3585,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_55",
@@ -3603,7 +3603,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.9383,
       "settlement_id": "Wildland_Forest",
@@ -3618,7 +3617,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_56",
@@ -3635,7 +3635,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 1.7516,
       "settlement_id": "Wildland_Forest",
@@ -3650,7 +3649,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_57",
@@ -3667,7 +3667,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.5889,
       "settlement_id": "Wildland_Forest",
@@ -3682,7 +3681,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_58",
@@ -3699,7 +3699,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.4163,
       "settlement_id": "Wildland_Forest",
@@ -3714,7 +3713,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_59",
@@ -3731,7 +3731,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.3545,
       "settlement_id": "Wildland_Forest",
@@ -3746,7 +3745,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_60",
@@ -3763,7 +3763,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.9579,
       "settlement_id": "Wildland_Forest",
@@ -3778,7 +3777,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_61",
@@ -3795,7 +3795,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.8059,
       "settlement_id": "Wildland_Forest",
@@ -3810,7 +3809,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_62",
@@ -3827,7 +3827,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.2716,
       "settlement_id": "Wildland_Forest",
@@ -3842,7 +3841,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_63",
@@ -3859,7 +3859,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.899,
       "settlement_id": "Wildland_Forest",
@@ -3874,7 +3873,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_64",
@@ -3891,7 +3891,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.094,
       "settlement_id": "Wildland_Forest",
@@ -3906,7 +3905,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_65",
@@ -3923,7 +3923,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.1127,
       "settlement_id": "Wildland_Forest",
@@ -3938,7 +3937,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_66",
@@ -3955,7 +3955,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.0023,
       "settlement_id": "Wildland_Forest",
@@ -3970,7 +3969,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_67",
@@ -3987,7 +3987,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 1.8654,
       "settlement_id": "Wildland_Forest",
@@ -4002,7 +4001,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_68",
@@ -4019,7 +4019,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.3169,
       "settlement_id": "Wildland_Forest",
@@ -4034,7 +4033,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_69",
@@ -4051,7 +4051,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.6006,
       "settlement_id": "Wildland_Forest",
@@ -4066,7 +4065,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_70",
@@ -4083,7 +4083,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.1101,
       "settlement_id": "Wildland_Forest",
@@ -4098,7 +4097,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_71",
@@ -4115,7 +4115,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.8706,
       "settlement_id": "Wildland_Forest",
@@ -4130,7 +4129,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_72",
@@ -4147,7 +4147,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.2506,
       "settlement_id": "Wildland_Forest",
@@ -4162,7 +4161,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_73",
@@ -4179,7 +4179,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 6.0688,
       "settlement_id": "Wildland_Forest",
@@ -4194,7 +4193,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_74",
@@ -4211,7 +4211,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.1054,
       "settlement_id": "Wildland_Forest",
@@ -4226,7 +4225,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_75",
@@ -4243,7 +4243,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.9274,
       "settlement_id": "Wildland_Forest",
@@ -4258,7 +4257,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_76",
@@ -4275,7 +4275,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.6047,
       "settlement_id": "Wildland_Forest",
@@ -4290,7 +4289,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_77",
@@ -4307,7 +4307,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.718,
       "settlement_id": "Wildland_Forest",
@@ -4322,7 +4321,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_78",
@@ -4339,7 +4339,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.6906,
       "settlement_id": "Wildland_Forest",
@@ -4354,7 +4353,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_79",
@@ -4371,7 +4371,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.5399,
       "settlement_id": "Wildland_Forest",
@@ -4386,7 +4385,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_80",
@@ -4403,7 +4403,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.097,
       "settlement_id": "Wildland_Forest",
@@ -4418,7 +4417,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_81",
@@ -4435,7 +4435,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.3295,
       "settlement_id": "Wildland_Forest",
@@ -4450,7 +4449,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_82",
@@ -4467,7 +4467,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.23,
       "settlement_id": "Wildland_Forest",
@@ -4482,7 +4481,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_83",
@@ -4499,7 +4499,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.7454,
       "settlement_id": "Wildland_Forest",
@@ -4514,7 +4513,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_84",
@@ -4531,7 +4531,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.5756,
       "settlement_id": "Wildland_Forest",
@@ -4546,7 +4545,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_85",
@@ -4563,7 +4563,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 3.3858,
       "settlement_id": "Wildland_Forest",
@@ -4578,7 +4577,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_86",
@@ -4595,7 +4595,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.7829,
       "settlement_id": "Wildland_Forest",
@@ -4610,7 +4609,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_87",
@@ -4627,7 +4627,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 0.2972,
       "settlement_id": "Wildland_Forest",
@@ -4642,7 +4641,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_88",
@@ -4659,7 +4659,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 2.5811,
       "settlement_id": "Wildland_Forest",
@@ -4674,7 +4673,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_89",
@@ -4691,7 +4691,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 5.9286,
       "settlement_id": "Wildland_Forest",
@@ -4706,7 +4705,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "Forest_Tree_90",
@@ -4723,7 +4723,6 @@
         0.0,
         1
       ],
-      "light_range": 0.0,
       "light_energy": 0.0,
       "yaw_rad": 4.9259,
       "settlement_id": "Wildland_Forest",
@@ -4738,7 +4737,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 0.0
     },
     {
       "name": "River_Bridge_1",
@@ -4755,7 +4755,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.8608,
       "settlement_id": "Regional_Transport",
@@ -4768,7 +4767,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_2",
@@ -4785,7 +4785,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.8608,
       "settlement_id": "Regional_Transport",
@@ -4798,7 +4797,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_3",
@@ -4815,7 +4815,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.8608,
       "settlement_id": "Regional_Transport",
@@ -4828,7 +4827,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_4",
@@ -4845,7 +4845,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.8608,
       "settlement_id": "Regional_Transport",
@@ -4858,7 +4857,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_5",
@@ -4875,7 +4875,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.8608,
       "settlement_id": "Regional_Transport",
@@ -4888,7 +4887,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_6",
@@ -4905,7 +4905,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -4918,7 +4917,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_7",
@@ -4935,7 +4935,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -4948,7 +4947,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_8",
@@ -4965,7 +4965,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -4978,7 +4977,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_9",
@@ -4995,7 +4995,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5008,7 +5007,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_10",
@@ -5025,7 +5025,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5038,7 +5037,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_11",
@@ -5055,7 +5055,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5068,7 +5067,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_12",
@@ -5085,7 +5085,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5098,7 +5097,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_13",
@@ -5115,7 +5115,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5128,7 +5127,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_14",
@@ -5145,7 +5145,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5158,7 +5157,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_15",
@@ -5175,7 +5175,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5188,7 +5187,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_16",
@@ -5205,7 +5205,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5218,7 +5217,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_17",
@@ -5235,7 +5235,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5248,7 +5247,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_18",
@@ -5265,7 +5265,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5278,7 +5277,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_19",
@@ -5295,7 +5295,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5308,7 +5307,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_20",
@@ -5325,7 +5325,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5338,7 +5337,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_21",
@@ -5355,7 +5355,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5368,7 +5367,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_22",
@@ -5385,7 +5385,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5398,7 +5397,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_23",
@@ -5415,7 +5415,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5428,7 +5427,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_24",
@@ -5445,7 +5445,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5458,7 +5457,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_25",
@@ -5475,7 +5475,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5488,7 +5487,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_26",
@@ -5505,7 +5505,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5518,7 +5517,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_27",
@@ -5535,7 +5535,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5548,7 +5547,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_28",
@@ -5565,7 +5565,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5578,7 +5577,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_29",
@@ -5595,7 +5595,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5608,7 +5607,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_30",
@@ -5625,7 +5625,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5638,7 +5637,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_31",
@@ -5655,7 +5655,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5668,7 +5667,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_32",
@@ -5685,7 +5685,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5698,7 +5697,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_33",
@@ -5715,7 +5715,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -0.2416,
       "settlement_id": "Regional_Transport",
@@ -5728,7 +5727,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_34",
@@ -5745,7 +5745,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
@@ -5758,7 +5757,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_35",
@@ -5775,7 +5775,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
@@ -5788,7 +5787,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_36",
@@ -5805,7 +5805,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
@@ -5818,7 +5817,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_37",
@@ -5835,7 +5835,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
@@ -5848,7 +5847,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_38",
@@ -5865,7 +5865,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
@@ -5878,7 +5877,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_39",
@@ -5895,7 +5895,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
@@ -5908,7 +5907,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_40",
@@ -5925,7 +5925,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
@@ -5938,7 +5937,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_41",
@@ -5955,7 +5955,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
@@ -5968,7 +5967,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_42",
@@ -5985,7 +5985,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": -2.0911,
       "settlement_id": "Regional_Transport",
@@ -5998,7 +5997,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_43",
@@ -6015,7 +6015,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": 1.0039,
       "settlement_id": "Regional_Transport",
@@ -6028,7 +6027,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_44",
@@ -6045,7 +6045,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": 1.0039,
       "settlement_id": "Regional_Transport",
@@ -6058,7 +6057,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_45",
@@ -6075,7 +6075,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": 1.0039,
       "settlement_id": "Regional_Transport",
@@ -6088,7 +6087,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "River_Bridge_46",
@@ -6105,7 +6105,6 @@
         0.72,
         1
       ],
-      "light_range": 38.0,
       "light_energy": 4.2,
       "yaw_rad": 2.0564,
       "settlement_id": "Regional_Transport",
@@ -6118,7 +6117,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 38.0
     },
     {
       "name": "EndCap_NavBeacon_South_1",
@@ -6135,7 +6135,6 @@
         1.0,
         1
       ],
-      "light_range": 45.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_South",
@@ -6148,7 +6147,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 45.0
     },
     {
       "name": "EndCap_NavBeacon_South_2",
@@ -6165,7 +6165,6 @@
         1.0,
         1
       ],
-      "light_range": 45.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_South",
@@ -6178,7 +6177,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 45.0
     },
     {
       "name": "EndCap_NavBeacon_South_3",
@@ -6195,7 +6195,6 @@
         1.0,
         1
       ],
-      "light_range": 45.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_South",
@@ -6208,7 +6207,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 45.0
     },
     {
       "name": "EndCap_NavBeacon_South_4",
@@ -6225,7 +6225,6 @@
         1.0,
         1
       ],
-      "light_range": 45.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_South",
@@ -6238,7 +6237,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 45.0
     },
     {
       "name": "EndCap_NavBeacon_North_1",
@@ -6255,7 +6255,6 @@
         1.0,
         1
       ],
-      "light_range": 45.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_North",
@@ -6268,7 +6267,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 45.0
     },
     {
       "name": "EndCap_NavBeacon_North_2",
@@ -6285,7 +6285,6 @@
         1.0,
         1
       ],
-      "light_range": 45.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_North",
@@ -6298,7 +6297,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 45.0
     },
     {
       "name": "EndCap_NavBeacon_North_3",
@@ -6315,7 +6315,6 @@
         1.0,
         1
       ],
-      "light_range": 45.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_North",
@@ -6328,7 +6327,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 45.0
     },
     {
       "name": "EndCap_NavBeacon_North_4",
@@ -6345,7 +6345,6 @@
         1.0,
         1
       ],
-      "light_range": 45.0,
       "light_energy": 5.5,
       "yaw_rad": 0.0,
       "settlement_id": "EndCap_North",
@@ -6358,7 +6357,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 45.0
     },
     {
       "name": "Spawn_Showcase_Campfire",
@@ -6375,7 +6375,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6388,7 +6387,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Lamp_Post",
@@ -6405,7 +6405,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6418,7 +6417,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Beacon_Lantern",
@@ -6435,7 +6435,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6448,7 +6447,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Arched_Bridge",
@@ -6465,7 +6465,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6478,7 +6477,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Bonfire",
@@ -6495,7 +6495,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6508,7 +6507,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Colony_House",
@@ -6525,7 +6525,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6538,7 +6537,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Foliage_Tree",
@@ -6555,7 +6555,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6568,7 +6567,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Windmill",
@@ -6585,7 +6585,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6598,7 +6597,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Oak_Tree",
@@ -6615,7 +6615,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6629,7 +6628,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Pine_Tree",
@@ -6646,7 +6646,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6660,7 +6659,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Birch_Tree",
@@ -6677,7 +6677,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6691,7 +6690,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Willow_Tree",
@@ -6708,7 +6708,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6722,7 +6721,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Cherry_Blossom_Tree",
@@ -6739,7 +6739,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6753,7 +6752,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     },
     {
       "name": "Spawn_Showcase_Dead_Tree",
@@ -6770,7 +6770,6 @@
         0.54,
         1
       ],
-      "light_range": 18.0,
       "light_energy": 2.0,
       "yaw_rad": 0.0,
       "settlement_id": "Spawn_Showcase",
@@ -6784,7 +6783,8 @@
         1,
         1
       ],
-      "scale": 1
+      "scale": 1,
+      "light_range_m": 18.0
     }
   ],
   "spawn_points": [

@@ -1,4 +1,6 @@
 extends SceneTree
+const ObjectFactory = preload("res://scripts/map_object_factory.gd")
+const EditStorage = preload("res://scripts/world_edit_storage.gd")
 var failures = 0
 func check(ok: bool, message: String):
 	if not ok:
@@ -6,6 +8,12 @@ func check(ok: bool, message: String):
 		push_error(message)
 	else:
 		print("PASS: ", message)
+
+func flame_card_material(object: Node) -> ShaderMaterial:
+	var card := object.find_child("FlameCard0", true, false) as MeshInstance3D
+	if not card or not card.mesh:
+		return null
+	return card.get_active_material(0) as ShaderMaterial
 func _initialize():
 	_run.call_deferred()
 func _run():
@@ -22,6 +30,42 @@ func _run():
 	check(refs.get_child_count() > 1, "Scene instantiates map objects")
 	var first = get_first_node_in_group("surface_light_objects")
 	check(first != null and not first.asset_id.is_empty(), "Object instances retain stable catalog IDs")
+	var map_doc: Dictionary = world.active_map_config
+	var flame_parameters: Dictionary = map_doc.shader_parameters["campfire_flame.gdshader"]
+	var shader_object := ObjectFactory.create(map_doc, {"id":"shader-map-check", "asset":"campfire", "theta":0.4, "z":12.0}, world)
+	refs.add_child(shader_object)
+	await process_frame
+	var flame_material := flame_card_material(shader_object)
+	check(flame_material != null and flame_material.get_shader_parameter("color_flame").is_equal_approx(MapConfig.color(flame_parameters.color_flame)), "Map flame shader parameters apply to duplicated nested object materials")
+	var alternate_doc: Dictionary = map_doc.duplicate(true)
+	alternate_doc.shader_parameters["campfire_flame.gdshader"].color_flame = [0.2,0.7,0.9,1.0]
+	world.active_map_config = alternate_doc
+	shader_object.rebuild_object()
+	await process_frame
+	flame_material = flame_card_material(shader_object)
+	check(flame_material != null and flame_material.get_shader_parameter("color_flame").is_equal_approx(Color(0.2,0.7,0.9,1)), "Object rebuild uses newly active map shader values")
+	world.active_map_config = map_doc
+	shader_object.rebuild_object()
+	await process_frame
+	shader_object.queue_free()
+	var saved_light_record := {"id":"canonical-light-range-check", "asset":"campfire", "theta":0.4, "z":20.0, "light_range_m":38.0}
+	var saved_light_object := ObjectFactory.create(map_doc, saved_light_record, world)
+	refs.add_child(saved_light_object)
+	await process_frame
+	var placement_snapshot_path := "user://maps/canonical_light_range_%d.json" % Time.get_ticks_usec()
+	check(EditStorage.save(refs, placement_snapshot_path) == OK, "Placement snapshot saves canonical light settings")
+	var placement_snapshot: Variant = JSON.parse_string(FileAccess.get_file_as_string(placement_snapshot_path))
+	var persisted_light: Dictionary = {}
+	if placement_snapshot is Dictionary:
+		for record in placement_snapshot.get("objects", []):
+			if record.get("id") == "canonical-light-range-check":
+				persisted_light = record
+				break
+	check(persisted_light.get("light_range_m") == 38.0, "Canonical instance light range survives saving")
+	var restored_light = ObjectFactory.create(map_doc, persisted_light, world) if not persisted_light.is_empty() else null
+	check(restored_light != null and is_equal_approx(restored_light.light_range, 38.0), "Saved canonical light range survives object reconstruction")
+	if restored_light:
+		restored_light.free()
 	var env = scene.get_node("WorldEnvironment").environment
 	check(env.background_color.is_equal_approx(MapConfig.color(world.active_map_config.environment.sky_color)), "Map sky color applied")
 	check(world.water_material.get_shader_parameter("deep_color").is_equal_approx(MapConfig.color(world.active_map_config.environment.water.deep_color)), "Map water color applied")

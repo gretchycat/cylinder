@@ -19,6 +19,9 @@ func test_check(condition: bool, failure_message: String) -> void:
 		OS.kill(OS.get_process_id())
 
 func _init() -> void:
+	# Keep this legacy simulation suite independent of whichever user map was
+	# active in a previous editor/library test or local app session.
+	MapConfig.active_map_file = "user://test_simulation_active_%d.txt" % Time.get_ticks_usec()
 	# Start background watchdog to prevent any possibility of hanging
 	_watchdog(60.0)
 
@@ -543,8 +546,8 @@ func _init() -> void:
 
 	# Verify sample campfire emission and omni light
 	test_check(sample_campfire != null and sample_campfire.omni_light != null, "Campfire must possess an OmniLight3D emitter")
-	test_check(sample_campfire.omni_light.light_color.r > 0.8 and sample_campfire.omni_light.light_color.b < 0.4, "Campfire light must be warm firelight spectrum")
-	test_check(sample_campfire.omni_light.omni_range >= 30.0, "Campfire light range must illuminate surrounding ground (>= 30m)")
+	test_check(sample_campfire.omni_light.light_color.r > sample_campfire.omni_light.light_color.g and sample_campfire.omni_light.light_color.g > sample_campfire.omni_light.light_color.b, "Campfire light must retain its map-defined warm color ordering")
+	test_check(is_equal_approx(sample_campfire.omni_light.omni_range, sample_campfire.light_range), "Campfire emitter must use its map-defined instance light range")
 	test_check(sample_campfire.flame_mats.size() > 0, "Campfire must have emissive flame material")
 	test_check(sample_campfire.flame_mats[0].emission_enabled, "Campfire flame mesh material emission must be enabled")
 
@@ -829,5 +832,3 @@ func _init() -> void:
 	print(" ALL O'NEILL CYLINDER SIMULATION TESTS PASSED (17/17)! ")
 	print("=======================================================\n")
 	quit(0)
-
-

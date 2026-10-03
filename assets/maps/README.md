@@ -40,4 +40,5 @@ Open the map editor (or tap **SAVE**), enter a map name, and choose **Save map**
 **Load selected map** to switch maps; save unsaved changes before switching.
 **Save and export map** writes a `.cylmap` ZIP archive, and **Import map** validates
 and loads an archive as a separate user map. Custom models and textures travel
-with the archive; built-in asset references require the app's bundled assets.
+with the archive. Each import receives a new `world_id`; built-in `res://` asset
+references remain dependencies on assets bundled with the app.

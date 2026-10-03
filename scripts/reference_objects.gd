@@ -230,13 +230,13 @@ func _load_and_spawn_from_json(progress_cb: Callable = Callable()) -> bool:
 	return true
 
 func _record_surface_position(record: Dictionary) -> Vector2:
-	if record.has("theta") and record.has("z"):
-		return Vector2(float(record.theta), float(record.z))
 	var packed: Variant = record.get("transform", [])
 	if packed is Array and packed.size() >= 12:
 		var x := float(packed[9])
 		var y := float(packed[10])
 		return Vector2(atan2(y, x), float(packed[11]))
+	if record.has("theta") and record.has("z"):
+		return Vector2(float(record.theta), float(record.z))
 	return Vector2.ZERO
 
 func _surface_distance(a: Vector2, b: Vector2) -> float:
@@ -294,6 +294,7 @@ func _update_placement_streaming(force: bool = false) -> void:
 		if live_placements.has(id):
 			continue
 		var instance = preload("res://scripts/map_object_factory.gd").create(active_map_config, record, world)
+		instance.set_meta("map_stream_initial_transform", instance.transform)
 		add_child(instance)
 		live_placements[id] = instance
 		spawned += 1
@@ -302,10 +303,15 @@ func _capture_live_placement(record: Dictionary, object: Node) -> void:
 	if not object is SurfaceLightObject:
 		return
 	var packed: Array = []
-	var transform := (object as Node3D).global_transform
+	var transform := (object as Node3D).transform
 	for vector in [transform.basis.x, transform.basis.y, transform.basis.z, transform.origin]:
 		packed.append_array([vector.x, vector.y, vector.z])
-	record["transform"] = packed
+	var initial_transform: Variant = object.get_meta("map_stream_initial_transform") if object.has_meta("map_stream_initial_transform") else null
+	if record.has("transform") or initial_transform == null or not transform.is_equal_approx(initial_transform):
+		record["transform"] = packed
+		# An explicit local transform is authoritative; discard redundant surface coordinates.
+		record.erase("theta")
+		record.erase("z")
 	record["tint"] = MapConfigClass.rgba(object.tint)
 	record["light_color"] = MapConfigClass.rgba(object.light_color)
 	record["light_energy"] = object.light_energy
@@ -339,7 +345,7 @@ func get_all_placement_records() -> Array:
 		if known_ids.has(object.instance_id):
 			continue
 		var packed: Array = []
-		var transform := object.global_transform
+		var transform := object.transform
 		for vector in [transform.basis.x, transform.basis.y, transform.basis.z, transform.origin]:
 			packed.append_array([vector.x, vector.y, vector.z])
 		placement_records.append({"id": object.instance_id, "asset": object.asset_id, "name": str(object.name), "transform": packed, "tint": MapConfigClass.rgba(object.tint), "light_color": MapConfigClass.rgba(object.light_color), "light_energy": object.light_energy, "light_range_m": object.light_range, "flicker": object.enable_flicker})

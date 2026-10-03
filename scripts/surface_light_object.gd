@@ -25,6 +25,7 @@ enum TreeVariant {
 
 const MapConfigClass = preload("res://scripts/map_config.gd")
 const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
+const MapRuntimeClass = preload("res://scripts/map_runtime.gd")
 
 @export var object_type: ObjectType = ObjectType.CAMPFIRE:
 	set(val):
@@ -107,12 +108,36 @@ func rebuild_object() -> void:
 		return
 
 	add_child(instance)
+	_apply_map_shader_parameters(instance)
 	_setup_instance_bindings(instance)
 	if not omni_light and light_energy > 0:
 		omni_light = OmniLight3D.new()
 		instance.add_child(omni_light)
 		base_energy = light_energy * light_color.a
 	apply_appearance(instance)
+
+func _apply_map_shader_parameters(root: Node) -> void:
+	var map_doc: Dictionary = MapRuntimeClass.document(self)
+	if map_doc.is_empty():
+		return
+	var meshes: Array[Node] = []
+	if root is MeshInstance3D:
+		meshes.append(root)
+	meshes.append_array(root.find_children("*", "MeshInstance3D", true, false))
+	for node in meshes:
+		var mesh := node as MeshInstance3D
+		if mesh.material_override is ShaderMaterial:
+			var override := (mesh.material_override as ShaderMaterial).duplicate(true) as ShaderMaterial
+			MapRuntimeClass.shader_parameters(override, map_doc)
+			mesh.material_override = override
+		if not mesh.mesh:
+			continue
+		for surface in mesh.mesh.get_surface_count():
+			var source := mesh.get_active_material(surface)
+			if source is ShaderMaterial:
+				var material := (source as ShaderMaterial).duplicate(true) as ShaderMaterial
+				MapRuntimeClass.shader_parameters(material, map_doc)
+				mesh.set_surface_override_material(surface, material)
 
 func _setup_instance_bindings(instance: Node3D) -> void:
 	# Helper to find nodes by name at any depth in the instance hierarchy.

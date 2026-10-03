@@ -425,9 +425,12 @@ func _import_file(path: String) -> void:
 			return
 		instance.free()
 	else:
-		var img = Image.load_from_file(path)
-		if not img or img.get_width() > 8192 or img.get_height() > 8192 or img.save_png(path_out) != OK:
-			message.text = "Unable to decode texture (maximum 8192×8192)"
+		var img = Assets.load_image(path)
+		if not img or not Assets.texture_dimensions_allowed(Vector2i(img.get_width(), img.get_height())):
+			message.text = "Texture limit: each side up to 8192 px and at most 16,777,216 total pixels"
+			return
+		if img.save_png(path_out) != OK:
+			message.text = "Unable to save imported texture"
 			return
 	import_callback.call(path_out)
 	message.text = "Imported; Save or Generate to include it in the map"

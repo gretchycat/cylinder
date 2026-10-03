@@ -104,7 +104,7 @@ static func palette_color(stops: Array, t: float) -> Color:
 	return color(stops[i]).lerp(color(stops[mini(i + 1, stops.size() - 1)]), f - i)
 
 static func validate(doc: Dictionary) -> String:
-	if not finite_number(doc.get("schema_version")) or int(doc.schema_version) != 3:
+	if not integer_number(doc.get("schema_version")) or int(doc.schema_version) != 3:
 		return "Map requires schema_version 3"
 	if not doc.get("world_id") is String or doc.world_id.is_empty():
 		return "Map requires a permanent world_id"
@@ -133,8 +133,11 @@ static func validate(doc: Dictionary) -> String:
 		if not gen.has(key) or not finite_number(gen[key]):
 			return "Missing/invalid generation." + key
 	for key in ["elevation_width", "elevation_height", "terrain_width", "terrain_height"]:
-		if gen[key] < 2 or gen[key] > 4096 or gen[key] != int(gen[key]):
+		if not integer_number(gen[key]) or gen[key] < 2 or gen[key] > 4096:
 			return key + " must be an integer in 2..4096"
+	for key in ["seed", "erosion_iterations", "object_limit", "noise_octaves", "balance_iterations"]:
+		if not integer_number(gen[key]):
+			return key + " must be an integer"
 	if gen.elevation_width * gen.elevation_height > 4194304 or gen.terrain_width * gen.terrain_height > 4194304:
 		return "Each layer is limited to 4,194,304 samples"
 	for key in ["noise_wavelength_m", "detail_wavelength_m", "climate_wavelength_m", "coast_wavelength_m", "lake_radius_m", "river_width_m", "biome_region_wavelength_m"]:
@@ -169,6 +172,9 @@ static func validate(doc: Dictionary) -> String:
 	for key in ["radial_segments", "length_segments", "end_cap_rings", "end_cap_dish_depth_m", "biome_texture_resolution"]:
 		if not finite_number(doc.rendering.get(key)) or doc.rendering[key] <= 0:
 			return "Invalid rendering." + key
+	for key in ["radial_segments", "length_segments", "end_cap_rings", "biome_texture_resolution"]:
+		if not integer_number(doc.rendering[key]):
+			return "rendering.%s must be an integer" % key
 	if gen.balance_iterations < 1 or gen.balance_iterations > 64 or gen.biome_region_strength <= 0:
 		return "Balance iterations must be 1..64; biome region strength must be positive"
 	if gen.noise_octaves < 1 or gen.noise_octaves > 10 or gen.noise_gain < 0 or gen.noise_gain > 1 or gen.detail_strength < 0 or gen.detail_strength > 1:
@@ -192,7 +198,7 @@ static func validate(doc: Dictionary) -> String:
 		for field in ["raster_id", "name", "weight", "elevation_range_m", "max_slope_deg", "moisture", "temperature", "submerged", "texture", "texture_size_m", "roughness", "tint", "clutter", "objects"]:
 			if not b.has(field):
 				return "Missing biome %s.%s" % [key, field]
-		if not finite_number(b.raster_id) or b.raster_id < 0 or b.raster_id > 255 or ids.has(int(b.raster_id)):
+		if not integer_number(b.raster_id) or b.raster_id < 0 or b.raster_id > 255 or ids.has(int(b.raster_id)):
 			return "Biome raster IDs must be unique in 0..255"
 		ids[int(b.raster_id)] = true
 		for numeric in ["weight", "texture_size_m", "roughness", "max_slope_deg", "moisture", "temperature"]:
@@ -246,8 +252,10 @@ static func validate(doc: Dictionary) -> String:
 		for key in ["name", "scene_path", "behavior_type", "variant", "tint", "light_color", "light_energy", "light_range_m", "flicker"]:
 			if not entry.has(key):
 				return "Missing object %s.%s" % [id, key]
-		if not finite_number(entry.behavior_type) or entry.behavior_type != int(entry.behavior_type) or entry.behavior_type < 0 or entry.behavior_type > 8:
+		if not integer_number(entry.behavior_type) or entry.behavior_type < 0 or entry.behavior_type > 8:
 			return "Unknown object behavior: " + id
+		if not integer_number(entry.variant):
+			return "Object variant must be an integer: " + id
 		if not valid_color(entry.tint) or not valid_color(entry.light_color):
 			return "Invalid object RGBA: " + id
 		if not finite_number(entry.light_energy) or entry.light_energy < 0 or not finite_number(entry.light_range_m) or entry.light_range_m < 0:
@@ -261,6 +269,9 @@ static func validate(doc: Dictionary) -> String:
 
 static func finite_number(value: Variant) -> bool:
 	return (value is float or value is int) and is_finite(float(value))
+
+static func integer_number(value: Variant) -> bool:
+	return finite_number(value) and float(value) == floorf(float(value))
 
 static func valid_color(value: Variant) -> bool:
 	if not value is Array or value.size() != 4:
@@ -508,7 +519,7 @@ static func validate_assets(doc: Dictionary) -> String:
 	for b in doc.biomes.values():
 		var image = preload("res://scripts/map_asset_loader.gd").load_image(resolve_map_asset_path(doc, b.texture))
 		if image == null:
-			return "Invalid biome texture: " + str(b.texture)
+			return "Invalid biome texture (each side <= 8192 px; <= 16,777,216 pixels): " + str(b.texture)
 	var placements_path = get_object_map_path(doc)
 	var placements: Variant = JSON.parse_string(FileAccess.get_file_as_string(placements_path))
 	if not placements is Dictionary or not placements.get("objects") is Array:
@@ -520,6 +531,8 @@ static func validate_assets(doc: Dictionary) -> String:
 		if not record.get("id") is String or record.id.is_empty() or placement_ids.has(record.id):
 			return "Placement IDs must be unique non-empty strings"
 		placement_ids[record.id] = true
+		if record.has("light_range"):
+			return "Placement uses obsolete light_range; use light_range_m: " + record.id
 		if record.has("transform"):
 			if not record.transform is Array or record.transform.size() != 12:
 				return "Placement transform must contain 12 numbers"

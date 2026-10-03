@@ -17,6 +17,7 @@ var terrain_data := PackedByteArray()
 var biomes: Dictionary = {}
 var biome_by_id: Dictionary = {}
 var last_error: String = ""
+static var last_read_error: String = ""
 
 func _init(_u: int = 0, _v: int = 0, variance: float = 1.0, sea: float = 0.0) -> void:
 	elevation_variance = variance
@@ -60,24 +61,26 @@ func load_layers(elev_path: String, terrain_path: String) -> bool:
 
 static func read_elevation(path: String) -> Image:
 	var parsed = _read_elevation_data(path)
-	if parsed.is_empty():
+	if not parsed.get("ok", false):
+		last_read_error = str(parsed.get("error", "Invalid elevation layer: " + path))
 		return null
+	last_read_error = ""
 	return Image.create_from_data(parsed.width, parsed.height, false, Image.FORMAT_RF, parsed.samples.to_byte_array())
 
 static func _read_elevation_data(path: String) -> Dictionary:
 	var file = FileAccess.open(path, FileAccess.READ)
 	if not file:
-		return {"error": "Cannot open elevation layer: " + path}
+		return {"ok": false, "error": "Cannot open elevation layer: " + path}
 	file.big_endian = false
 	if file.get_length() < 12 or file.get_buffer(4).get_string_from_ascii() != "CYLH":
-		return {"error": "Elevation layer must start with CYLH and contain its header: " + path}
+		return {"ok": false, "error": "Elevation layer must start with CYLH and contain its header: " + path}
 	var width = file.get_32()
 	var height = file.get_32()
 	if width < 2 or height < 2 or width > 4096 or height > 4096 or width * height > 4194304:
-		return {"error": "Elevation dimensions are invalid or exceed 4,194,304 samples: %s (%d x %d)" % [path, width, height]}
+		return {"ok": false, "error": "Elevation dimensions are invalid or exceed 4,194,304 samples: %s (%d x %d)" % [path, width, height]}
 	var expected_length: int = 12 + width * height * 4
 	if file.get_length() != expected_length:
-		return {"error": "Elevation byte count does not match its dimensions: " + path}
+		return {"ok": false, "error": "Elevation byte count does not match its dimensions: " + path}
 	var samples = PackedFloat32Array()
 	samples.resize(width * height)
 	var index = 0
@@ -85,14 +88,14 @@ static func _read_elevation_data(path: String) -> Dictionary:
 		var byte_count = mini(65536, (samples.size() - index) * 4)
 		var chunk = file.get_buffer(byte_count)
 		if chunk.size() != byte_count:
-			return {"error": "Elevation data ended unexpectedly: " + path}
+			return {"ok": false, "error": "Elevation data ended unexpectedly: " + path}
 		for offset in range(0, byte_count, 4):
 			var value = chunk.decode_float(offset)
 			if not is_finite(value) or value < 0 or value > 1:
-				return {"error": "Elevation samples must be finite normalized values from 0 to 1: " + path}
+				return {"ok": false, "error": "Elevation samples must be finite normalized values from 0 to 1: " + path}
 			samples[index] = value
 			index += 1
-	return {"width": width, "height": height, "samples": samples}
+	return {"ok": true, "width": width, "height": height, "samples": samples}
 
 static func write_elevation(path: String, image: Image) -> Error:
 	var f = FileAccess.open(path, FileAccess.WRITE)
@@ -109,7 +112,7 @@ static func write_elevation(path: String, image: Image) -> Error:
 
 func load_elevation(path: String) -> bool:
 	var parsed = _read_elevation_data(path)
-	if parsed.is_empty():
+	if not parsed.get("ok", false):
 		last_error = str(parsed.get("error", "Invalid elevation layer: " + path))
 		return false
 	elevation_grid_u = parsed.width
