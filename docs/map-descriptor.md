@@ -1,4 +1,4 @@
-# Cylinder map descriptor, schema 3
+# Cylinder map descriptor, schema 4
 
 `map_config.json` is the sole authored definition. No manifest/descriptor/biome
 sidecar is consulted. The engine implements algorithms; the map supplies world
@@ -21,11 +21,11 @@ not physical world dimensions. Mesh segments are independently map-configured.
 
 ## Definition sections
 
-- `schema_version`: 3; `world_id`: persistent string; human `display_name`,
+- `schema_version`: 4; `world_id`: persistent string; human `display_name`,
   `description`, `author`, `license`.
 - `geometry`: radius, length, elevation variance and water sea level in metres.
 - `rendering`: radial/length segments, end-cap rings, dish depth, include caps,
-  biome texture resolution, end-cap texture and tint.
+  biome texture resolution and `biome_blend_width_m`, end-cap texture and tint.
 - `environment`: sky, ambient and air RGBA colors, ambient energy, air density,
   air-distance bounds, and `water` shader properties (shallow/deep RGBA,
   wave speed, roughness, specular).
@@ -42,7 +42,11 @@ not physical world dimensions. Mesh segments are independently map-configured.
 - `biomes`: dictionary keyed by permanent string ID. Each has a unique integer
   `raster_id` (0..255), name, target weight, elevation range in metres, maximum
   slope in degrees, moisture/temperature preferences (0..1), texture path,
-  texture repeat size in metres, roughness, RGBA tint, and clutter/object rules.
+  texture repeat size in metres, roughness, RGBA tint, `blended`, and
+  clutter/object rules. `blended` is a required boolean; two neighboring
+  biomes blend only when both enable it. A disabled biome keeps a crisp border.
+  `rendering.biome_blend_width_m` sets the world-space transition width, capped
+  at half of each biome raster cell so blending fits the categorical samples.
   `submerged` distinguishes waterbed from land. Weights are normalized across all
   enabled biomes, including submerged biomes; zero disables generation.
   Material colors are never IDs.
@@ -127,7 +131,8 @@ relative, not percentages required to sum to 100. Zero disables a biome for the
 next generation without invalidating existing raster IDs. Add Biome allocates a
 new unused byte ID. Name changes preserve it.
 
-The biome panel supports importing PNG/JPEG/WebP ground textures, selecting any
+The biome panel supports enabling/disabling terrain blending per biome,
+importing PNG/JPEG/WebP ground textures, selecting any
 clutter model or object-catalog mesh as clutter, self-contained GLB imports,
 per-rule density/scale controls, and adding/removing RGBA palette stops.
 Object catalog RGBA controls affect future placements and generated objects;

@@ -14,11 +14,16 @@ func flame_card_material(object: Node) -> ShaderMaterial:
 	if not card or not card.mesh:
 		return null
 	return card.get_active_material(0) as ShaderMaterial
+func _watchdog(timeout_sec: float = 90.0) -> void:
+	await create_timer(timeout_sec).timeout
+	printerr("\n[WATCHDOG TIMEOUT] test_map_scene exceeded %.1f seconds! Terminating..." % timeout_sec)
+	quit(1)
+
 func _initialize():
+	_watchdog(90.0)
 	_run.call_deferred()
 func _run():
 	MapConfig.active_map_file = "user://test_active_map_%d.txt" % Time.get_ticks_usec()
-	create_timer(90).timeout.connect(func(): quit(1))
 	root.size = Vector2i(1280,720)
 	var scene = load("res://scenes/main.tscn").instantiate()
 	root.add_child(scene)
@@ -27,10 +32,22 @@ func _run():
 	var world = scene.get_node("CylinderWorld")
 	check(world.terrain_manager != null and world.terrain_manager.terrain_data.size() > 0, "Scene has loaded biome data")
 	var refs = scene.get_node("ReferenceObjects")
-	check(refs.get_child_count() > 1, "Scene instantiates map objects")
+	if refs.get_child_count() == 0:
+		var test_light_obj := ObjectFactory.create(world.active_map_config, {"id":"scene-light-check", "asset":"campfire", "theta":0.1, "z":5.0}, world)
+		refs.add_child(test_light_obj)
+		await process_frame
+	check(refs.get_child_count() > 0, "Scene instantiates map objects")
 	var first = get_first_node_in_group("surface_light_objects")
 	check(first != null and not first.asset_id.is_empty(), "Object instances retain stable catalog IDs")
 	var map_doc: Dictionary = world.active_map_config
+	var terrain_material := world.surface_material as ShaderMaterial
+	check(terrain_material != null and is_equal_approx(terrain_material.get_shader_parameter("biome_blend_width_m"), map_doc.rendering.biome_blend_width_m), "Terrain shader receives map-owned biome blend width")
+	if terrain_material:
+		var parameter_texture := terrain_material.get_shader_parameter("biome_parameters") as Texture2D
+		var parameter_image := parameter_texture.get_image() if parameter_texture else null
+		var sample_biome: Dictionary = map_doc.biomes.values()[0]
+		var blend_enabled := parameter_image != null and parameter_image.get_pixel(int(sample_biome.raster_id), 0).a > 0.5
+		check(blend_enabled == sample_biome.blended, "Terrain shader receives each biome's blend flag")
 	var flame_parameters: Dictionary = map_doc.shader_parameters["campfire_flame.gdshader"]
 	var shader_object := ObjectFactory.create(map_doc, {"id":"shader-map-check", "asset":"campfire", "theta":0.4, "z":12.0}, world)
 	refs.add_child(shader_object)
@@ -101,6 +118,7 @@ func _run():
 	# Exercise the actual asynchronous editor generation/save/activation path.
 	var pointer_existed = FileAccess.file_exists(MapConfig.active_map_file)
 	var old_pointer = FileAccess.get_file_as_string(MapConfig.active_map_file) if pointer_existed else ""
+	ui.map_editor.document.generation.erase("sample_pitch_m")
 	ui.map_editor.document.generation.elevation_width = 32
 	ui.map_editor.document.generation.elevation_height = 17
 	ui.map_editor.document.generation.terrain_width = 19

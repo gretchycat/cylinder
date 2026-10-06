@@ -2392,6 +2392,7 @@ func _on_toggle_controls_pressed() -> void:
 	if control_panel:
 		control_panel.visible = not control_panel.visible
 		if control_panel.visible:
+			_update_panel_constraints()
 			if telemetry_panel:
 				telemetry_panel.visible = false
 			if log_panel:
@@ -2410,6 +2411,7 @@ func _on_toggle_telemetry_pressed() -> void:
 		telemetry_panel.visible = not telemetry_panel.visible
 		looking_at_enabled = telemetry_panel.visible
 		if telemetry_panel.visible:
+			_update_panel_constraints()
 			if control_panel:
 				control_panel.visible = false
 			if log_panel:
@@ -2430,6 +2432,7 @@ func _on_toggle_log_pressed() -> void:
 	if log_panel:
 		log_panel.visible = not log_panel.visible
 		if log_panel.visible:
+			_update_panel_constraints()
 			if control_panel:
 				control_panel.visible = false
 			if telemetry_panel:

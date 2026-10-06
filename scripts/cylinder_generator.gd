@@ -499,7 +499,14 @@ func _update_terrain_material_textures(mat: ShaderMaterial = null) -> void:
 		img.generate_mipmaps()
 		var id = int(biome.raster_id)
 		tints.set_pixel(id, 0, MapConfigClass.color(biome.tint))
-		parameters.set_pixel(id, 0, Color(images.size(), biome.texture_size_m, biome.roughness, 1))
+		var is_blended: bool = bool(biome.get("blended", true))
+		var is_rotated: bool = bool(biome.get("rotate", is_blended))
+		var alpha_val: float = 0.0
+		if is_blended:
+			alpha_val = 1.0 if is_rotated else 0.5
+		parameters.set_pixel(id, 0, Color(images.size(), biome.texture_size_m, biome.roughness, alpha_val))
+
+
 		images.append(img)
 	var textures = Texture2DArray.new()
 	textures.create_from_images(images)
@@ -510,6 +517,7 @@ func _update_terrain_material_textures(mat: ShaderMaterial = null) -> void:
 	mat.set_shader_parameter("end_cap_tint", MapConfigClass.color(active_map_config.rendering.end_cap_tint))
 	mat.set_shader_parameter("terrain_map", ImageTexture.create_from_image(terrain_manager.create_terrain_type_id_image()))
 	mat.set_shader_parameter("terrain_map_size", Vector2(terrain_manager.terrain_grid_u, terrain_manager.terrain_grid_v))
+	mat.set_shader_parameter("biome_blend_width_m", active_map_config.rendering.biome_blend_width_m)
 	mat.set_shader_parameter("deep_water_color", MapConfigClass.color(active_map_config.environment.water.deep_color))
 
 	mat.set_shader_parameter("cylinder_radius", radius)

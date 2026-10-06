@@ -8,7 +8,13 @@ func check(ok: bool, message: String):
 	else:
 		failures += 1
 		push_error(message)
+func _watchdog(timeout_sec: float = 60.0) -> void:
+	await create_timer(timeout_sec).timeout
+	printerr("\n[WATCHDOG TIMEOUT] test_map_library exceeded %.1f seconds! Terminating..." % timeout_sec)
+	quit(1)
+
 func _initialize():
+	_watchdog(60.0)
 	_run.call_deferred()
 func _run():
 	var root_path = "user://library_test_" + Config.new_map_id()

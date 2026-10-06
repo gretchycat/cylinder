@@ -76,8 +76,8 @@ static func _read_elevation_data(path: String) -> Dictionary:
 		return {"ok": false, "error": "Elevation layer must start with CYLH and contain its header: " + path}
 	var width = file.get_32()
 	var height = file.get_32()
-	if width < 2 or height < 2 or width > 4096 or height > 4096 or width * height > 4194304:
-		return {"ok": false, "error": "Elevation dimensions are invalid or exceed 4,194,304 samples: %s (%d x %d)" % [path, width, height]}
+	if width < 2 or height < 2 or width > 32768 or height > 32768 or width * height > 536870912:
+		return {"ok": false, "error": "Elevation dimensions are invalid or exceed 536,870,912 samples: %s (%d x %d)" % [path, width, height]}
 	var expected_length: int = 12 + width * height * 4
 	if file.get_length() != expected_length:
 		return {"ok": false, "error": "Elevation byte count does not match its dimensions: " + path}
@@ -127,12 +127,12 @@ func load_elevation(path: String) -> bool:
 
 
 func load_terrain(path: String) -> bool:
-	var img = MapAssetLoaderClass.load_image(path, 4194304)
+	var img = MapAssetLoaderClass.load_image(path, 536870912)
 	if not img or img.get_width() < 2 or img.get_height() < 2:
-		last_error = "Biome layer is missing, malformed, or exceeds 4,194,304 pixels: " + path
+		last_error = "Biome layer is missing, malformed, or exceeds 536,870,912 pixels: " + path
 		return false
-	if img.get_width() * img.get_height() > 4194304:
-		last_error = "Biome layer exceeds 4,194,304 pixels: " + path
+	if img.get_width() * img.get_height() > 536870912:
+		last_error = "Biome layer exceeds 536,870,912 pixels: " + path
 		return false
 	img.convert(Image.FORMAT_L8)
 	var data = img.get_data()

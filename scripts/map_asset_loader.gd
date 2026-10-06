@@ -130,12 +130,6 @@ static func _image_dimensions(path: String) -> Vector2i:
 static func load_image(path: String, max_pixels: int = MAX_TEXTURE_PIXELS) -> Image:
 	if path.is_empty():
 		return null
-	if ResourceLoader.exists(path):
-		var resource = ResourceLoader.load(path)
-		if resource is Texture2D:
-			if not texture_dimensions_allowed(Vector2i(resource.get_width(), resource.get_height())) or (max_pixels > 0 and resource.get_width() * resource.get_height() > max_pixels):
-				return null
-			return resource.get_image()
 	if FileAccess.file_exists(path):
 		var dimensions = _image_dimensions(path)
 		if not texture_dimensions_allowed(dimensions):
@@ -154,4 +148,10 @@ static func load_image(path: String, max_pixels: int = MAX_TEXTURE_PIXELS) -> Im
 			"webp": error = image.load_webp_from_buffer(bytes)
 		if error == OK:
 			return image
+	if ResourceLoader.exists(path):
+		var resource = ResourceLoader.load(path)
+		if resource is Texture2D:
+			if not texture_dimensions_allowed(Vector2i(resource.get_width(), resource.get_height())) or (max_pixels > 0 and resource.get_width() * resource.get_height() > max_pixels):
+				return null
+			return resource.get_image()
 	return null

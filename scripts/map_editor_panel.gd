@@ -182,9 +182,47 @@ func rebuild() -> void:
 	for key in document.rendering:
 		if Config.finite_number(document.rendering[key]):
 			number(geo, key.replace("_", " "), document.rendering, key, 1, 4096, 1)
+	var initial_dims = Config.get_grid_dimensions(document)
+	if not document.generation.has("sample_pitch_m"):
+		document.generation["sample_pitch_m"] = initial_dims.sample_pitch_m
+
+	var pitch_row = VBoxContainer.new()
+	geo.add_child(pitch_row)
+	var pitch_label = Label.new()
+	pitch_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	pitch_row.add_child(pitch_label)
+
+	var update_pitch_info = func():
+		var d = Config.get_grid_dimensions(document)
+		document.generation["elevation_width"] = d.elevation_width
+		document.generation["elevation_height"] = d.elevation_height
+		document.generation["terrain_width"] = d.terrain_width
+		document.generation["terrain_height"] = d.terrain_height
+		pitch_label.text = "Sample Pitch: %.1fm  ·  Grid: %d × %d px" % [float(document.generation.sample_pitch_m), d.elevation_width, d.elevation_height]
+
+	update_pitch_info.call()
+
+	var spin_row = HBoxContainer.new()
+	pitch_row.add_child(spin_row)
+	var l = Label.new()
+	l.text = "Terrain Sample Pitch (m/px)"
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spin_row.add_child(l)
+	var spin = SpinBox.new()
+	spin.min_value = 0.5
+	spin.max_value = 64.0
+	spin.step = 0.5
+	spin.value = float(document.generation.sample_pitch_m)
+	spin.custom_minimum_size = Vector2(120, 44)
+	spin.value_changed.connect(func(v):
+		document.generation["sample_pitch_m"] = v
+		update_pitch_info.call())
+	spin_row.add_child(spin)
+
 	for key in document.generation:
-		var maximum = 4096 if key in ["elevation_width", "elevation_height", "terrain_width", "terrain_height"] else 1000000
-		number(geo, key.replace("_", " "), document.generation, key, 0, maximum, 0.01 if key in ["sea_center_v", "noise_gain", "detail_strength", "biome_region_strength"] else 1)
+		if key in ["elevation_width", "elevation_height", "terrain_width", "terrain_height", "sample_pitch_m"]:
+			continue
+		number(geo, key.replace("_", " "), document.generation, key, 0, 1000000, 0.01 if key in ["sea_center_v", "noise_gain", "detail_strength", "biome_region_strength"] else 1)
 	var env = section("Sky, atmosphere & water")
 	for key in document.environment:
 		if document.environment[key] is Array:
@@ -304,6 +342,11 @@ func _build_biome(id: String) -> void:
 	row.add_child(value)
 	slider.value_changed.connect(func(v): b.weight = v; value.text = "Weight %.2f" % v)
 	color_control(box, "Terrain RGBA tint", b, "tint")
+	var blend = CheckButton.new()
+	blend.text = "Blend with neighboring biomes"
+	blend.button_pressed = b.blended
+	blend.toggled.connect(func(v): b.blended = v)
+	box.add_child(blend)
 	button(box, "Import ground texture", func(): choose_import("texture", func(path): b.texture = path; message.text = "Imported texture for " + b.name))
 	label(box, "Texture: " + str(b.texture))
 	number(box, "Texture repeat (m)", b, "texture_size_m", 0.1, 10000, 0.1)
@@ -438,16 +481,12 @@ func _import_file(path: String) -> void:
 func package_imports(directory: String) -> bool:
 	if DirAccess.make_dir_recursive_absolute(directory.path_join("assets")) != OK:
 		return false
-	var original = document
-	document = document.duplicate(true)
 	for biome in document.biomes.values():
 		if not _package_path(biome, "texture", directory):
-			document = original
 			return false
 	for catalog in [document.objects.model_catalog, document.ground_clutter.models]:
 		for definition in catalog.values():
 			if not _package_path(definition, "scene_path", directory):
-				document = original
 				return false
 	return true
 

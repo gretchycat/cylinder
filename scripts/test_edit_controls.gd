@@ -8,17 +8,40 @@ var failures := 0
 class ObjectLayer extends Node3D:
 	var active_map_config: Dictionary
 
+class MockCylinderWorld extends Node3D:
+	var terrain_manager: TerrainManager
+	var active_map_config: Dictionary
+	var surface_material: Material = null
+	var radius: float = 4000.0
+	var cylinder_length: float = 18000.0
+	func generate_cylinder() -> void:
+		pass
+	func load_map_package(dir: String) -> void:
+		pass
+
 func check(condition: bool, message: String) -> void:
 	if not condition:
 		failures += 1
 		printerr("[FAIL] ", message)
 
+func _watchdog(timeout_sec: float = 60.0) -> void:
+	await create_timer(timeout_sec).timeout
+	printerr("\n[WATCHDOG TIMEOUT] test_edit_controls exceeded %.1f seconds! Terminating..." % timeout_sec)
+	quit(1)
+
 func _init() -> void:
+	_watchdog(60.0)
 	_run.call_deferred()
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	var world := Node3D.new()
+	var world := MockCylinderWorld.new()
+	world.active_map_config = Config.load_map_config("default")
+	world.add_to_group("cylinder_world")
+	world.terrain_manager = TerrainManager.new()
+	world.terrain_manager.configure(Config.load_map_config("default"))
+	world.terrain_manager.elevation_data.resize(world.terrain_manager.elevation_grid_u * world.terrain_manager.elevation_grid_v)
+	world.terrain_manager.terrain_data.resize(world.terrain_manager.terrain_grid_u * world.terrain_manager.terrain_grid_v)
 	root.add_child(world)
 	var layer := ObjectLayer.new()
 	layer.active_map_config = Config.load_map_config("default")
@@ -163,7 +186,7 @@ func _run() -> void:
 	check(tree != null, "Tree variant places on a sloped surface")
 	if tree:
 		check(tree.tree_variant == SurfaceLightObject.TreeVariant.DEAD_TREE, "Selected tree variant is used")
-		check(tree.global_basis.y.dot(floor_body.global_basis.y) > 0.99, "Object aligns to sloped surface normal")
+		check(tree.global_basis.y.dot(Vector3.UP) > 0.99, "Object stands flat to gravity on sloped surface")
 		tree.queue_free()
 		await process_frame
 	player.camera.look_at(player.camera.global_position + Vector3.UP, Vector3.FORWARD)
@@ -198,6 +221,92 @@ func _run() -> void:
 	old_file.close()
 	check(Storage.restore(layer, TEST_SAVE), "Object-only document loads")
 	check(layer.get_meta("saved_player_spawn").is_empty(), "Absent player transform uses map spawn")
+	# Test 3 Sub-Modes (Object, Painter, Elevation)
+	var WorldEditorClass = preload("res://scripts/world_editor.gd")
+	editor_ui._set_sub_mode(WorldEditorClass.SubMode.PAINTER)
+	check(editor_ui.editor.sub_mode == WorldEditorClass.SubMode.PAINTER, "Submode switches to PAINTER")
+	check(editor_ui.active_box.visible, "Active chooser box visible in PAINTER mode")
+	check(editor_ui.paint_button != null and editor_ui.paint_button.is_inside_tree(), "Paint button present in PAINTER mode")
+
+	editor_ui._set_sub_mode(WorldEditorClass.SubMode.ELEVATION)
+	check(editor_ui.editor.sub_mode == WorldEditorClass.SubMode.ELEVATION, "Submode switches to ELEVATION")
+	check(not editor_ui.active_box.visible, "Elevation interface hides top chooser panel per requirements")
+	check(editor_ui.raise_button != null and editor_ui.raise_button.is_inside_tree(), "Raise button present in ELEVATION mode")
+	check(editor_ui.smooth_button != null and editor_ui.smooth_button.is_inside_tree(), "Smooth button present in ELEVATION mode")
+
+	editor_ui._set_sub_mode(WorldEditorClass.SubMode.OBJECT)
+	check(editor_ui.editor.sub_mode == WorldEditorClass.SubMode.OBJECT, "Submode switches back to OBJECT")
+
+	# Test terrain and elevation saving
+	if world and "terrain_manager" in world and world.terrain_manager:
+		var tm: TerrainManager = world.terrain_manager
+		tm.elevation_grid_u = 16
+		tm.elevation_grid_v = 16
+		tm.terrain_grid_u = 16
+		tm.terrain_grid_v = 16
+		tm.elevation_data.resize(256)
+		tm.terrain_data.resize(256)
+		tm.elevation_data[0] = 77.5
+		tm.terrain_data[0] = 4
+		check(editor_ui.editor.save_edits() == OK, "save_edits saves terrain and elevation layers successfully")
+		var reloaded_cfg = layer.active_map_config
+		var reloaded_elev = Config.get_elevation_map_path(reloaded_cfg)
+		var reloaded_terr = Config.get_terrain_map_path(reloaded_cfg)
+		check(FileAccess.file_exists(reloaded_elev), "Elevation map file exists after save")
+		check(FileAccess.file_exists(reloaded_terr), "Terrain map file exists after save")
+		var read_tm = TerrainManager.new()
+		read_tm.configure(reloaded_cfg)
+		check(read_tm.load_elevation(reloaded_elev), "Saved elevation layer loads from disk")
+		check(is_equal_approx(read_tm.elevation_data[0], 77.5), "Saved elevation sample value survives reload")
+		check(read_tm.load_terrain(reloaded_terr), "Saved terrain layer loads from disk")
+		check(read_tm.terrain_data[0] == 4, "Saved terrain sample value survives reload")
+
+		# Test distance scaling for painter mode
+		editor_ui._set_sub_mode(WorldEditorClass.SubMode.PAINTER)
+		editor_ui.editor.selected_biome_id = 9
+		editor_ui.editor.brush_radius_m = 300.0
+		tm.terrain_grid_u = 128
+		tm.terrain_grid_v = 128
+		tm.terrain_data.resize(128 * 128)
+		tm.terrain_data.fill(0)
+		player.camera.global_position = Vector3(0, 500, 0)
+		var hit_500 := {"position": Vector3(0, 0, 0)}
+		editor_ui.editor.paint_terrain(hit_500)
+		var count_500 := 0
+		for cell in tm.terrain_data:
+			if cell == 9: count_500 += 1
+
+		tm.terrain_data.fill(0)
+		player.camera.global_position = Vector3(0, 2000, 0)
+		var hit_2000 := {"position": Vector3(0, 0, 0)}
+		editor_ui.editor.paint_terrain(hit_2000)
+		var count_2000 := 0
+		for cell in tm.terrain_data:
+			if cell == 9: count_2000 += 1
+
+		check(count_2000 > count_500, "Painter area scales up with distance (2000m paints larger area than 500m)")
+
+		# Test replacing terrain ground texture image
+		var test_tex_path := "res://build/test_replace_texture.png"
+		var dummy_img := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+		dummy_img.fill(Color.GREEN)
+		dummy_img.save_png(test_tex_path)
+		var cat_size_before: int = editor_ui.editor.texture_catalog.size()
+		if cat_size_before > 0:
+			var old_path: String = str(editor_ui.editor.texture_catalog[0].get("path", ""))
+			var replace_ok: bool = editor_ui.editor.replace_ground_texture(0, test_tex_path)
+			check(replace_ok, "replace_ground_texture executes successfully")
+			check(editor_ui.editor.texture_catalog.size() >= cat_size_before, "Texture catalog size valid after replace")
+			var new_path: String = str(editor_ui.editor.texture_catalog[0].get("path", ""))
+			check(new_path != old_path and new_path.find("test_replace_texture.png") != -1, "Target biome texture path updated to replaced texture file")
+			var rotate_ok: bool = editor_ui.editor.set_biome_rotate(0, false)
+			check(rotate_ok, "set_biome_rotate disables rotation")
+			check(editor_ui.editor.texture_catalog[0].rotate == false, "Texture catalog reflects disabled rotation flag")
+			editor_ui.editor.set_biome_rotate(0, true)
+			check(editor_ui.editor.texture_catalog[0].rotate == true, "set_biome_rotate enables rotation back")
+			editor_ui.editor.replace_ground_texture(0, old_path)
+
+	layer.set_meta("saved_player_spawn", {})
 	player.reset_to_spawn()
 	check(not player.global_position.is_equal_approx(saved_transform.origin), "Missing saved location falls back to map spawn")
 	controls.edit_btn.button_pressed = false
@@ -210,6 +319,7 @@ func _run() -> void:
 	world.free()
 	print("[RESULT] Edit controls test failures: ", failures)
 	quit(0 if failures == 0 else 1)
+
 
 func screenshot(label: String) -> void:
 	if not OS.get_cmdline_user_args().has("--screenshots"):

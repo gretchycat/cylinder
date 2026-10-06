@@ -65,7 +65,7 @@ func _build_ui() -> void:
 	if not card_panel:
 		card_panel = PanelContainer.new()
 		card_panel.name = "CardPanel"
-		card_panel.custom_minimum_size = Vector2(440.0, 320.0)
+		card_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 		var panel_style = StyleBoxFlat.new()
 		panel_style.bg_color = Color(0.06, 0.08, 0.12, 0.92)
@@ -78,22 +78,24 @@ func _build_ui() -> void:
 		panel_style.corner_radius_top_right = 10
 		panel_style.corner_radius_bottom_right = 10
 		panel_style.corner_radius_bottom_left = 10
-		panel_style.content_margin_left = 24.0
-		panel_style.content_margin_top = 22.0
-		panel_style.content_margin_right = 24.0
-		panel_style.content_margin_bottom = 22.0
+		panel_style.content_margin_left = 16.0
+		panel_style.content_margin_top = 18.0
+		panel_style.content_margin_right = 16.0
+		panel_style.content_margin_bottom = 18.0
 		card_panel.add_theme_stylebox_override("panel", panel_style)
 		center_container.add_child(card_panel)
 
 	var vbox = VBoxContainer.new()
 	vbox.name = "ContentVBox"
 	vbox.add_theme_constant_override("separation", 10)
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card_panel.add_child(vbox)
 
 	# Header tag
 	var tag_label = Label.new()
 	tag_label.text = "● CYLINDER HABITAT SIMULATION ●"
 	tag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tag_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tag_label.add_theme_color_override("font_color", Color(0.35, 0.80, 1.0, 0.9))
 	tag_label.add_theme_font_size_override("font_size", 11)
 	vbox.add_child(tag_label)
@@ -102,16 +104,18 @@ func _build_ui() -> void:
 	title_label = Label.new()
 	title_label.text = "O'NEILL CYLINDER"
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	title_label.add_theme_color_override("font_color", Color(0.95, 0.98, 1.0, 1.0))
-	title_label.add_theme_font_size_override("font_size", 24)
+	title_label.add_theme_font_size_override("font_size", 22)
 	vbox.add_child(title_label)
 
 	# Subtitle
 	subtitle_label = Label.new()
 	subtitle_label.text = "Island One Settlement • Atmospheric Physics Engine"
 	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle_label.add_theme_color_override("font_color", Color(0.65, 0.78, 0.90, 0.8))
-	subtitle_label.add_theme_font_size_override("font_size", 12)
+	subtitle_label.add_theme_font_size_override("font_size", 11)
 	vbox.add_child(subtitle_label)
 
 	var sep1 = HSeparator.new()
@@ -123,6 +127,7 @@ func _build_ui() -> void:
 	# Status row (Status + Percentage)
 	var status_row = HBoxContainer.new()
 	status_row.name = "StatusRow"
+	status_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.add_child(status_row)
 
 	spinner_label = Label.new()
@@ -134,19 +139,21 @@ func _build_ui() -> void:
 	status_label = Label.new()
 	status_label.text = "Initializing Habitat Systems..."
 	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status_label.add_theme_color_override("font_color", Color(0.88, 0.94, 1.0, 0.95))
-	status_label.add_theme_font_size_override("font_size", 13)
+	status_label.add_theme_font_size_override("font_size", 12)
 	status_row.add_child(status_label)
 
 	percentage_label = Label.new()
 	percentage_label.text = "0%"
 	percentage_label.add_theme_color_override("font_color", Color(0.35, 0.80, 1.0, 1.0))
-	percentage_label.add_theme_font_size_override("font_size", 13)
+	percentage_label.add_theme_font_size_override("font_size", 12)
 	status_row.add_child(percentage_label)
 
 	# Progress bar
 	progress_bar = ProgressBar.new()
-	progress_bar.custom_minimum_size = Vector2(380.0, 10.0)
+	progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	progress_bar.custom_minimum_size = Vector2(0.0, 10.0)
 	progress_bar.show_percentage = false
 	progress_bar.min_value = 0.0
 	progress_bar.max_value = 100.0
@@ -188,9 +195,29 @@ func _build_ui() -> void:
 	var specs_label = Label.new()
 	specs_label.text = "• Radius: 4,000 m  • Length: 18,000 m\n• Gravity: 1.00 G  • Surface Area: ~452 km²"
 	specs_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	specs_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	specs_label.add_theme_color_override("font_color", Color(0.45, 0.60, 0.75, 0.7))
-	specs_label.add_theme_font_size_override("font_size", 11)
+	specs_label.add_theme_font_size_override("font_size", 10)
 	vbox.add_child(specs_label)
+
+	# Dynamic screen scaling listener
+	var vp = get_viewport()
+	if vp and not vp.size_changed.is_connected(_on_viewport_resized):
+		vp.size_changed.connect(_on_viewport_resized)
+	_on_viewport_resized()
+
+func _on_viewport_resized() -> void:
+	if not card_panel or not is_instance_valid(card_panel):
+		return
+	var vp = get_viewport()
+	if not vp:
+		return
+	var vp_size = vp.get_visible_rect().size
+	if vp_size.x <= 0:
+		return
+	# Scale card panel smoothly to screen width on mobile phone screens (320px..480px)
+	var max_card_w = minf(vp_size.x - 24.0, 440.0)
+	card_panel.custom_minimum_size.x = maxf(max_card_w, 280.0)
 
 func _process(delta: float) -> void:
 	elapsed_time += delta

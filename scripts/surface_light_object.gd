@@ -80,6 +80,11 @@ func _ready() -> void:
 	flicker_time = rng_offset
 	rebuild_object()
 
+func _update_process_state() -> void:
+	set_physics_process(false)
+	var needs_proc = (rotor_hub_node != null and is_instance_valid(rotor_hub_node)) or (enable_flicker and omni_light != null and is_near_camera)
+	set_process(needs_proc)
+
 func _get_model_instance() -> Node3D:
 	var scene_path = model_scene_path
 	if scene_path.is_empty():
@@ -115,6 +120,7 @@ func rebuild_object() -> void:
 		instance.add_child(omni_light)
 		base_energy = light_energy * light_color.a
 	apply_appearance(instance)
+	_update_process_state()
 
 func _apply_map_shader_parameters(root: Node) -> void:
 	var map_doc: Dictionary = MapRuntimeClass.document(self)
@@ -317,8 +323,8 @@ var is_near_camera: bool = true
 
 func set_surface_light_active(light: OmniLight3D, active: bool) -> void:
 	light.visible = active
-	if active:
-		is_near_camera = true
+	is_near_camera = active
+	_update_process_state()
 
 func _process(delta: float) -> void:
 	if rotor_hub_node and is_instance_valid(rotor_hub_node):
@@ -389,7 +395,8 @@ static func create_on_cylinder(
 	custom_normal: Vector3 = Vector3.ZERO,
 	custom_pos: Vector3 = Vector3.ZERO,
 	tree_variant_idx: int = -1,
-	model_path: String = ""
+	model_path: String = "",
+	player_facing_fwd: Vector3 = Vector3.ZERO
 ) -> SurfaceLightObject:
 	var obj = SurfaceLightObject.new()
 	obj.object_type = type
@@ -408,15 +415,28 @@ static func create_on_cylinder(
 		var surface_r = cylinder_radius - elevation
 		pos = Vector3(surface_r * cos(theta), surface_r * sin(theta), z)
 
-	# Local coordinate basis on the curved inner surface:
-	# Y points inward towards the rotational axis (Local Up) or terrain surface normal
-	var up = custom_normal if custom_normal != Vector3.ZERO else Vector3(-cos(theta), -sin(theta), 0.0)
-	var forward = Vector3(0.0, 0.0, -1.0)
-	if absf(up.dot(forward)) > 0.90:
-		forward = Vector3(1.0, 0.0, 0.0)
-	var right = up.cross(forward).normalized()
-	var forward_adj = right.cross(up).normalized()
-	var basis = Basis(right, up, -forward_adj).orthonormalized()
+	# Local coordinate basis on the curved surface:
+	# Y points radially inward towards the rotational axis (flat to centrifugal gravity).
+	# Object faces 180 degrees off from the player (facing back towards the player).
+	var up := Vector3.UP
+	var r_xz := Vector2(pos.x, pos.y).length()
+	if r_xz > 500.0:
+		var cyl_up := Vector3(-pos.x, -pos.y, 0.0).normalized()
+		if not cyl_up.is_zero_approx():
+			up = cyl_up
+
+	var fwd = -player_facing_fwd
+	if fwd != Vector3.ZERO:
+		fwd = (fwd - up * fwd.dot(up)).normalized()
+	if fwd.is_zero_approx():
+		fwd = Vector3(0.0, 0.0, 1.0)
+		if absf(up.dot(fwd)) > 0.90:
+			fwd = Vector3(-1.0, 0.0, 0.0)
+		fwd = (fwd - up * fwd.dot(up)).normalized()
+
+	var right = up.cross(-fwd).normalized()
+	var adjusted_up = (-fwd).cross(right).normalized()
+	var basis = Basis(right, adjusted_up, -fwd).orthonormalized()
 
 	if not is_zero_approx(yaw_angle_rad):
 		basis = basis.rotated(up, yaw_angle_rad)

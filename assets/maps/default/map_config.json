@@ -1,2046 +1,2426 @@
 {
-  "author": "Colony Habitat Systems",
-  "biomes": {
-    "coastal_beach": {
-      "clutter": [
-        {
-          "density_per_m2": 0.003,
-          "model": "pebbles",
-          "palette": [
-            [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "elevation_range_m": [
-        18.0,
-        24.0
-      ],
-      "max_slope_deg": 15.0,
-      "moisture": 0.5,
-      "name": "Shoreline & Alluvial Sands",
-      "objects": [
-        {
-          "asset": "tree_3",
-          "density_per_sq_km": 6.0,
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "raster_id": 9.0,
-      "roughness": 0.9,
-      "submerged": false,
-      "temperature": 0.5,
-      "texture": "res://assets/textures/terrain/sand_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "weight": 0.05
-    },
-    "desert": {
-      "clutter": [
-        {
-          "density_per_m2": 0.003,
-          "model": "pebbles",
-          "palette": [
-            [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "elevation_range_m": [
-        20.0,
-        80.0
-      ],
-      "max_slope_deg": 30.0,
-      "moisture": 0.15,
-      "name": "Arid Dunes & Badlands",
-      "objects": [
-        {
-          "asset": "tree_5",
-          "density_per_sq_km": 3.0,
-          "scale_range": [
-            0.6,
-            1.2
-          ]
-        }
-      ],
-      "raster_id": 5.0,
-      "roughness": 0.9,
-      "submerged": false,
-      "temperature": 0.8,
-      "texture": "res://assets/textures/terrain/sand_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "weight": 0.04
-    },
-    "flower_fields": {
-      "clutter": [
-        {
-          "density_per_m2": 0.025,
-          "model": "grass_tuft",
-          "palette": [
-            [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        },
-        {
-          "density_per_m2": 0.003,
-          "model": "wildflowers",
-          "palette": [
-            [
-              0.95,
-              0.22,
-              0.18,
-              0.9
-            ],
-            [
-              0.98,
-              0.85,
-              0.15,
-              0.9
-            ],
-            [
-              0.35,
-              0.55,
-              0.95,
-              0.9
-            ],
-            [
-              0.72,
-              0.38,
-              0.92,
-              0.9
-            ],
-            [
-              0.96,
-              0.96,
-              0.92,
-              0.85
-            ],
-            [
-              0.98,
-              0.52,
-              0.25,
-              0.9
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "elevation_range_m": [
-        22.0,
-        50.0
-      ],
-      "max_slope_deg": 20.0,
-      "moisture": 0.5,
-      "name": "Wildflower Meadow",
-      "objects": [
-        {
-          "asset": "tree_4",
-          "density_per_sq_km": 12.0,
-          "scale_range": [
-            0.8,
-            1.4
-          ]
-        }
-      ],
-      "raster_id": 2.0,
-      "roughness": 0.9,
-      "submerged": false,
-      "temperature": 0.5,
-      "texture": "res://assets/textures/terrain/grass_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "weight": 0.1
-    },
-    "grassland": {
-      "clutter": [
-        {
-          "density_per_m2": 0.025,
-          "model": "grass_tuft",
-          "palette": [
-            [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        },
-        {
-          "density_per_m2": 0.003,
-          "model": "wildflowers",
-          "palette": [
-            [
-              0.95,
-              0.22,
-              0.18,
-              0.9
-            ],
-            [
-              0.98,
-              0.85,
-              0.15,
-              0.9
-            ],
-            [
-              0.35,
-              0.55,
-              0.95,
-              0.9
-            ],
-            [
-              0.72,
-              0.38,
-              0.92,
-              0.9
-            ],
-            [
-              0.96,
-              0.96,
-              0.92,
-              0.85
-            ],
-            [
-              0.98,
-              0.52,
-              0.25,
-              0.9
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "elevation_range_m": [
-        20.0,
-        60.0
-      ],
-      "max_slope_deg": 25.0,
-      "moisture": 0.5,
-      "name": "Lush Grass Plains",
-      "objects": [
-        {
-          "asset": "tree_0",
-          "density_per_sq_km": 15.0,
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        },
-        {
-          "asset": "tree_2",
-          "density_per_sq_km": 8.0,
-          "scale_range": [
-            0.7,
-            1.2
-          ]
-        },
-        {
-          "asset": "campfire",
-          "density_per_sq_km": 0.5,
-          "scale_range": [
-            1.0,
-            1.0
-          ]
-        }
-      ],
-      "raster_id": 1.0,
-      "roughness": 0.9,
-      "submerged": false,
-      "temperature": 0.5,
-      "texture": "res://assets/textures/terrain/grass_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "weight": 0.2
-    },
-    "mountain": {
-      "clutter": [
-        {
-          "density_per_m2": 0.003,
-          "model": "pebbles",
-          "palette": [
-            [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "elevation_range_m": [
-        70.0,
-        100.0
-      ],
-      "max_slope_deg": 65.0,
-      "moisture": 0.5,
-      "name": "High Massif Crags & Peaks",
-      "objects": [
-        {
-          "asset": "tree_1",
-          "density_per_sq_km": 4.0,
-          "scale_range": [
-            0.5,
-            0.9
-          ]
-        }
-      ],
-      "raster_id": 8.0,
-      "roughness": 0.9,
-      "submerged": false,
-      "temperature": 0.2,
-      "texture": "res://assets/textures/terrain/rocks_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "weight": 0.08
-    },
-    "old_growth_forest": {
-      "clutter": [
-        {
-          "density_per_m2": 0.003,
-          "model": "shrubs",
-          "palette": [
-            [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        },
-        {
-          "density_per_m2": 0.003,
-          "model": "mushrooms",
-          "palette": [
-            [
-              0.62,
-              0.24,
-              0.21,
-              1.0
-            ],
-            [
-              0.44,
-              0.31,
-              0.22,
-              1.0
-            ],
-            [
-              0.82,
-              0.72,
-              0.5,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "elevation_range_m": [
-        22.0,
-        75.0
-      ],
-      "max_slope_deg": 40.0,
-      "moisture": 0.8,
-      "name": "Ancient Old-Growth Forest",
-      "objects": [
-        {
-          "asset": "tree_10",
-          "density_per_sq_km": 60.0,
-          "scale_range": [
-            1.0,
-            1.3
-          ]
-        },
-        {
-          "asset": "tree_11",
-          "density_per_sq_km": 45.0,
-          "scale_range": [
-            1.0,
-            1.3
-          ]
-        },
-        {
-          "asset": "tree_12",
-          "density_per_sq_km": 20.0,
-          "scale_range": [
-            1.0,
-            1.2
-          ]
-        },
-        {
-          "asset": "tree_13",
-          "density_per_sq_km": 15.0,
-          "scale_range": [
-            1.0,
-            1.2
-          ]
-        },
-        {
-          "asset": "tree_5",
-          "density_per_sq_km": 8.0,
-          "scale_range": [
-            0.9,
-            1.5
-          ]
-        }
-      ],
-      "raster_id": 4.0,
-      "roughness": 0.9,
-      "submerged": false,
-      "temperature": 0.5,
-      "texture": "res://assets/textures/terrain/dirt_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "weight": 0.15
-    },
-    "riverbank_wetlands": {
-      "clutter": [
-        {
-          "density_per_m2": 0.003,
-          "model": "shrubs",
-          "palette": [
-            [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        },
-        {
-          "density_per_m2": 0.003,
-          "model": "mushrooms",
-          "palette": [
-            [
-              0.62,
-              0.24,
-              0.21,
-              1.0
-            ],
-            [
-              0.44,
-              0.31,
-              0.22,
-              1.0
-            ],
-            [
-              0.82,
-              0.72,
-              0.5,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "elevation_range_m": [
-        16.0,
-        28.0
-      ],
-      "max_slope_deg": 18.0,
-      "moisture": 0.8,
-      "name": "Riverbank & Riparian Corridor",
-      "objects": [
-        {
-          "asset": "tree_3",
-          "density_per_sq_km": 30.0,
-          "scale_range": [
-            0.9,
-            1.5
-          ]
-        },
-        {
-          "asset": "tree_2",
-          "density_per_sq_km": 25.0,
-          "scale_range": [
-            0.8,
-            1.4
-          ]
-        }
-      ],
-      "raster_id": 10.0,
-      "roughness": 0.9,
-      "submerged": false,
-      "temperature": 0.5,
-      "texture": "res://assets/textures/terrain/dirt_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "weight": 0.05
-    },
-    "rocky_fields": {
-      "clutter": [
-        {
-          "density_per_m2": 0.003,
-          "model": "pebbles",
-          "palette": [
-            [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "elevation_range_m": [
-        50.0,
-        85.0
-      ],
-      "max_slope_deg": 45.0,
-      "moisture": 0.5,
-      "name": "Alpine Scree & Boulder Fields",
-      "objects": [
-        {
-          "asset": "tree_1",
-          "density_per_sq_km": 10.0,
-          "scale_range": [
-            0.6,
-            1.1
-          ]
-        },
-        {
-          "asset": "tree_5",
-          "density_per_sq_km": 6.0,
-          "scale_range": [
-            0.7,
-            1.3
-          ]
-        }
-      ],
-      "raster_id": 7.0,
-      "roughness": 0.9,
-      "submerged": false,
-      "temperature": 0.5,
-      "texture": "res://assets/textures/terrain/rocks_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "weight": 0.08
-    },
-    "swamp": {
-      "clutter": [
-        {
-          "density_per_m2": 0.003,
-          "model": "shrubs",
-          "palette": [
-            [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        },
-        {
-          "density_per_m2": 0.003,
-          "model": "mushrooms",
-          "palette": [
-            [
-              0.62,
-              0.24,
-              0.21,
-              1.0
-            ],
-            [
-              0.44,
-              0.31,
-              0.22,
-              1.0
-            ],
-            [
-              0.82,
-              0.72,
-              0.5,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "elevation_range_m": [
-        15.0,
-        24.0
-      ],
-      "max_slope_deg": 12.0,
-      "moisture": 0.8,
-      "name": "Marshland Wetlands",
-      "objects": [
-        {
-          "asset": "tree_3",
-          "density_per_sq_km": 40.0,
-          "scale_range": [
-            1.0,
-            1.7
-          ]
-        },
-        {
-          "asset": "tree_5",
-          "density_per_sq_km": 15.0,
-          "scale_range": [
-            0.8,
-            1.4
-          ]
-        },
-        {
-          "asset": "campfire",
-          "density_per_sq_km": 0.4,
-          "scale_range": [
-            1.0,
-            1.0
-          ]
-        }
-      ],
-      "raster_id": 6.0,
-      "roughness": 0.9,
-      "submerged": false,
-      "temperature": 0.5,
-      "texture": "res://assets/textures/terrain/dirt_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "weight": 0.08
-    },
-    "tundra_plateau": {
-      "clutter": [
-        {
-          "density_per_m2": 0.003,
-          "model": "pebbles",
-          "palette": [
-            [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "elevation_range_m": [
-        65.0,
-        90.0
-      ],
-      "max_slope_deg": 25.0,
-      "moisture": 0.5,
-      "name": "High Alpine Tundra & Plateau",
-      "objects": [
-        {
-          "asset": "tree_1",
-          "density_per_sq_km": 12.0,
-          "scale_range": [
-            0.5,
-            0.9
-          ]
-        }
-      ],
-      "raster_id": 11.0,
-      "roughness": 0.9,
-      "submerged": false,
-      "temperature": 0.2,
-      "texture": "res://assets/textures/terrain/rocks_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "weight": 0.02
-    },
-    "waterbed": {
-      "clutter": [],
-      "elevation_range_m": [
-        0.0,
-        20.0
-      ],
-      "max_slope_deg": 90.0,
-      "moisture": 0.5,
-      "name": "Waterbed",
-      "objects": [],
-      "raster_id": 0.0,
-      "roughness": 0.9,
-      "submerged": true,
-      "temperature": 0.5,
-      "texture": "res://assets/textures/terrain/sand_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        0.6,
-        0.65,
-        0.7,
-        1.0
-      ],
-      "weight": 0.18
-    },
-    "young_forest": {
-      "clutter": [
-        {
-          "density_per_m2": 0.025,
-          "model": "grass_tuft",
-          "palette": [
-            [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        },
-        {
-          "density_per_m2": 0.003,
-          "model": "wildflowers",
-          "palette": [
-            [
-              0.95,
-              0.22,
-              0.18,
-              0.9
-            ],
-            [
-              0.98,
-              0.85,
-              0.15,
-              0.9
-            ],
-            [
-              0.35,
-              0.55,
-              0.95,
-              0.9
-            ],
-            [
-              0.72,
-              0.38,
-              0.92,
-              0.9
-            ],
-            [
-              0.96,
-              0.96,
-              0.92,
-              0.85
-            ],
-            [
-              0.98,
-              0.52,
-              0.25,
-              0.9
-            ]
-          ],
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "elevation_range_m": [
-        21.0,
-        65.0
-      ],
-      "max_slope_deg": 35.0,
-      "moisture": 0.5,
-      "name": "Young Growth Woodlands",
-      "objects": [
-        {
-          "asset": "tree_0",
-          "density_per_sq_km": 40.0,
-          "scale_range": [
-            0.7,
-            1.2
-          ]
-        },
-        {
-          "asset": "tree_2",
-          "density_per_sq_km": 35.0,
-          "scale_range": [
-            0.7,
-            1.2
-          ]
-        },
-        {
-          "asset": "tree_1",
-          "density_per_sq_km": 20.0,
-          "scale_range": [
-            0.8,
-            1.3
-          ]
-        }
-      ],
-      "raster_id": 3.0,
-      "roughness": 0.9,
-      "submerged": false,
-      "temperature": 0.5,
-      "texture": "res://assets/textures/terrain/grass_0.png",
-      "texture_size_m": 4.0,
-      "tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "weight": 0.15
-    }
-  },
-  "description": "Procedurally generated O'Neill Cylinder (dramatic topography preset) with settlements, hydrology, ground clutter, and biomes.",
-  "display_name": "O'Neill Cylinder (Dramatic)",
-  "entities": {
-    "groups": [],
-    "model_catalog": {},
-    "spawns": []
-  },
-  "environment": {
-    "air_color": [
-      0.52,
-      0.72,
-      0.88,
-      1.0
-    ],
-    "air_density": 1.25,
-    "air_distance_max": 18000.0,
-    "air_distance_min": 200.0,
-    "ambient_color": [
-      0.92,
-      0.95,
-      1.0,
-      1.0
-    ],
-    "ambient_energy": 1.0,
-    "sky_color": [
-      0.02,
-      0.03,
-      0.05,
-      1.0
-    ],
-    "water": {
-      "deep_color": [
-        0.015,
-        0.18,
-        0.38,
-        0.72
-      ],
-      "roughness": 0.05,
-      "shallow_color": [
-        0.08,
-        0.55,
-        0.78,
-        0.38
-      ],
-      "specular": 0.95,
-      "wave_speed": 0.65,
-      "extinction_rgb": [
-        0.18,
-        0.05,
-        0.02
-      ],
-      "reflection_color": [
-        0.92,
-        0.96,
-        1,
-        1
-      ],
-      "foam_color": [
-        0.94,
-        0.98,
-        1,
-        1
-      ],
-      "caustic_color": [
-        0.35,
-        0.85,
-        1,
-        1
-      ],
-      "overcast_color": [
-        0.78,
-        0.88,
-        1.0,
-        1
-      ]
-    }
-  },
-  "events": {
-    "environmental_triggers": [],
-    "scheduled": []
-  },
-  "extensions": {},
-  "files": {
-    "elevation_map": "elevation.cylh",
-    "object_map": "placements.json",
-    "terrain_map": "biomes.png"
-  },
-  "generation": {
-    "base_height_m": 42.0,
-    "climate_wavelength_m": 2500.0,
-    "coast_variation_m": 450.0,
-    "coast_wavelength_m": 2200.0,
-    "detail_wavelength_m": 450.0,
-    "elevation_height": 512.0,
-    "elevation_width": 1024.0,
-    "erosion_iterations": 8.0,
-    "lake_count": 2.0,
-    "lake_depth_m": 12.0,
-    "lake_radius_m": 500.0,
-    "noise_wavelength_m": 3500.0,
-    "object_limit": 12000.0,
-    "relief_m": 45.0,
-    "ridge_height_m": 30.0,
-    "river_count": 3.0,
-    "river_depth_m": 6.0,
-    "river_width_m": 90.0,
-    "sea_center_v": 0.5,
-    "sea_depth_m": 18.0,
-    "sea_width_m": 1800.0,
-    "seed": 42.0,
-    "spawn_clearance_m": 3.0,
-    "talus_slope_deg": 32.0,
-    "terrain_height": 256.0,
-    "terrain_width": 512.0,
-    "noise_octaves": 5,
-    "noise_gain": 0.5,
-    "detail_strength": 0.12,
-    "biome_region_wavelength_m": 2200,
-    "biome_region_strength": 0.3,
-    "balance_iterations": 32
-  },
-  "geometry": {
-    "cylinder_length_m": 18000.0,
-    "cylinder_radius_m": 4000.0,
-    "elevation_variance_m": 100.0,
-    "water_sea_level_m": 20.0
-  },
-  "ground_clutter": {
-    "chunk_size_m": 40.0,
-    "density_multiplier": 1.0,
-    "fade_distance_m": 45.0,
-    "models": {
-      "crops": {
-        "base_color": [
-          0.65,
-          0.52,
-          0.22,
-          1.0
-        ],
-        "category": "crops",
-        "gradient_extent_m": 1.15,
-        "gradient_mode": "linear",
-        "scene_path": "res://assets/maps/default/models/ground_clutter/crops.tscn",
-        "tip_color": [
-          0.88,
-          0.74,
-          0.32,
-          1.0
-        ],
-        "type": "procedural_mesh",
-        "wind_speed": 1.8,
-        "wind_strength": 0.2,
-        "roughness": 0.85
-      },
-      "grass_tuft": {
-        "base_color": [
-          0.24,
-          0.52,
-          0.16,
-          1.0
-        ],
-        "category": "foliage",
-        "gradient_extent_m": 0.85,
-        "gradient_mode": "linear",
-        "scene_path": "res://assets/maps/default/models/ground_clutter/grass_tuft.tscn",
-        "tip_color": [
-          0.48,
-          0.78,
-          0.25,
-          1.0
-        ],
-        "type": "procedural_mesh",
-        "wind_speed": 2.2,
-        "wind_strength": 0.24,
-        "roughness": 0.85
-      },
-      "mushrooms": {
-        "base_color": [
-          0.84,
-          0.76,
-          0.63,
-          1.0
-        ],
-        "category": "foliage",
-        "gradient_extent_m": 0.115,
-        "gradient_mode": "radial",
-        "scene_path": "res://assets/maps/default/models/ground_clutter/mushrooms.tscn",
-        "tip_color": [
-          0.44,
-          0.27,
-          0.16,
-          1.0
-        ],
-        "type": "procedural_mesh",
-        "wind_speed": 0,
-        "wind_strength": 0,
-        "roughness": 0.85
-      },
-      "pebbles": {
-        "base_color": [
-          0.42,
-          0.44,
-          0.46,
-          1.0
-        ],
-        "category": "rock_debris",
-        "gradient_extent_m": 0.4,
-        "gradient_mode": "radial",
-        "roughness": 0.94,
-        "scene_path": "res://assets/maps/default/models/ground_clutter/pebbles.tscn",
-        "tip_color": [
-          0.55,
-          0.56,
-          0.58,
-          1.0
-        ],
-        "type": "procedural_mesh",
-        "wind_speed": 0,
-        "wind_strength": 0
-      },
-      "shrubs": {
-        "base_color": [
-          0.18,
-          0.42,
-          0.14,
-          1.0
-        ],
-        "category": "foliage",
-        "gradient_extent_m": 0.65,
-        "gradient_mode": "radial",
-        "scene_path": "res://assets/maps/default/models/ground_clutter/shrubs.tscn",
-        "tip_color": [
-          0.35,
-          0.65,
-          0.22,
-          1.0
-        ],
-        "type": "procedural_mesh",
-        "wind_speed": 1.5,
-        "wind_strength": 0.12,
-        "roughness": 0.85
-      },
-      "wildflowers": {
-        "base_color": [
-          0.22,
-          0.5,
-          0.18,
-          1.0
-        ],
-        "category": "foliage",
-        "gradient_extent_m": 0.8,
-        "gradient_mode": "linear",
-        "scene_path": "res://assets/maps/default/models/ground_clutter/wildflowers.tscn",
-        "tip_color": [
-          0.95,
-          0.3,
-          0.2,
-          1.0
-        ],
-        "type": "procedural_mesh",
-        "wind_speed": 2.6,
-        "wind_strength": 0.18,
-        "roughness": 0.85
-      }
-    },
-    "seed": 42.0,
-    "view_radius_m": 220.0
-  },
-  "license": "CC-BY-4.0",
-  "map_name": "default",
-  "networking": {
-    "allow_multiplayer": false,
-    "irc_channel": "",
-    "irc_server": ""
-  },
-  "objects": {
-    "model_catalog": {
-      "arched_bridge": {
-        "behavior_type": 3.0,
-        "flicker": true,
-        "light_color": [
-          1.0,
-          0.82,
-          0.45,
-          1.0
-        ],
-        "light_energy": 4.5,
-        "light_range_m": 50.0,
-        "name": "Arched Bridge",
-        "scene_path": "res://assets/maps/default/models/objects/bridge.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": -1.0
-      },
-      "beacon_lantern": {
-        "behavior_type": 2.0,
-        "flicker": true,
-        "light_color": [
-          0.45,
-          0.75,
-          1.0,
-          1.0
-        ],
-        "light_energy": 12.0,
-        "light_range_m": 120.0,
-        "name": "Beacon Lantern",
-        "scene_path": "res://assets/maps/default/models/objects/beacon_lantern.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": -1.0
-      },
-      "bonfire": {
-        "behavior_type": 4.0,
-        "flicker": true,
-        "light_color": [
-          1.0,
-          0.5,
-          0.15,
-          1.0
-        ],
-        "light_energy": 8.5,
-        "light_range_m": 85.0,
-        "name": "Bonfire",
-        "scene_path": "res://assets/maps/default/models/objects/bonfire.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": -1.0
-      },
-      "campfire": {
-        "behavior_type": 0.0,
-        "flicker": true,
-        "light_color": [
-          1.0,
-          0.58,
-          0.22,
-          1.0
-        ],
-        "light_energy": 5.5,
-        "light_range_m": 55.0,
-        "name": "Campfire",
-        "scene_path": "res://assets/maps/default/models/objects/campfire.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": -1.0
-      },
-      "colony_house": {
-        "behavior_type": 5.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Colony House",
-        "scene_path": "res://assets/maps/default/models/objects/house.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": -1.0
-      },
-      "foliage_tree": {
-        "behavior_type": 6.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Foliage Tree",
-        "scene_path": "res://assets/maps/default/models/objects/tree.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": -1.0
-      },
-      "lamp_post": {
-        "behavior_type": 1.0,
-        "flicker": true,
-        "light_color": [
-          1.0,
-          0.92,
-          0.7,
-          1.0
-        ],
-        "light_energy": 4.0,
-        "light_range_m": 45.0,
-        "name": "Lamp Post",
-        "scene_path": "res://assets/maps/default/models/objects/lamp_post.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": -1.0
-      },
-      "tree_0": {
-        "behavior_type": 6.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Oak",
-        "scene_path": "res://assets/maps/default/models/objects/tree_oak.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": 0.0
-      },
-      "tree_1": {
-        "behavior_type": 6.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Pine",
-        "scene_path": "res://assets/maps/default/models/objects/tree_pine.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": 1.0
-      },
-      "tree_10": {
-        "behavior_type": 6.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Ancient Giant Oak",
-        "scene_path": "res://assets/maps/default/models/objects/tree_ancient_oak.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": 10.0
-      },
-      "tree_11": {
-        "behavior_type": 6.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Ancient Giant Pine",
-        "scene_path": "res://assets/maps/default/models/objects/tree_ancient_pine.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": 11.0
-      },
-      "tree_12": {
-        "behavior_type": 6.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Ancient Giant Willow",
-        "scene_path": "res://assets/maps/default/models/objects/tree_ancient_willow.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": 12.0
-      },
-      "tree_13": {
-        "behavior_type": 6.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Ancient Giant Birch",
-        "scene_path": "res://assets/maps/default/models/objects/tree_ancient_birch.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": 13.0
-      },
-      "tree_2": {
-        "behavior_type": 6.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Birch",
-        "scene_path": "res://assets/maps/default/models/objects/tree_birch.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": 2.0
-      },
-      "tree_3": {
-        "behavior_type": 6.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Willow",
-        "scene_path": "res://assets/maps/default/models/objects/tree_willow.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": 3.0
-      },
-      "tree_4": {
-        "behavior_type": 6.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Cherry Blossom",
-        "scene_path": "res://assets/maps/default/models/objects/tree_cherry_blossom.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": 4.0
-      },
-      "tree_5": {
-        "behavior_type": 6.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Dead Tree",
-        "scene_path": "res://assets/maps/default/models/objects/tree_dead.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": 5.0
-      },
-      "windmill": {
-        "behavior_type": 8.0,
-        "flicker": false,
-        "light_color": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "light_energy": 0.0,
-        "light_range_m": 1.0,
-        "name": "Windmill",
-        "scene_path": "res://assets/maps/default/models/objects/windmill.tscn",
-        "tint": [
-          1.0,
-          1.0,
-          1.0,
-          1.0
-        ],
-        "variant": -1.0
-      }
-    }
-  },
-  "relationships": {
-    "factions": [],
-    "routes": []
-  },
-  "rendering": {
-    "biome_texture_resolution": 256.0,
-    "end_cap_dish_depth_m": 4000.0,
-    "end_cap_rings": 32.0,
-    "end_cap_texture": "res://assets/textures/terrain/end_cap_ribs.png",
-    "end_cap_tint": [
-      1.0,
-      1.0,
-      1.0,
-      1.0
-    ],
-    "include_end_caps": true,
-    "length_segments": 180.0,
-    "radial_segments": 144.0
-  },
-  "schema_version": 3.0,
-  "simulation": {
-    "light_bar": {
-      "bar_radius": 35.0,
-      "day_of_year": 0,
-      "earth_latitude_deg": 35.0,
-      "enable_shadows": false,
-      "end_color": [
-        0.959999978542328,
-        0.980000019073486,
-        1.0,
-        1.0
-      ],
-      "end_intensity": 3.5,
-      "global_intensity_multiplier": 3.5,
-      "gradient_follows_solar_cycle": false,
-      "num_segments": 36,
-      "preset": 0,
-      "solar_span_hours": 1.5,
-      "start_color": [
-        1.0,
-        0.980000019073486,
-        0.949999988079071,
-        1.0
-      ],
-      "start_intensity": 3.5,
-      "time_of_day_hours": 12.0,
-      "time_scale": 1.0,
-      "uniform_follows_solar_cycle": true,
-      "use_real_time": true,
-      "wave_speed": 0.5
-    },
-    "particle_emitter": {
-      "air_drag_coefficient": 0.0,
-      "base_gravity": 9.5,
-      "bounciness": 0.35,
-      "default_particle_color": [
-        0.25,
-        0.899999976158142,
-        1.0,
-        1.0
-      ],
-      "impact_marker_color": [
-        1.0,
-        0.449999988079071,
-        0.200000002980232,
-        0.949999988079071
-      ],
-      "max_bounces": 1,
-      "max_particles": 3500,
-      "max_trail_points": 300,
-      "particle_lifetime": 80.0,
-      "rain_stream_altitude": 1250.0,
-      "rain_stream_enabled": false,
-      "rain_stream_rate": 45.0,
-      "show_particles": true,
-      "show_trajectories": true,
-      "spin_direction": 1,
-      "trail_lifetime": 90.0
-    },
-    "player": {
-      "acceleration": 18.0,
-      "air_control": 5.0,
-      "attitude_flatten_speed": 3.0,
-      "base_gravity": 9.5,
-      "fly_speed": 75.0,
-      "horizon_alignment_speed": 20.0,
-      "jump_velocity": 6.2,
-      "max_walkable_slope_deg": 45.0,
-      "min_elevation_above_sea": 2.0,
-      "mouse_sensitivity": 0.0025,
-      "preferred_spawn_theta": -1.5707963267949,
-      "preferred_spawn_z": 0.0,
-      "sprint_speed": 7.2,
-      "touch_sensitivity": 0.004,
-      "walk_speed": 3.2,
-      "wobble_damping_max": 1.0,
-      "wobble_damping_min": 0.25,
-      "wobble_frequency_max": 16.0,
-      "wobble_frequency_min": 1.0
-    },
-    "weather_system": {
-      "ambient_pressure_kpa": 101.3,
-      "auto_weather_cycle_enabled": true,
-      "base_gravity": 9.5,
-      "cloud_altitude_m": 1250.0,
-      "cloud_coverage": 0.55,
-      "cloud_thickness_m": 250.0,
-      "day_of_year": 172,
-      "dust_density": 0.2,
-      "endcap_air_temperature_c": 22.5,
-      "humidity_density_gm3": 14.5,
-      "latitude_deg": 40.0,
-      "precipitation_rate_mmh": 0.0,
-      "rain_sheet_layer_count": 4,
-      "spin_direction": 1,
-      "tie_to_in_game_clock": true,
-      "trajectory_speed_scale": 1.0,
-      "water_pipe_temperature_c": 24.0,
-      "yearly_precipitation_mm": 950.0
-    }
-  },
-  "version": "1.0.0",
-  "world_id": "world_ae0130fcc6f8",
-  "shader_parameters": {
-    "campfire_flame.gdshader": {
-      "color_core": [
-        1.0,
-        0.96,
-        0.72,
-        1.0
-      ],
-      "color_flame": [
-        1.0,
-        0.48,
-        0.06,
-        1.0
-      ],
-      "color_tip": [
-        0.85,
-        0.12,
-        0.01,
-        0.8
-      ],
-      "speed": 2.8,
-      "turbulence": 0.35
-    },
-    "cylinder_clouds.gdshader": {
-      "cylinder_radius": 4000.0,
-      "cylinder_length": 18000.0,
-      "cloud_altitude": 1250.0,
-      "cloud_thickness": 250.0,
-      "humidity_density": 14.5,
-      "cloud_coverage": 0.55,
-      "cloud_density": 1.0,
-      "cloud_softness": 0.25,
-      "dust_density": 0.2,
-      "coriolis_spin_direction": 1.0,
-      "cloud_deck_offset": [
-        0.0,
-        0.0
-      ],
-      "cloud_color_day": [
-        0.85,
-        0.86,
-        0.88,
-        1.0
-      ],
-      "cloud_color_storm": [
-        0.2,
-        0.22,
-        0.26,
-        1.0
-      ],
-      "cloud_shadow_color": [
-        0.45,
-        0.48,
-        0.52,
-        1.0
-      ],
-      "dust_tint": [
-        0.9,
-        0.84,
-        0.72,
-        1.0
-      ],
-      "air_color": [
-        0.52,
-        0.72,
-        0.88,
-        1.0
-      ],
-      "air_density": 1.0,
-      "air_distance_min": 200.0,
-      "air_distance_max": 18000.0,
-      "axial_light_enabled": 1.0,
-      "global_light_intensity": 3.5
-    },
-    "cylinder_clouds_far.gdshader": {
-      "cylinder_radius": 4000.0,
-      "cylinder_length": 18000.0,
-      "cloud_altitude": 1250.0,
-      "cloud_thickness": 250.0,
-      "humidity_density": 14.5,
-      "cloud_coverage": 0.55,
-      "cloud_density": 1.0,
-      "cloud_softness": 0.25,
-      "dust_density": 0.2,
-      "coriolis_spin_direction": 1.0,
-      "cloud_deck_offset": [
-        0.0,
-        0.0
-      ],
-      "cloud_color_day": [
-        0.85,
-        0.86,
-        0.88,
-        1.0
-      ],
-      "cloud_color_storm": [
-        0.2,
-        0.22,
-        0.26,
-        1.0
-      ],
-      "cloud_shadow_color": [
-        0.45,
-        0.48,
-        0.52,
-        1.0
-      ],
-      "dust_tint": [
-        0.9,
-        0.84,
-        0.72,
-        1.0
-      ],
-      "air_color": [
-        0.52,
-        0.72,
-        0.88,
-        1.0
-      ],
-      "air_density": 1.0,
-      "air_distance_min": 200.0,
-      "air_distance_max": 18000.0,
-      "axial_light_enabled": 1.0,
-      "global_light_intensity": 3.5
-    },
-    "cylinder_rain_sheet.gdshader": {
-      "uv_scale": [
-        0.25,
-        0.25
-      ],
-      "uv_scroll_offset": [
-        0.0,
-        0.0
-      ],
-      "rain_tint": [
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ],
-      "rain_alpha_multiplier": 0.0,
-      "axial_light_enabled": 1.0,
-      "global_light_intensity": 3.5,
-      "cylinder_length": 18000.0,
-      "cloud_thickness": 250.0,
-      "night_tint": [
-        0.04,
-        0.04,
-        0.06,
-        1.0
-      ],
-      "near_fade_min": 0.2,
-      "near_fade_max": 1.0,
-      "far_fade_min": 60.0,
-      "far_fade_max": 95.0
-    },
-    "cylinder_surface.gdshader": {
-      "base_color": [
-        0.48,
-        0.5,
-        0.53,
-        1.0
-      ],
-      "line_color": [
-        0.32,
-        0.34,
-        0.37,
-        1.0
-      ],
-      "accent_line_color": [
-        0.22,
-        0.24,
-        0.27,
-        1.0
-      ],
-      "major_grid_spacing": 20.0,
-      "minor_grid_spacing": 4.0,
-      "line_thickness": 0.04,
-      "roughness": 0.75,
-      "metallic": 0.15,
-      "air_color": [
-        0.52,
-        0.72,
-        0.88,
-        1.0
-      ],
-      "air_density": 0.65,
-      "air_distance_min": 200.0,
-      "air_distance_max": 18000.0
-    },
-    "cylinder_terrain.gdshader": {
-      "axial_light_enabled": 1.0,
-      "endcap_emission_factor": 1.0
-    },
-    "cylinder_water.gdshader": {
-      "axial_light_enabled": 1.0,
-      "precipitation_rate": 0.0,
-      "is_snow_mode": 0.0
-    },
-    "ground_clutter.gdshader": {
-      "base_color": [
-        0.35,
-        0.72,
-        0.22,
-        1.0
-      ],
-      "tip_color": [
-        0.55,
-        0.88,
-        0.32,
-        1.0
-      ],
-      "gradient_mode": 0.0,
-      "gradient_extent": 1.0,
-      "roughness": 0.85,
-      "wind_speed": 2.4,
-      "wind_strength": 0.22,
-      "wind_turbulence": 0.5,
-      "max_distance": 500.0,
-      "fade_distance": 120.0,
-      "is_flower": false,
-      "is_mushroom": false,
-      "is_stone": false,
-      "cylinder_radius": 4000.0,
-      "water_level": 20.0,
-      "air_color": [
-        0.52,
-        0.72,
-        0.88,
-        1.0
-      ],
-      "air_density": 1.0,
-      "air_distance_min": 200.0,
-      "air_distance_max": 18000.0
-    },
-    "underwater_overlay.gdshader": {
-      "underwater_tint": [
-        0.06,
-        0.38,
-        0.62,
-        0.22
-      ],
-      "deep_vignette_color": [
-        0.01,
-        0.12,
-        0.28,
-        0.35
-      ]
-    }
-  },
-  "lighting_palette": {
-    "spine": [
-      0.12,
-      0.13,
-      0.16,
-      1
-    ],
-    "daylight": [
-      1,
-      0.98,
-      0.95,
-      1
-    ],
-    "dawn": [
-      1,
-      0.52,
-      0.18,
-      1
-    ],
-    "morning": [
-      1,
-      0.88,
-      0.65,
-      1
-    ],
-    "noon": [
-      0.98,
-      0.98,
-      1,
-      1
-    ],
-    "dusk": [
-      0.65,
-      0.35,
-      0.75,
-      1
-    ],
-    "night": [
-      0.08,
-      0.16,
-      0.38,
-      1
-    ],
-    "sunset_amber": [
-      1,
-      0.48,
-      0.15,
-      1
-    ],
-    "sunset_gold": [
-      1,
-      0.85,
-      0.45,
-      1
-    ],
-    "sunset_crimson": [
-      0.92,
-      0.25,
-      0.35,
-      1
-    ],
-    "sunset_twilight": [
-      0.18,
-      0.28,
-      0.75,
-      1
-    ],
-    "moon_night": [
-      0.35,
-      0.34,
-      0.65,
-      1
-    ],
-    "moon_day": [
-      1,
-      0.96,
-      0.9,
-      1
-    ]
-  },
-  "weather_palette": {
-    "rain_sheet": [
-      0.12,
-      0.28,
-      0.58,
-      1
-    ],
-    "snow_sheet": [
-      0.96,
-      0.98,
-      1,
-      1
-    ],
-    "dust": [
-      0.95,
-      0.9,
-      0.78,
-      0.25
-    ],
-    "snow_dust": [
-      0.95,
-      0.98,
-      1,
-      1
-    ],
-    "rain_particles": [
-      0.9,
-      0.95,
-      1,
-      0.75
-    ],
-    "snow_particles": [
-      1,
-      1,
-      1,
-      0.9
-    ]
-  },
-  "name": "Default habitat template"
+	"author": "Colony Habitat Systems",
+	"biomes": {
+		"badlands": {
+			"blended": true,
+			"clutter": [],
+			"elevation_range_m": [
+				0.0,
+				100.0
+			],
+			"max_slope_deg": 45.0,
+			"moisture": 0.5,
+			"name": "Badlands",
+			"objects": [],
+			"raster_id": 12.0,
+			"rotate": true,
+			"roughness": 0.85,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/badlands.png",
+			"texture_size_m": 20.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.0
+		},
+		"coastal_beach": {
+			"blended": true,
+			"clutter": [
+				{
+					"density_per_m2": 0.003,
+					"model": "pebbles",
+					"palette": [
+						[
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
+			"elevation_range_m": [
+				18.0,
+				24.0
+			],
+			"max_slope_deg": 15.0,
+			"moisture": 0.5,
+			"name": "Shoreline & Alluvial Sands",
+			"objects": [
+				{
+					"asset": "tree_3",
+					"density_per_sq_km": 96.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				}
+			],
+			"raster_id": 9.0,
+			"roughness": 0.9,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/beach.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.05
+		},
+		"concrete": {
+			"blended": true,
+			"clutter": [],
+			"elevation_range_m": [
+				0.0,
+				100.0
+			],
+			"max_slope_deg": 45.0,
+			"moisture": 0.5,
+			"name": "Concrete Surface",
+			"objects": [],
+			"raster_id": 13.0,
+			"rotate": true,
+			"roughness": 0.85,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/concrete.png",
+			"texture_size_m": 20.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.0
+		},
+		"desert": {
+			"blended": true,
+			"clutter": [
+				{
+					"density_per_m2": 0.003,
+					"model": "pebbles",
+					"palette": [
+						[
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
+			"elevation_range_m": [
+				20.0,
+				80.0
+			],
+			"max_slope_deg": 30.0,
+			"moisture": 0.15,
+			"name": "Arid Dunes & Badlands",
+			"objects": [
+				{
+					"asset": "tree_5",
+					"density_per_sq_km": 48.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				}
+			],
+			"raster_id": 5.0,
+			"roughness": 0.9,
+			"submerged": false,
+			"temperature": 0.8,
+			"texture": "res://assets/textures/terrain/desert_dunes.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.04
+		},
+		"dirt": {
+			"blended": true,
+			"clutter": [],
+			"elevation_range_m": [
+				0.0,
+				100.0
+			],
+			"max_slope_deg": 45.0,
+			"moisture": 0.5,
+			"name": "Dirt",
+			"objects": [],
+			"raster_id": 20.0,
+			"rotate": true,
+			"roughness": 0.85,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/dirt.png",
+			"texture_size_m": 20.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.0
+		},
+		"farmland": {
+			"blended": true,
+			"clutter": [],
+			"elevation_range_m": [
+				0.0,
+				100.0
+			],
+			"max_slope_deg": 45.0,
+			"moisture": 0.5,
+			"name": "Farmland",
+			"objects": [],
+			"raster_id": 14.0,
+			"rotate": true,
+			"roughness": 0.85,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/farmland.png",
+			"texture_size_m": 20.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.0
+		},
+		"flower_fields": {
+			"blended": true,
+			"clutter": [
+				{
+					"density_per_m2": 0.025,
+					"model": "grass_tuft",
+					"palette": [
+						[
+							0.32,
+							0.72,
+							0.18,
+							1.0
+						],
+						[
+							0.38,
+							0.78,
+							0.22,
+							1.0
+						],
+						[
+							0.28,
+							0.65,
+							0.15,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				},
+				{
+					"density_per_m2": 0.003,
+					"model": "wildflowers",
+					"palette": [
+						[
+							0.95,
+							0.12,
+							0.15,
+							0.9
+						],
+						[
+							0.98,
+							0.85,
+							0.1,
+							0.9
+						],
+						[
+							0.2,
+							0.45,
+							0.95,
+							0.9
+						],
+						[
+							0.75,
+							0.2,
+							0.9,
+							0.9
+						],
+						[
+							0.95,
+							0.15,
+							0.6,
+							0.9
+						],
+						[
+							0.98,
+							0.5,
+							0.1,
+							0.9
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
+			"elevation_range_m": [
+				22.0,
+				50.0
+			],
+			"max_slope_deg": 20.0,
+			"moisture": 0.5,
+			"name": "Wildflower Meadow",
+			"objects": [
+				{
+					"asset": "tree_4",
+					"density_per_sq_km": 192.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				}
+			],
+			"raster_id": 2.0,
+			"roughness": 0.9,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/flower_fields.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.1
+		},
+		"forest_undergrowth": {
+			"blended": true,
+			"clutter": [],
+			"elevation_range_m": [
+				0.0,
+				100.0
+			],
+			"max_slope_deg": 45.0,
+			"moisture": 0.5,
+			"name": "Forest Undergrowth",
+			"objects": [],
+			"raster_id": 15.0,
+			"rotate": true,
+			"roughness": 0.85,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/forest_undergrowth.png",
+			"texture_size_m": 20.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.0
+		},
+		"grassland": {
+			"blended": true,
+			"clutter": [
+				{
+					"density_per_m2": 0.025,
+					"model": "grass_tuft",
+					"palette": [
+						[
+							0.32,
+							0.72,
+							0.18,
+							1.0
+						],
+						[
+							0.38,
+							0.78,
+							0.22,
+							1.0
+						],
+						[
+							0.28,
+							0.65,
+							0.15,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				},
+				{
+					"density_per_m2": 0.003,
+					"model": "wildflowers",
+					"palette": [
+						[
+							0.95,
+							0.12,
+							0.15,
+							0.9
+						],
+						[
+							0.98,
+							0.85,
+							0.1,
+							0.9
+						],
+						[
+							0.2,
+							0.45,
+							0.95,
+							0.9
+						],
+						[
+							0.75,
+							0.2,
+							0.9,
+							0.9
+						],
+						[
+							0.95,
+							0.15,
+							0.6,
+							0.9
+						],
+						[
+							0.98,
+							0.5,
+							0.1,
+							0.9
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
+			"elevation_range_m": [
+				20.0,
+				60.0
+			],
+			"max_slope_deg": 25.0,
+			"moisture": 0.5,
+			"name": "Lush Grass Plains",
+			"objects": [
+				{
+					"asset": "tree_0",
+					"density_per_sq_km": 240.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "tree_2",
+					"density_per_sq_km": 128.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "campfire",
+					"density_per_sq_km": 0.5,
+					"scale_range": [
+						1.0,
+						1.0
+					]
+				}
+			],
+			"raster_id": 1.0,
+			"roughness": 0.9,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/grass.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.2
+		},
+		"high_desert": {
+			"blended": true,
+			"clutter": [],
+			"elevation_range_m": [
+				0.0,
+				100.0
+			],
+			"max_slope_deg": 45.0,
+			"moisture": 0.5,
+			"name": "High Desert",
+			"objects": [],
+			"raster_id": 16.0,
+			"rotate": true,
+			"roughness": 0.85,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/high_desert.png",
+			"texture_size_m": 20.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.0
+		},
+		"mountain": {
+			"blended": true,
+			"clutter": [
+				{
+					"density_per_m2": 0.003,
+					"model": "pebbles",
+					"palette": [
+						[
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
+			"elevation_range_m": [
+				70.0,
+				100.0
+			],
+			"max_slope_deg": 65.0,
+			"moisture": 0.5,
+			"name": "High Massif Crags & Peaks",
+			"objects": [
+				{
+					"asset": "tree_1",
+					"density_per_sq_km": 64.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				}
+			],
+			"raster_id": 8.0,
+			"roughness": 0.9,
+			"submerged": false,
+			"temperature": 0.2,
+			"texture": "res://assets/textures/terrain/crags_and_peaks.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.08
+		},
+		"old_growth_forest": {
+			"blended": true,
+			"clutter": [
+				{
+					"density_per_m2": 0.003,
+					"model": "shrubs",
+					"palette": [
+						[
+							0.22,
+							0.58,
+							0.14,
+							1.0
+						],
+						[
+							0.28,
+							0.65,
+							0.18,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				},
+				{
+					"density_per_m2": 0.003,
+					"model": "mushrooms",
+					"palette": [
+						[
+							0.62,
+							0.24,
+							0.21,
+							1.0
+						],
+						[
+							0.44,
+							0.31,
+							0.22,
+							1.0
+						],
+						[
+							0.82,
+							0.72,
+							0.5,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
+			"elevation_range_m": [
+				22.0,
+				75.0
+			],
+			"max_slope_deg": 40.0,
+			"moisture": 0.8,
+			"name": "Ancient Old-Growth Forest",
+			"objects": [
+				{
+					"asset": "tree_10",
+					"density_per_sq_km": 960.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "tree_11",
+					"density_per_sq_km": 720.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "tree_12",
+					"density_per_sq_km": 320.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "tree_13",
+					"density_per_sq_km": 240.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "tree_5",
+					"density_per_sq_km": 128.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				}
+			],
+			"raster_id": 4.0,
+			"roughness": 0.9,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/old_growth_forest_undergrowth.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.15
+		},
+		"riverbank_wetlands": {
+			"blended": true,
+			"clutter": [
+				{
+					"density_per_m2": 0.003,
+					"model": "shrubs",
+					"palette": [
+						[
+							0.22,
+							0.58,
+							0.14,
+							1.0
+						],
+						[
+							0.28,
+							0.65,
+							0.18,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				},
+				{
+					"density_per_m2": 0.003,
+					"model": "mushrooms",
+					"palette": [
+						[
+							0.62,
+							0.24,
+							0.21,
+							1.0
+						],
+						[
+							0.44,
+							0.31,
+							0.22,
+							1.0
+						],
+						[
+							0.82,
+							0.72,
+							0.5,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
+			"elevation_range_m": [
+				16.0,
+				28.0
+			],
+			"max_slope_deg": 18.0,
+			"moisture": 0.8,
+			"name": "Riverbank & Riparian Corridor",
+			"objects": [
+				{
+					"asset": "tree_3",
+					"density_per_sq_km": 480.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "tree_2",
+					"density_per_sq_km": 400.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				}
+			],
+			"raster_id": 10.0,
+			"roughness": 0.9,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/water_eroded_clay.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.05
+		},
+		"road": {
+			"blended": true,
+			"clutter": [],
+			"elevation_range_m": [
+				0.0,
+				100.0
+			],
+			"max_slope_deg": 45.0,
+			"moisture": 0.5,
+			"name": "Paved Road",
+			"objects": [],
+			"raster_id": 21.0,
+			"rotate": true,
+			"roughness": 0.85,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/concrete.png",
+			"texture_size_m": 20.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.0
+		},
+		"rocky_fields": {
+			"blended": true,
+			"clutter": [
+				{
+					"density_per_m2": 0.003,
+					"model": "pebbles",
+					"palette": [
+						[
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
+			"elevation_range_m": [
+				50.0,
+				85.0
+			],
+			"max_slope_deg": 45.0,
+			"moisture": 0.5,
+			"name": "Alpine Scree & Boulder Fields",
+			"objects": [
+				{
+					"asset": "tree_1",
+					"density_per_sq_km": 160.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "tree_5",
+					"density_per_sq_km": 96.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				}
+			],
+			"raster_id": 7.0,
+			"roughness": 0.9,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/rocky.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.08
+		},
+		"sand_dunes": {
+			"blended": true,
+			"clutter": [],
+			"elevation_range_m": [
+				0.0,
+				100.0
+			],
+			"max_slope_deg": 45.0,
+			"moisture": 0.5,
+			"name": "Sand Dunes",
+			"objects": [],
+			"raster_id": 17.0,
+			"rotate": true,
+			"roughness": 0.85,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/sand_dunes.png",
+			"texture_size_m": 20.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.0
+		},
+		"snowy_tundra": {
+			"blended": true,
+			"clutter": [],
+			"elevation_range_m": [
+				0.0,
+				100.0
+			],
+			"max_slope_deg": 45.0,
+			"moisture": 0.5,
+			"name": "Snowy Tundra",
+			"objects": [],
+			"raster_id": 18.0,
+			"rotate": true,
+			"roughness": 0.85,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/snowy_tundra.png",
+			"texture_size_m": 20.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.0
+		},
+		"sparse_forest_undergrowth": {
+			"blended": true,
+			"clutter": [],
+			"elevation_range_m": [
+				0.0,
+				100.0
+			],
+			"max_slope_deg": 45.0,
+			"moisture": 0.5,
+			"name": "Sparse Forest Undergrowth",
+			"objects": [],
+			"raster_id": 19.0,
+			"rotate": true,
+			"roughness": 0.85,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/sparse_forest_undergrowth.png",
+			"texture_size_m": 20.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.0
+		},
+		"swamp": {
+			"blended": true,
+			"clutter": [
+				{
+					"density_per_m2": 0.003,
+					"model": "shrubs",
+					"palette": [
+						[
+							0.22,
+							0.58,
+							0.14,
+							1.0
+						],
+						[
+							0.28,
+							0.65,
+							0.18,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				},
+				{
+					"density_per_m2": 0.003,
+					"model": "mushrooms",
+					"palette": [
+						[
+							0.62,
+							0.24,
+							0.21,
+							1.0
+						],
+						[
+							0.44,
+							0.31,
+							0.22,
+							1.0
+						],
+						[
+							0.82,
+							0.72,
+							0.5,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
+			"elevation_range_m": [
+				15.0,
+				24.0
+			],
+			"max_slope_deg": 12.0,
+			"moisture": 0.8,
+			"name": "Marshland Wetlands",
+			"objects": [
+				{
+					"asset": "tree_3",
+					"density_per_sq_km": 640.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "tree_5",
+					"density_per_sq_km": 240.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "campfire",
+					"density_per_sq_km": 0.4,
+					"scale_range": [
+						1.0,
+						1.0
+					]
+				}
+			],
+			"raster_id": 6.0,
+			"roughness": 0.9,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/wetland.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.08
+		},
+		"tundra_plateau": {
+			"blended": true,
+			"clutter": [
+				{
+					"density_per_m2": 0.003,
+					"model": "pebbles",
+					"palette": [
+						[
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
+			"elevation_range_m": [
+				65.0,
+				90.0
+			],
+			"max_slope_deg": 25.0,
+			"moisture": 0.5,
+			"name": "High Alpine Tundra & Plateau",
+			"objects": [
+				{
+					"asset": "tree_1",
+					"density_per_sq_km": 192.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				}
+			],
+			"raster_id": 11.0,
+			"roughness": 0.9,
+			"submerged": false,
+			"temperature": 0.2,
+			"texture": "res://assets/textures/terrain/cold_snowy_tundra.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.02
+		},
+		"waterbed": {
+			"blended": true,
+			"clutter": [],
+			"elevation_range_m": [
+				0.0,
+				20.0
+			],
+			"max_slope_deg": 90.0,
+			"moisture": 0.5,
+			"name": "Waterbed",
+			"objects": [],
+			"raster_id": 0.0,
+			"roughness": 0.9,
+			"submerged": true,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/sand_dunes.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				0.6,
+				0.65,
+				0.7,
+				1.0
+			],
+			"weight": 0.18
+		},
+		"young_forest": {
+			"blended": true,
+			"clutter": [
+				{
+					"density_per_m2": 0.025,
+					"model": "grass_tuft",
+					"palette": [
+						[
+							0.32,
+							0.72,
+							0.18,
+							1.0
+						],
+						[
+							0.38,
+							0.78,
+							0.22,
+							1.0
+						],
+						[
+							0.28,
+							0.65,
+							0.15,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				},
+				{
+					"density_per_m2": 0.003,
+					"model": "wildflowers",
+					"palette": [
+						[
+							0.95,
+							0.12,
+							0.15,
+							0.9
+						],
+						[
+							0.98,
+							0.85,
+							0.1,
+							0.9
+						],
+						[
+							0.2,
+							0.45,
+							0.95,
+							0.9
+						],
+						[
+							0.75,
+							0.2,
+							0.9,
+							0.9
+						],
+						[
+							0.95,
+							0.15,
+							0.6,
+							0.9
+						],
+						[
+							0.98,
+							0.5,
+							0.1,
+							0.9
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
+			"elevation_range_m": [
+				21.0,
+				65.0
+			],
+			"max_slope_deg": 35.0,
+			"moisture": 0.5,
+			"name": "Young Growth Woodlands",
+			"objects": [
+				{
+					"asset": "tree_0",
+					"density_per_sq_km": 640.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "tree_2",
+					"density_per_sq_km": 560.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
+					"asset": "tree_1",
+					"density_per_sq_km": 320.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				}
+			],
+			"raster_id": 3.0,
+			"roughness": 0.9,
+			"submerged": false,
+			"temperature": 0.5,
+			"texture": "res://assets/textures/terrain/forest_floor.png",
+			"texture_size_m": 4.0,
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"weight": 0.15
+		}
+	},
+	"description": "Procedurally generated O'Neill Cylinder (dramatic topography preset) with settlements, hydrology, ground clutter, and biomes.",
+	"display_name": "O'Neill Cylinder (Dramatic)",
+	"entities": {
+		"groups": [],
+		"model_catalog": {},
+		"spawns": []
+	},
+	"environment": {
+		"air_color": [
+			0.52,
+			0.72,
+			0.88,
+			1.0
+		],
+		"air_density": 1.25,
+		"air_distance_max": 18000.0,
+		"air_distance_min": 200.0,
+		"ambient_color": [
+			0.92,
+			0.95,
+			1.0,
+			1.0
+		],
+		"ambient_energy": 1.0,
+		"sky_color": [
+			0.02,
+			0.03,
+			0.05,
+			1.0
+		],
+		"water": {
+			"caustic_color": [
+				0.35,
+				0.85,
+				1.0,
+				1.0
+			],
+			"deep_color": [
+				0.015,
+				0.18,
+				0.38,
+				0.72
+			],
+			"extinction_rgb": [
+				0.18,
+				0.05,
+				0.02
+			],
+			"foam_color": [
+				0.94,
+				0.98,
+				1.0,
+				1.0
+			],
+			"overcast_color": [
+				0.78,
+				0.88,
+				1.0,
+				1.0
+			],
+			"reflection_color": [
+				0.92,
+				0.96,
+				1.0,
+				1.0
+			],
+			"roughness": 0.05,
+			"shallow_color": [
+				0.08,
+				0.55,
+				0.78,
+				0.38
+			],
+			"specular": 0.95,
+			"wave_speed": 0.65
+		}
+	},
+	"events": {
+		"environmental_triggers": [],
+		"scheduled": []
+	},
+	"extensions": {},
+	"files": {
+		"elevation_map": "elevation.cylh",
+		"object_map": "placements.json",
+		"terrain_map": "biomes.png"
+	},
+	"generation": {
+		"balance_iterations": 32.0,
+		"base_height_m": 42.0,
+		"biome_region_strength": 0.3,
+		"biome_region_wavelength_m": 2200.0,
+		"climate_wavelength_m": 2500.0,
+		"coast_variation_m": 450.0,
+		"coast_wavelength_m": 2200.0,
+		"detail_strength": 0.12,
+		"detail_wavelength_m": 450.0,
+		"elevation_height": 1125,
+		"elevation_width": 1571,
+		"erosion_iterations": 8.0,
+		"lake_count": 2.0,
+		"lake_depth_m": 12.0,
+		"lake_radius_m": 500.0,
+		"noise_gain": 0.5,
+		"noise_octaves": 5.0,
+		"noise_wavelength_m": 3500.0,
+		"object_limit": 12000.0,
+		"relief_m": 45.0,
+		"ridge_height_m": 30.0,
+		"river_count": 3.0,
+		"river_depth_m": 6.0,
+		"river_width_m": 90.0,
+		"sample_pitch_m": 16.0,
+		"sea_center_v": 0.5,
+		"sea_depth_m": 18.0,
+		"sea_width_m": 1800.0,
+		"seed": 42.0,
+		"spawn_clearance_m": 3.0,
+		"talus_slope_deg": 32.0,
+		"terrain_height": 1125,
+		"terrain_width": 1571
+	},
+	"generation_report": {
+		"coastal_beach": {
+			"achieved": 0.0403479736897942,
+			"requested": 0.0423728813559322
+		},
+		"desert": {
+			"achieved": 0.0361411698139897,
+			"requested": 0.0338983050847458
+		},
+		"flower_fields": {
+			"achieved": 0.0855602234952967,
+			"requested": 0.0847457627118644
+		},
+		"grassland": {
+			"achieved": 0.170130277954594,
+			"requested": 0.169491525423729
+		},
+		"mountain": {
+			"achieved": 0.0673592191809887,
+			"requested": 0.0677966101694915
+		},
+		"old_growth_forest": {
+			"achieved": 0.12805941014216,
+			"requested": 0.127118644067797
+		},
+		"riverbank_wetlands": {
+			"achieved": 0.0387925595869581,
+			"requested": 0.0423728813559322
+		},
+		"rocky_fields": {
+			"achieved": 0.0697282693259778,
+			"requested": 0.0677966101694915
+		},
+		"swamp": {
+			"achieved": 0.0640288563547634,
+			"requested": 0.0677966101694915
+		},
+		"tundra_plateau": {
+			"achieved": 0.0192958483626848,
+			"requested": 0.0169491525423729
+		},
+		"waterbed": {
+			"achieved": 0.152618431289342,
+			"requested": 0.152542372881356
+		},
+		"young_forest": {
+			"achieved": 0.127937760803451,
+			"requested": 0.127118644067797
+		}
+	},
+	"generation_warnings": [],
+	"geometry": {
+		"cylinder_length_m": 18000.0,
+		"cylinder_radius_m": 4000.0,
+		"elevation_variance_m": 100.0,
+		"water_sea_level_m": 20.0
+	},
+	"ground_clutter": {
+		"chunk_size_m": 40.0,
+		"density_multiplier": 1.0,
+		"fade_distance_m": 45.0,
+		"models": {
+			"crops": {
+				"base_color": [
+					0.65,
+					0.52,
+					0.22,
+					1.0
+				],
+				"category": "crops",
+				"gradient_extent_m": 1.15,
+				"gradient_mode": "linear",
+				"roughness": 0.85,
+				"scene_path": "res://assets/maps/default/models/ground_clutter/crops.tscn",
+				"tip_color": [
+					0.88,
+					0.74,
+					0.32,
+					1.0
+				],
+				"type": "procedural_mesh",
+				"wind_speed": 1.8,
+				"wind_strength": 0.2
+			},
+			"grass_tuft": {
+				"base_color": [
+					0.7,
+					0.7,
+					0.7,
+					1.0
+				],
+				"category": "foliage",
+				"gradient_extent_m": 0.85,
+				"gradient_mode": "linear",
+				"roughness": 0.85,
+				"scene_path": "res://assets/maps/default/models/ground_clutter/grass_tuft.tscn",
+				"tip_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"type": "procedural_mesh",
+				"wind_speed": 2.2,
+				"wind_strength": 0.24
+			},
+			"mushrooms": {
+				"base_color": [
+					0.84,
+					0.76,
+					0.63,
+					1.0
+				],
+				"category": "foliage",
+				"gradient_extent_m": 0.115,
+				"gradient_mode": "radial",
+				"roughness": 0.85,
+				"scene_path": "res://assets/maps/default/models/ground_clutter/mushrooms.tscn",
+				"tip_color": [
+					0.44,
+					0.27,
+					0.16,
+					1.0
+				],
+				"type": "procedural_mesh",
+				"wind_speed": 0.0,
+				"wind_strength": 0.0
+			},
+			"pebbles": {
+				"base_color": [
+					0.4,
+					0.44,
+					0.5,
+					1.0
+				],
+				"category": "rock_debris",
+				"gradient_extent_m": 0.4,
+				"gradient_mode": "radial",
+				"roughness": 0.94,
+				"scene_path": "res://assets/maps/default/models/ground_clutter/pebbles.tscn",
+				"tip_color": [
+					0.55,
+					0.6,
+					0.7,
+					1.0
+				],
+				"type": "procedural_mesh",
+				"wind_speed": 0.0,
+				"wind_strength": 0.0
+			},
+			"shrubs": {
+				"base_color": [
+					0.7,
+					0.7,
+					0.7,
+					1.0
+				],
+				"category": "foliage",
+				"gradient_extent_m": 0.65,
+				"gradient_mode": "radial",
+				"roughness": 0.85,
+				"scene_path": "res://assets/maps/default/models/ground_clutter/shrubs.tscn",
+				"tip_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"type": "procedural_mesh",
+				"wind_speed": 1.5,
+				"wind_strength": 0.12
+			},
+			"wildflowers": {
+				"base_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"category": "foliage",
+				"gradient_extent_m": 0.8,
+				"gradient_mode": "linear",
+				"roughness": 0.85,
+				"scene_path": "res://assets/maps/default/models/ground_clutter/wildflowers.tscn",
+				"tip_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"type": "procedural_mesh",
+				"wind_speed": 2.6,
+				"wind_strength": 0.18
+			}
+		},
+		"seed": 42.0,
+		"view_radius_m": 220.0
+	},
+	"license": "CC-BY-4.0",
+	"lighting_palette": {
+		"dawn": [
+			1.0,
+			0.52,
+			0.18,
+			1.0
+		],
+		"daylight": [
+			1.0,
+			0.98,
+			0.95,
+			1.0
+		],
+		"dusk": [
+			0.65,
+			0.35,
+			0.75,
+			1.0
+		],
+		"moon_day": [
+			1.0,
+			0.96,
+			0.9,
+			1.0
+		],
+		"moon_night": [
+			0.35,
+			0.34,
+			0.65,
+			1.0
+		],
+		"morning": [
+			1.0,
+			0.88,
+			0.65,
+			1.0
+		],
+		"night": [
+			0.08,
+			0.16,
+			0.38,
+			1.0
+		],
+		"noon": [
+			0.98,
+			0.98,
+			1.0,
+			1.0
+		],
+		"spine": [
+			0.12,
+			0.13,
+			0.16,
+			1.0
+		],
+		"sunset_amber": [
+			1.0,
+			0.48,
+			0.15,
+			1.0
+		],
+		"sunset_crimson": [
+			0.92,
+			0.25,
+			0.35,
+			1.0
+		],
+		"sunset_gold": [
+			1.0,
+			0.85,
+			0.45,
+			1.0
+		],
+		"sunset_twilight": [
+			0.18,
+			0.28,
+			0.75,
+			1.0
+		]
+	},
+	"map_name": "default",
+	"name": "Default habitat template",
+	"networking": {
+		"allow_multiplayer": false,
+		"irc_channel": "",
+		"irc_server": ""
+	},
+	"objects": {
+		"model_catalog": {
+			"arched_bridge": {
+				"behavior_type": 3.0,
+				"flicker": true,
+				"light_color": [
+					1.0,
+					0.82,
+					0.45,
+					1.0
+				],
+				"light_energy": 4.5,
+				"light_range_m": 50.0,
+				"name": "Arched Bridge",
+				"scene_path": "res://assets/maps/default/models/objects/bridge.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": -1.0
+			},
+			"beacon_lantern": {
+				"behavior_type": 2.0,
+				"flicker": true,
+				"light_color": [
+					0.45,
+					0.75,
+					1.0,
+					1.0
+				],
+				"light_energy": 12.0,
+				"light_range_m": 120.0,
+				"name": "Beacon Lantern",
+				"scene_path": "res://assets/maps/default/models/objects/beacon_lantern.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": -1.0
+			},
+			"bonfire": {
+				"behavior_type": 4.0,
+				"flicker": true,
+				"light_color": [
+					1.0,
+					0.5,
+					0.15,
+					1.0
+				],
+				"light_energy": 8.5,
+				"light_range_m": 85.0,
+				"name": "Bonfire",
+				"scene_path": "res://assets/maps/default/models/objects/bonfire.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": -1.0
+			},
+			"campfire": {
+				"behavior_type": 0.0,
+				"flicker": true,
+				"light_color": [
+					1.0,
+					0.58,
+					0.22,
+					1.0
+				],
+				"light_energy": 5.5,
+				"light_range_m": 55.0,
+				"name": "Campfire",
+				"scene_path": "res://assets/maps/default/models/objects/campfire.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": -1.0
+			},
+			"colony_house": {
+				"behavior_type": 5.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Colony House",
+				"scene_path": "res://assets/maps/default/models/objects/house.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": -1.0
+			},
+			"foliage_tree": {
+				"behavior_type": 6.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Foliage Tree",
+				"scene_path": "res://assets/maps/default/models/objects/tree.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": -1.0
+			},
+			"lamp_post": {
+				"behavior_type": 1.0,
+				"flicker": true,
+				"light_color": [
+					1.0,
+					0.92,
+					0.7,
+					1.0
+				],
+				"light_energy": 4.0,
+				"light_range_m": 45.0,
+				"name": "Lamp Post",
+				"scene_path": "res://assets/maps/default/models/objects/lamp_post.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": -1.0
+			},
+			"tree_0": {
+				"behavior_type": 6.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Oak",
+				"scene_path": "res://assets/maps/default/models/objects/tree_oak.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": 0.0
+			},
+			"tree_1": {
+				"behavior_type": 6.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Pine",
+				"scene_path": "res://assets/maps/default/models/objects/tree_pine.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": 1.0
+			},
+			"tree_10": {
+				"behavior_type": 6.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Ancient Giant Oak",
+				"scene_path": "res://assets/maps/default/models/objects/tree_ancient_oak.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": 10.0
+			},
+			"tree_11": {
+				"behavior_type": 6.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Ancient Giant Pine",
+				"scene_path": "res://assets/maps/default/models/objects/tree_ancient_pine.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": 11.0
+			},
+			"tree_12": {
+				"behavior_type": 6.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Ancient Giant Willow",
+				"scene_path": "res://assets/maps/default/models/objects/tree_ancient_willow.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": 12.0
+			},
+			"tree_13": {
+				"behavior_type": 6.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Ancient Giant Birch",
+				"scene_path": "res://assets/maps/default/models/objects/tree_ancient_birch.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": 13.0
+			},
+			"tree_2": {
+				"behavior_type": 6.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Birch",
+				"scene_path": "res://assets/maps/default/models/objects/tree_birch.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": 2.0
+			},
+			"tree_3": {
+				"behavior_type": 6.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Willow",
+				"scene_path": "res://assets/maps/default/models/objects/tree_willow.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": 3.0
+			},
+			"tree_4": {
+				"behavior_type": 6.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Cherry Blossom",
+				"scene_path": "res://assets/maps/default/models/objects/tree_cherry_blossom.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": 4.0
+			},
+			"tree_5": {
+				"behavior_type": 6.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Dead Tree",
+				"scene_path": "res://assets/maps/default/models/objects/tree_dead.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": 5.0
+			},
+			"windmill": {
+				"behavior_type": 8.0,
+				"flicker": false,
+				"light_color": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"light_energy": 0.0,
+				"light_range_m": 1.0,
+				"name": "Windmill",
+				"scene_path": "res://assets/maps/default/models/objects/windmill.tscn",
+				"tint": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				],
+				"variant": -1.0
+			}
+		}
+	},
+	"relationships": {
+		"factions": [],
+		"routes": []
+	},
+	"rendering": {
+		"biome_blend_width_m": 8.0,
+		"biome_texture_resolution": 256.0,
+		"end_cap_dish_depth_m": 4000.0,
+		"end_cap_rings": 32.0,
+		"end_cap_texture": "res://assets/textures/terrain/end_cap_ribs.png",
+		"end_cap_tint": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"include_end_caps": true,
+		"length_segments": 180.0,
+		"radial_segments": 144.0
+	},
+	"saved_at_unix": 1791309379.58288,
+	"schema_version": 4.0,
+	"shader_parameters": {
+		"campfire_flame.gdshader": {
+			"color_core": [
+				1.0,
+				0.96,
+				0.72,
+				1.0
+			],
+			"color_flame": [
+				1.0,
+				0.48,
+				0.06,
+				1.0
+			],
+			"color_tip": [
+				0.85,
+				0.12,
+				0.01,
+				0.8
+			],
+			"speed": 2.8,
+			"turbulence": 0.35
+		},
+		"cylinder_clouds.gdshader": {
+			"air_color": [
+				0.52,
+				0.72,
+				0.88,
+				1.0
+			],
+			"air_density": 1.0,
+			"air_distance_max": 18000.0,
+			"air_distance_min": 200.0,
+			"axial_light_enabled": 1.0,
+			"cloud_altitude": 1250.0,
+			"cloud_color_day": [
+				0.85,
+				0.86,
+				0.88,
+				1.0
+			],
+			"cloud_color_storm": [
+				0.2,
+				0.22,
+				0.26,
+				1.0
+			],
+			"cloud_coverage": 0.55,
+			"cloud_deck_offset": [
+				0.0,
+				0.0
+			],
+			"cloud_density": 1.0,
+			"cloud_shadow_color": [
+				0.45,
+				0.48,
+				0.52,
+				1.0
+			],
+			"cloud_softness": 0.25,
+			"cloud_thickness": 250.0,
+			"coriolis_spin_direction": 1.0,
+			"cylinder_length": 18000.0,
+			"cylinder_radius": 4000.0,
+			"dust_density": 0.2,
+			"dust_tint": [
+				0.9,
+				0.84,
+				0.72,
+				1.0
+			],
+			"global_light_intensity": 3.5,
+			"humidity_density": 14.5
+		},
+		"cylinder_clouds_far.gdshader": {
+			"air_color": [
+				0.52,
+				0.72,
+				0.88,
+				1.0
+			],
+			"air_density": 1.0,
+			"air_distance_max": 18000.0,
+			"air_distance_min": 200.0,
+			"axial_light_enabled": 1.0,
+			"cloud_altitude": 1250.0,
+			"cloud_color_day": [
+				0.85,
+				0.86,
+				0.88,
+				1.0
+			],
+			"cloud_color_storm": [
+				0.2,
+				0.22,
+				0.26,
+				1.0
+			],
+			"cloud_coverage": 0.55,
+			"cloud_deck_offset": [
+				0.0,
+				0.0
+			],
+			"cloud_density": 1.0,
+			"cloud_shadow_color": [
+				0.45,
+				0.48,
+				0.52,
+				1.0
+			],
+			"cloud_softness": 0.25,
+			"cloud_thickness": 250.0,
+			"coriolis_spin_direction": 1.0,
+			"cylinder_length": 18000.0,
+			"cylinder_radius": 4000.0,
+			"dust_density": 0.2,
+			"dust_tint": [
+				0.9,
+				0.84,
+				0.72,
+				1.0
+			],
+			"global_light_intensity": 3.5,
+			"humidity_density": 14.5
+		},
+		"cylinder_rain_sheet.gdshader": {
+			"axial_light_enabled": 1.0,
+			"cloud_thickness": 250.0,
+			"cylinder_length": 18000.0,
+			"far_fade_max": 95.0,
+			"far_fade_min": 60.0,
+			"global_light_intensity": 3.5,
+			"near_fade_max": 1.0,
+			"near_fade_min": 0.2,
+			"night_tint": [
+				0.04,
+				0.04,
+				0.06,
+				1.0
+			],
+			"rain_alpha_multiplier": 0.0,
+			"rain_tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"uv_scale": [
+				0.25,
+				0.25
+			],
+			"uv_scroll_offset": [
+				0.0,
+				0.0
+			]
+		},
+		"cylinder_surface.gdshader": {
+			"accent_line_color": [
+				0.22,
+				0.24,
+				0.27,
+				1.0
+			],
+			"air_color": [
+				0.52,
+				0.72,
+				0.88,
+				1.0
+			],
+			"air_density": 0.65,
+			"air_distance_max": 18000.0,
+			"air_distance_min": 200.0,
+			"base_color": [
+				0.48,
+				0.5,
+				0.53,
+				1.0
+			],
+			"line_color": [
+				0.32,
+				0.34,
+				0.37,
+				1.0
+			],
+			"line_thickness": 0.04,
+			"major_grid_spacing": 20.0,
+			"metallic": 0.15,
+			"minor_grid_spacing": 4.0,
+			"roughness": 0.75
+		},
+		"cylinder_terrain.gdshader": {
+			"axial_light_enabled": 1.0,
+			"endcap_emission_factor": 1.0
+		},
+		"cylinder_water.gdshader": {
+			"axial_light_enabled": 1.0,
+			"is_snow_mode": 0.0,
+			"precipitation_rate": 0.0
+		},
+		"ground_clutter.gdshader": {
+			"air_color": [
+				0.52,
+				0.72,
+				0.88,
+				1.0
+			],
+			"air_density": 1.0,
+			"air_distance_max": 18000.0,
+			"air_distance_min": 200.0,
+			"base_color": [
+				0.35,
+				0.72,
+				0.22,
+				1.0
+			],
+			"cylinder_radius": 4000.0,
+			"fade_distance": 120.0,
+			"gradient_extent": 1.0,
+			"gradient_mode": 0.0,
+			"is_flower": false,
+			"is_mushroom": false,
+			"is_stone": false,
+			"max_distance": 500.0,
+			"roughness": 0.85,
+			"tip_color": [
+				0.55,
+				0.88,
+				0.32,
+				1.0
+			],
+			"water_level": 20.0,
+			"wind_speed": 2.4,
+			"wind_strength": 0.22,
+			"wind_turbulence": 0.5
+		},
+		"underwater_overlay.gdshader": {
+			"deep_vignette_color": [
+				0.01,
+				0.12,
+				0.28,
+				0.35
+			],
+			"underwater_tint": [
+				0.06,
+				0.38,
+				0.62,
+				0.22
+			]
+		}
+	},
+	"simulation": {
+		"light_bar": {
+			"bar_radius": 35.0,
+			"day_of_year": 0.0,
+			"earth_latitude_deg": 35.0,
+			"enable_shadows": false,
+			"end_color": [
+				0.959999978542328,
+				0.980000019073486,
+				1.0,
+				1.0
+			],
+			"end_intensity": 3.5,
+			"global_intensity_multiplier": 3.5,
+			"gradient_follows_solar_cycle": false,
+			"num_segments": 36.0,
+			"preset": 0.0,
+			"solar_span_hours": 1.5,
+			"start_color": [
+				1.0,
+				0.980000019073486,
+				0.949999988079071,
+				1.0
+			],
+			"start_intensity": 3.5,
+			"time_of_day_hours": 12.0,
+			"time_scale": 1.0,
+			"uniform_follows_solar_cycle": true,
+			"use_real_time": true,
+			"wave_speed": 0.5
+		},
+		"particle_emitter": {
+			"air_drag_coefficient": 0.0,
+			"base_gravity": 9.5,
+			"bounciness": 0.35,
+			"default_particle_color": [
+				0.25,
+				0.899999976158142,
+				1.0,
+				1.0
+			],
+			"impact_marker_color": [
+				1.0,
+				0.449999988079071,
+				0.200000002980232,
+				0.949999988079071
+			],
+			"max_bounces": 1.0,
+			"max_particles": 3500.0,
+			"max_trail_points": 300.0,
+			"particle_lifetime": 80.0,
+			"rain_stream_altitude": 1250.0,
+			"rain_stream_enabled": false,
+			"rain_stream_rate": 45.0,
+			"show_particles": true,
+			"show_trajectories": true,
+			"spin_direction": 1.0,
+			"trail_lifetime": 90.0
+		},
+		"player": {
+			"acceleration": 18.0,
+			"air_control": 5.0,
+			"attitude_flatten_speed": 3.0,
+			"base_gravity": 9.5,
+			"fly_speed": 75.0,
+			"horizon_alignment_speed": 20.0,
+			"jump_velocity": 6.2,
+			"max_walkable_slope_deg": 45.0,
+			"min_elevation_above_sea": 2.0,
+			"mouse_sensitivity": 0.0025,
+			"preferred_spawn_theta": -1.5707963267949,
+			"preferred_spawn_z": 0.0,
+			"sprint_speed": 7.2,
+			"touch_sensitivity": 0.004,
+			"walk_speed": 3.2,
+			"wobble_damping_max": 1.0,
+			"wobble_damping_min": 0.25,
+			"wobble_frequency_max": 16.0,
+			"wobble_frequency_min": 1.0
+		},
+		"weather_system": {
+			"ambient_pressure_kpa": 101.3,
+			"auto_weather_cycle_enabled": true,
+			"base_gravity": 9.5,
+			"cloud_altitude_m": 1250.0,
+			"cloud_coverage": 0.55,
+			"cloud_thickness_m": 250.0,
+			"day_of_year": 172.0,
+			"dust_density": 0.2,
+			"endcap_air_temperature_c": 22.5,
+			"humidity_density_gm3": 14.5,
+			"latitude_deg": 40.0,
+			"precipitation_rate_mmh": 0.0,
+			"rain_sheet_layer_count": 4.0,
+			"spin_direction": 1.0,
+			"tie_to_in_game_clock": true,
+			"trajectory_speed_scale": 1.0,
+			"water_pipe_temperature_c": 24.0,
+			"yearly_precipitation_mm": 950.0
+		}
+	},
+	"version": "1.0.0",
+	"weather_palette": {
+		"dust": [
+			0.95,
+			0.9,
+			0.78,
+			0.25
+		],
+		"rain_particles": [
+			0.9,
+			0.95,
+			1.0,
+			0.75
+		],
+		"rain_sheet": [
+			0.12,
+			0.28,
+			0.58,
+			1.0
+		],
+		"snow_dust": [
+			0.95,
+			0.98,
+			1.0,
+			1.0
+		],
+		"snow_particles": [
+			1.0,
+			1.0,
+			1.0,
+			0.9
+		],
+		"snow_sheet": [
+			0.96,
+			0.98,
+			1.0,
+			1.0
+		]
+	},
+	"world_id": "world_ae0130fcc6f8"
 }

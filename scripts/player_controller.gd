@@ -615,7 +615,7 @@ func deploy_campfire() -> void:
 		var target_pos = global_position + fwd * 2.5
 		var theta = atan2(target_pos.y, target_pos.x)
 		var z = target_pos.z
-		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.CAMPFIRE, theta, z)
+		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.CAMPFIRE, theta, z, Color.WHITE, -1.0, fwd)
 		HUD.log_event("Habitat Object -> Campfire deployed at surface position", "#ffaa44")
 
 func deploy_lamp_post() -> void:
@@ -630,7 +630,7 @@ func deploy_lamp_post() -> void:
 		var target_pos = global_position + fwd * 2.5
 		var theta = atan2(target_pos.y, target_pos.x)
 		var z = target_pos.z
-		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.LAMP_POST, theta, z)
+		ref_obj.spawn_light_emitter(SurfaceLightObject.ObjectType.LAMP_POST, theta, z, Color.WHITE, -1.0, fwd)
 		HUD.log_event("Habitat Object -> Light Post / Beacon deployed at surface position", "#ffcc44")
 
 var last_telemetry: Dictionary = {}

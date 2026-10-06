@@ -1399,7 +1399,11 @@ func _emit_weather_telemetry(delta: float = 0.016) -> void:
 	weather_updated.emit(get_telemetry())
 
 func _map_color(key: String) -> Color:
+	if not has_meta("map_document"):
+		return Color.WHITE
 	var doc: Dictionary = get_meta("map_document")
+	if doc.is_empty() or not doc.has("weather_palette") or not doc.weather_palette.has(key):
+		return Color.WHITE
 	return preload("res://scripts/map_config.gd").color(doc.weather_palette[key])
 
 func map_changed() -> void:

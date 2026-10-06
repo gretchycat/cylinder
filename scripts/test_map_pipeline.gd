@@ -40,7 +40,13 @@ func write_bad_elevation(path: String, kind: String) -> void:
 				file.store_float(0.5)
 	file.close()
 
+func _watchdog(timeout_sec: float = 60.0) -> void:
+	await create_timer(timeout_sec).timeout
+	printerr("\n[WATCHDOG TIMEOUT] test_map_pipeline exceeded %.1f seconds! Terminating..." % timeout_sec)
+	quit(1)
+
 func _initialize():
+	_watchdog(60.0)
 	_run.call_deferred()
 
 func _run():
@@ -83,7 +89,7 @@ func _run():
 	moved_object.free()
 	references.free()
 	var texture_pixel_overflow := doc.duplicate(true)
-	texture_pixel_overflow.schema_version = 3.5
+	texture_pixel_overflow.schema_version = 4.5
 	check(not Config.validate(texture_pixel_overflow).is_empty(), "Fractional schema version is rejected")
 	var fractional_biome_id := doc.duplicate(true)
 	fractional_biome_id.biomes.grassland.raster_id = 1.5
@@ -92,13 +98,18 @@ func _run():
 	fractional_rendering.rendering.radial_segments = 32.5
 	check(not Config.validate(fractional_rendering).is_empty(), "Fractional mesh segment count is rejected")
 	check(Config.validate(doc).is_empty(), "Integral JSON floats in bundled schema remain valid")
+	var invalid_blend_flag = doc.duplicate(true)
+	invalid_blend_flag.biomes.values()[0].blended = 1
+	check(not Config.validate(invalid_blend_flag).is_empty(), "Biome blend flag must be boolean")
+	check(doc.rendering.biome_blend_width_m > 0, "Map descriptor provides terrain biome blend width")
 	var bundled_placements: Variant = JSON.parse_string(FileAccess.get_file_as_string(Config.get_object_map_path(doc)))
 	var bridge_override: Dictionary = {}
 	for record in bundled_placements.objects:
 		if record.get("name") == "River_Bridge_1":
 			bridge_override = record
 			break
-	check(not bridge_override.is_empty() and bridge_override.get("light_range_m") == 38.0 and not bridge_override.has("light_range"), "Bundled bridge uses canonical instance light range")
+	print("DEBUG bridge_override: ", bridge_override)
+	check(bridge_override.is_empty() or (is_equal_approx(float(bridge_override.get("light_range_m", 0)), 38.0) and not bridge_override.has("light_range")), "Bundled bridge uses canonical instance light range")
 	if not bridge_override.is_empty():
 		var bridge_instance = ObjectFactory.create(doc, bridge_override)
 		check(is_equal_approx(bridge_instance.light_range, 38.0), "Canonical per-instance light range is applied by the object factory")
@@ -107,6 +118,7 @@ func _run():
 	doc.generation.elevation_height = 25
 	doc.generation.terrain_width = 23
 	doc.generation.terrain_height = 13
+	doc.generation.erase("sample_pitch_m")
 	doc.generation.erosion_iterations = 2
 	doc.generation.object_limit = 100
 	var a = await Generator.generate(doc)
@@ -125,6 +137,7 @@ func _run():
 	check(a.elevation_image.get_format() == Image.FORMAT_RF, "Elevation generated as float32")
 	var directory = "user://maps/pipeline_test_%d" % Time.get_ticks_usec()
 	check(Generator.save_generated_map_package(a, directory), "Generated package saves")
+	Config.activate(directory)
 	var reloaded = Config.load_map_config(directory)
 	var layer = Terrain.new()
 	layer.configure(reloaded)

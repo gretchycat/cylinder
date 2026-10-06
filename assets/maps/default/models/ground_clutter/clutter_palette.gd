@@ -13,11 +13,11 @@ const GRASS_LIGHT := Color("#6FAF45")
 const STEM_DARK := Color("#24552A")
 const LEAF_MID := Color("#3B7D32")
 
-# Neutral stone palette.  These are deliberately slightly warm/cool rather
-# than pure gray so rocks don't look like untextured gray primitives.
-const ROCK_WARM := Color("#6D6257")
-const ROCK_NEUTRAL := Color("#777873")
-const ROCK_COOL := Color("#646B70")
+# Neutral stone palette with slate and mossy rock tones.
+const ROCK_WARM := Color(0.42, 0.44, 0.50, 1.0)
+const ROCK_NEUTRAL := Color(0.40, 0.44, 0.50, 1.0)
+const ROCK_COOL := Color(0.36, 0.42, 0.50, 1.0)
+const ROCK_MOSSY := Color("#FFAA66")
 
 # Mushroom stems and caps.
 const MUSHROOM_STEM := Color("#D6C3A1")
@@ -51,7 +51,7 @@ const FLOWER_COLORS: Array[Color] = [
 ]
 
 const ROCK_COLORS: Array[Color] = [
-	ROCK_WARM, ROCK_NEUTRAL, ROCK_COOL
+	ROCK_WARM, ROCK_NEUTRAL, ROCK_COOL, ROCK_MOSSY
 ]
 
 const MUSHROOM_CAP_COLORS: Array[Color] = [

@@ -1,7 +1,7 @@
 class_name MapConfig
 extends RefCounted
 
-## Schema 3 map document. See docs/map-descriptor.md.
+## Schema 4 map document. See docs/map-descriptor.md.
 const DEFAULT_MAP_DIRECTORY = "res://assets/maps/default"
 const MAP_ROOT_DIR = "res://assets/maps"
 static var active_map_file: String = "user://active_map.txt"
@@ -104,8 +104,8 @@ static func palette_color(stops: Array, t: float) -> Color:
 	return color(stops[i]).lerp(color(stops[mini(i + 1, stops.size() - 1)]), f - i)
 
 static func validate(doc: Dictionary) -> String:
-	if not integer_number(doc.get("schema_version")) or int(doc.schema_version) != 3:
-		return "Map requires schema_version 3"
+	if not integer_number(doc.get("schema_version")) or int(doc.schema_version) != 4:
+		return "Map requires schema_version 4"
 	if not doc.get("world_id") is String or doc.world_id.is_empty():
 		return "Map requires a permanent world_id"
 	for section in ["geometry", "rendering", "environment", "generation", "biomes", "objects", "ground_clutter", "files", "simulation", "shader_parameters", "lighting_palette", "weather_palette"]:
@@ -129,17 +129,29 @@ static func validate(doc: Dictionary) -> String:
 	if g.water_sea_level_m < 0 or g.water_sea_level_m > g.elevation_variance_m:
 		return "Sea level must be inside the elevation range"
 	var gen: Dictionary = doc.generation
+	var dims = get_grid_dimensions(doc)
+	if not gen.has("sample_pitch_m") and not gen.has("elevation_width"):
+		gen["sample_pitch_m"] = 4.0
+		dims = get_grid_dimensions(doc)
+	if gen.has("sample_pitch_m"):
+		if not finite_number(gen.sample_pitch_m) or gen.sample_pitch_m <= 0.01 or gen.sample_pitch_m > 1000.0:
+			return "sample_pitch_m must be between 0.01 and 1000.0 meters"
+		gen["elevation_width"] = dims.elevation_width
+		gen["elevation_height"] = dims.elevation_height
+		gen["terrain_width"] = dims.terrain_width
+		gen["terrain_height"] = dims.terrain_height
+
 	for key in ["seed", "elevation_width", "elevation_height", "terrain_width", "terrain_height", "noise_wavelength_m", "detail_wavelength_m", "climate_wavelength_m", "base_height_m", "relief_m", "ridge_height_m", "erosion_iterations", "talus_slope_deg", "sea_center_v", "sea_width_m", "sea_depth_m", "coast_wavelength_m", "coast_variation_m", "lake_count", "lake_radius_m", "lake_depth_m", "river_count", "river_width_m", "river_depth_m", "spawn_clearance_m", "object_limit", "noise_octaves", "noise_gain", "detail_strength", "biome_region_wavelength_m", "biome_region_strength", "balance_iterations"]:
 		if not gen.has(key) or not finite_number(gen[key]):
 			return "Missing/invalid generation." + key
 	for key in ["elevation_width", "elevation_height", "terrain_width", "terrain_height"]:
-		if not integer_number(gen[key]) or gen[key] < 2 or gen[key] > 4096:
-			return key + " must be an integer in 2..4096"
+		if not integer_number(gen[key]) or gen[key] < 2 or gen[key] > 32768:
+			return key + " must be an integer in 2..32768"
 	for key in ["seed", "erosion_iterations", "object_limit", "noise_octaves", "balance_iterations"]:
 		if not integer_number(gen[key]):
 			return key + " must be an integer"
-	if gen.elevation_width * gen.elevation_height > 4194304 or gen.terrain_width * gen.terrain_height > 4194304:
-		return "Each layer is limited to 4,194,304 samples"
+	if gen.elevation_width * gen.elevation_height > 536870912 or gen.terrain_width * gen.terrain_height > 536870912:
+		return "Each layer is limited to 536,870,912 samples"
 	for key in ["noise_wavelength_m", "detail_wavelength_m", "climate_wavelength_m", "coast_wavelength_m", "lake_radius_m", "river_width_m", "biome_region_wavelength_m"]:
 		if gen[key] <= 0:
 			return key + " must be positive"
@@ -169,7 +181,7 @@ static func validate(doc: Dictionary) -> String:
 	for key in ["wave_speed", "roughness", "specular"]:
 		if not finite_number(env.water.get(key)):
 			return "Missing water." + key
-	for key in ["radial_segments", "length_segments", "end_cap_rings", "end_cap_dish_depth_m", "biome_texture_resolution"]:
+	for key in ["radial_segments", "length_segments", "end_cap_rings", "end_cap_dish_depth_m", "biome_texture_resolution", "biome_blend_width_m"]:
 		if not finite_number(doc.rendering.get(key)) or doc.rendering[key] <= 0:
 			return "Invalid rendering." + key
 	for key in ["radial_segments", "length_segments", "end_cap_rings", "biome_texture_resolution"]:
@@ -183,8 +195,8 @@ static func validate(doc: Dictionary) -> String:
 	for biome in doc.biomes.values():
 		if biome is Dictionary and finite_number(biome.get("weight")) and biome.weight > 0:
 			enabled_biome_count += 1
-	if gen.terrain_width * gen.terrain_height * doc.biomes.size() > 16777216:
-		return "Biome resolution × biome count exceeds generation memory budget (16,777,216)"
+	if gen.terrain_width * gen.terrain_height * doc.biomes.size() > 2147483648:
+		return "Biome resolution × biome count exceeds generation memory budget (2,147,483,648)"
 	if doc.biomes.is_empty() or doc.biomes.size() > 256:
 		return "Define 1..256 biomes"
 	if not doc.objects.get("model_catalog") is Dictionary or not doc.ground_clutter.get("models") is Dictionary:
@@ -195,7 +207,7 @@ static func validate(doc: Dictionary) -> String:
 		var b = doc.biomes[key]
 		if not b is Dictionary:
 			return "Invalid biome " + key
-		for field in ["raster_id", "name", "weight", "elevation_range_m", "max_slope_deg", "moisture", "temperature", "submerged", "texture", "texture_size_m", "roughness", "tint", "clutter", "objects"]:
+		for field in ["raster_id", "name", "weight", "elevation_range_m", "max_slope_deg", "moisture", "temperature", "submerged", "blended", "texture", "texture_size_m", "roughness", "tint", "clutter", "objects"]:
 			if not b.has(field):
 				return "Missing biome %s.%s" % [key, field]
 		if not integer_number(b.raster_id) or b.raster_id < 0 or b.raster_id > 255 or ids.has(int(b.raster_id)):
@@ -210,7 +222,7 @@ static func validate(doc: Dictionary) -> String:
 			return "Invalid elevation range: " + key
 		if b.max_slope_deg < 0 or b.max_slope_deg > 90 or b.roughness < 0 or b.roughness > 1 or b.moisture < 0 or b.moisture > 1 or b.temperature < 0 or b.temperature > 1:
 			return "Biome slope/roughness/climate preference out of range: " + key
-		if not b.submerged is bool or not b.clutter is Array or not b.objects is Array or not b.name is String or not b.texture is String:
+		if not b.submerged is bool or not b.blended is bool or not b.clutter is Array or not b.objects is Array or not b.name is String or not b.texture is String:
 			return "Invalid biome fields: " + key
 		if not valid_range(b.elevation_range_m, 0, g.elevation_variance_m):
 			return "Biome elevation range exceeds geometry: " + key
@@ -356,15 +368,18 @@ static func copy_map_file(source: String, target: String) -> Error:
 
 ## Exported textures may only exist through Godot's import remap, not as PNG bytes.
 static func copy_terrain_image(source: String, target: String) -> Error:
-	# Imported resources are authoritative for bundled textures. On Android,
-	# a virtual path's existence does not guarantee the original PNG can open.
-	var image: Image
-	if source.begins_with("res://") and ResourceLoader.exists(source):
+	var image: Image = MapAssetLoader.load_image(source)
+	if image == null and source.begins_with("res://") and ResourceLoader.exists(source):
 		var texture = ResourceLoader.load(source)
 		if texture is Texture2D:
 			image = texture.get_image()
-	if image == null:
-		image = MapAssetLoader.load_image(source)
+			if image and not image.is_empty() and image.get_format() != Image.FORMAT_L8:
+				var l8_img = Image.create(image.get_width(), image.get_height(), false, Image.FORMAT_L8)
+				for y in image.get_height():
+					for x in image.get_width():
+						var col = image.get_pixel(x, y)
+						l8_img.set_pixel(x, y, Color(col.r, col.r, col.r, 1.0))
+				image = l8_img
 	if image == null or image.is_empty():
 		return copy_failure("load biome image", source, ERR_FILE_CANT_READ)
 	var error = DirAccess.make_dir_recursive_absolute(target.get_base_dir())
@@ -556,3 +571,49 @@ static func validate_assets(doc: Dictionary) -> String:
 		if not spawn is Dictionary or not finite_number(spawn.get("theta")) or not finite_number(spawn.get("z")):
 			return "Each spawn point requires finite theta/z coordinates"
 	return ""
+
+static func get_grid_dimensions(doc: Dictionary) -> Dictionary:
+	var g: Dictionary = doc.get("geometry", {})
+	var gen: Dictionary = doc.get("generation", {})
+	var r_m = float(g.get("cylinder_radius_m", 4000.0))
+	var l_m = float(g.get("cylinder_length_m", 18000.0))
+	
+	if gen.has("elevation_width") and gen.has("elevation_height"):
+		var ew = int(gen.elevation_width)
+		var eh = int(gen.elevation_height)
+		var tw = int(gen.get("terrain_width", ew))
+		var th = int(gen.get("terrain_height", eh))
+		var calc_pitch = (2.0 * PI * r_m) / float(ew) if ew > 0 else 4.0
+		if gen.has("sample_pitch_m"):
+			var user_pitch = float(gen.sample_pitch_m)
+			if user_pitch > 0 and absf(user_pitch - calc_pitch) > 0.05:
+				ew = max(16, int(round((2.0 * PI * r_m) / user_pitch)))
+				eh = max(16, int(round(l_m / user_pitch)))
+				return {
+					"elevation_width": ew,
+					"elevation_height": eh,
+					"terrain_width": ew,
+					"terrain_height": eh,
+					"sample_pitch_m": user_pitch
+				}
+		return {
+			"elevation_width": ew,
+			"elevation_height": eh,
+			"terrain_width": tw,
+			"terrain_height": th,
+			"sample_pitch_m": calc_pitch
+		}
+
+	var pitch = float(gen.get("sample_pitch_m", 4.0))
+	if pitch <= 0.0:
+		pitch = 4.0
+	var ew = max(16, int(round((2.0 * PI * r_m) / pitch)))
+	var eh = max(16, int(round(l_m / pitch)))
+	return {
+		"elevation_width": ew,
+		"elevation_height": eh,
+		"terrain_width": ew,
+		"terrain_height": eh,
+		"sample_pitch_m": pitch
+	}
+

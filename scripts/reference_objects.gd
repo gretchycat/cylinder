@@ -367,7 +367,8 @@ func spawn_light_emitter(
 	theta: float,
 	z: float,
 	custom_col: Color = Color.WHITE,
-	custom_range: float = -1.0
+	custom_range: float = -1.0,
+	player_facing_fwd: Vector3 = Vector3.ZERO
 ) -> SurfaceLightObject:
 	var elev = _get_terrain_elevation(theta, z)
 	var custom_pos = Vector3.ZERO
@@ -380,6 +381,11 @@ func spawn_light_emitter(
 			custom_pos = pt_info.get("position", Vector3.ZERO)
 			elev = pt_info.get("elevation", elev)
 
-	var obj = SurfaceLightObject.create_on_cylinder(type, theta, z, cylinder_radius, elev, custom_col, custom_range, 0.0, Vector3.ZERO, custom_pos, -1, _get_model_path(type))
+	var player = get_tree().get_first_node_in_group("player") as Node3D
+	var facing = player_facing_fwd
+	if facing == Vector3.ZERO and player:
+		facing = -player.global_basis.z
+
+	var obj = SurfaceLightObject.create_on_cylinder(type, theta, z, cylinder_radius, elev, custom_col, custom_range, 0.0, Vector3.ZERO, custom_pos, -1, _get_model_path(type), facing)
 	add_child(obj)
 	return obj

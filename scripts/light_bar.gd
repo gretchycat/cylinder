@@ -637,4 +637,6 @@ func get_solar_status() -> Dictionary:
 
 func _map_color(key: String) -> Color:
 	var doc = preload("res://scripts/map_runtime.gd").document(self)
+	if doc.is_empty() or not doc.has("lighting_palette") or not doc.lighting_palette.has(key):
+		return Color.WHITE
 	return preload("res://scripts/map_config.gd").color(doc.lighting_palette[key])

@@ -1,518 +1,811 @@
 {
-  "version": "2.0.0",
-  "biomes": {
-    "grassland": {
-      "name": "Lush Grass Plains",
-      "description": "Rolling meadow pastures, pastoral turf, and wild clover fields",
-      "color": [60, 140, 42, 255],
-      "elevation_range": [20.0, 60.0],
-      "max_slope_deg": 25.0,
-      "allowed_adjacent_biomes": [
-        "flower_fields",
-        "young_forest",
-        "old_growth_forest",
-        "coastal_beach",
-        "riverbank_wetlands",
-        "rocky_fields"
-      ],
-      "ground_clutter": {
-        "clutter_types": ["grass_tuft", "wildflowers", "dandelion_tufts", "clover_patches"],
-        "clutter_density": 0.40,
-        "scale_range": [0.5, 1.5],
-        "wind_stiffness": 0.8
-      },
-      "default_objects": [
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 0,
-          "name": "Oak Tree",
-          "density_per_sq_km": 15.0,
-          "noise_threshold": 0.55,
-          "scale_range": [0.8, 1.3]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 2,
-          "name": "Birch Tree",
-          "density_per_sq_km": 8.0,
-          "noise_threshold": 0.65,
-          "scale_range": [0.7, 1.2]
-        },
-        {
-          "object_type_name": "BOULDER",
-          "name": "Field Boulder",
-          "density_per_sq_km": 4.0,
-          "scale_range": [0.5, 1.5]
-        },
-        {
-          "object_type_name": "CAMPFIRE",
-          "name": "Traveler Campfire",
-          "density_per_sq_km": 0.5,
-          "light_color": [1.0, 0.7, 0.3],
-          "light_range": 15.0,
-          "light_energy": 2.0
-        }
-      ]
-    },
-    "flower_fields": {
-      "name": "Wildflower Meadow",
-      "description": "Vibrant floral bloom pastures, lavender fields, and fragrant blossoms",
-      "color": [180, 70, 160, 255],
-      "elevation_range": [22.0, 50.0],
-      "max_slope_deg": 20.0,
-      "allowed_adjacent_biomes": [
-        "grassland",
-        "young_forest",
-        "riverbank_wetlands"
-      ],
-      "ground_clutter": {
-        "clutter_types": ["poppy_blooms", "lavender_tufts", "bluebell_clusters", "golden_buttercups"],
-        "clutter_density": 0.60,
-        "scale_range": [0.4, 1.6],
-        "wind_stiffness": 0.6
-      },
-      "default_objects": [
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 4,
-          "name": "Cherry Blossom Tree",
-          "density_per_sq_km": 12.0,
-          "noise_threshold": 0.50,
-          "scale_range": [0.8, 1.4]
-        },
-        {
-          "object_type_name": "BEACON_LANTERN",
-          "name": "Meadow Lantern",
-          "density_per_sq_km": 1.0,
-          "light_color": [0.9, 0.8, 1.0],
-          "light_range": 18.0,
-          "light_energy": 2.2
-        }
-      ]
-    },
-    "young_forest": {
-      "name": "Young Growth Woodlands",
-      "description": "Dense sunlit woodland canopy of young oak, birch, and saplings",
-      "color": [45, 115, 35, 255],
-      "elevation_range": [21.0, 65.0],
-      "max_slope_deg": 35.0,
-      "allowed_adjacent_biomes": [
-        "grassland",
-        "flower_fields",
-        "old_growth_forest",
-        "swamp",
-        "riverbank_wetlands",
-        "rocky_fields"
-      ],
-      "ground_clutter": {
-        "clutter_types": ["small_twigs", "wild_mushrooms", "sprouting_roots", "grass_tuft"],
-        "clutter_density": 0.35,
-        "scale_range": [0.4, 1.4],
-        "wind_stiffness": 0.85
-      },
-      "default_objects": [
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 0,
-          "name": "Young Oak",
-          "density_per_sq_km": 40.0,
-          "noise_threshold": 0.35,
-          "scale_range": [0.7, 1.2]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 2,
-          "name": "Young Birch",
-          "density_per_sq_km": 35.0,
-          "noise_threshold": 0.40,
-          "scale_range": [0.7, 1.2]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 1,
-          "name": "Young Pine",
-          "density_per_sq_km": 20.0,
-          "noise_threshold": 0.50,
-          "scale_range": [0.8, 1.3]
-        },
-        {
-          "object_type_name": "FALLEN_LOG",
-          "name": "Fallen Woodland Log",
-          "density_per_sq_km": 5.0,
-          "scale_range": [0.8, 1.5]
-        }
-      ]
-    },
-    "old_growth_forest": {
-      "name": "Ancient Old-Growth Forest",
-      "description": "Towering primeval forest canopy with massive trunks, moss, and deep shade",
-      "color": [25, 75, 25, 255],
-      "elevation_range": [22.0, 75.0],
-      "max_slope_deg": 40.0,
-      "allowed_adjacent_biomes": [
-        "young_forest",
-        "swamp",
-        "riverbank_wetlands",
-        "rocky_fields",
-        "mountain"
-      ],
-      "ground_clutter": {
-        "clutter_types": ["humus_leaves", "giant_ferns", "mossy_boulders", "rare_mushrooms", "sprouting_roots"],
-        "clutter_density": 0.50,
-        "scale_range": [0.6, 2.0],
-        "wind_stiffness": 0.95
-      },
-      "default_objects": [
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 10,
-          "name": "Ancient Giant Oak",
-          "density_per_sq_km": 60.0,
-          "noise_threshold": 0.25,
-          "scale_range": [1.0, 1.3]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 11,
-          "name": "Ancient Giant Pine",
-          "density_per_sq_km": 45.0,
-          "noise_threshold": 0.30,
-          "scale_range": [1.0, 1.3]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 12,
-          "name": "Ancient Giant Willow",
-          "density_per_sq_km": 20.0,
-          "noise_threshold": 0.45,
-          "scale_range": [1.0, 1.2]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 13,
-          "name": "Ancient Giant Birch",
-          "density_per_sq_km": 15.0,
-          "noise_threshold": 0.50,
-          "scale_range": [1.0, 1.2]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 5,
-          "name": "Standing Dead Tree",
-          "density_per_sq_km": 8.0,
-          "noise_threshold": 0.60,
-          "scale_range": [0.9, 1.5]
-        },
-        {
-          "object_type_name": "FALLEN_LOG",
-          "name": "Mossy Fallen Log",
-          "density_per_sq_km": 12.0,
-          "scale_range": [1.0, 2.0]
-        },
-        {
-          "object_type_name": "BONFIRE",
-          "name": "Forest Haven Bonfire",
-          "density_per_sq_km": 0.3,
-          "light_color": [1.0, 0.6, 0.2],
-          "light_range": 22.0,
-          "light_energy": 2.5
-        }
-      ]
-    },
-    "desert": {
-      "name": "Arid Dunes & Badlands",
-      "description": "Sun-scorched silica sand dunes, wind-blown arroyos, and desert badlands",
-      "color": [225, 190, 125, 255],
-      "elevation_range": [20.0, 80.0],
-      "max_slope_deg": 30.0,
-      "allowed_adjacent_biomes": [
-        "coastal_beach",
-        "rocky_fields",
-        "tundra_plateau"
-      ],
-      "ground_clutter": {
-        "clutter_types": ["dune_grass_shoots", "sandstone_shards", "quartz_pebbles", "arid_scrub"],
-        "clutter_density": 0.10,
-        "scale_range": [0.3, 1.1],
-        "wind_stiffness": 0.4
-      },
-      "default_objects": [
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 5,
-          "name": "Desert Dead Wood",
-          "density_per_sq_km": 3.0,
-          "noise_threshold": 0.70,
-          "scale_range": [0.6, 1.2]
-        },
-        {
-          "object_type_name": "BOULDER",
-          "name": "Sandstone Monolith",
-          "density_per_sq_km": 8.0,
-          "scale_range": [1.0, 3.0]
-        },
-        {
-          "object_type_name": "LAMP_POST",
-          "name": "Desert Trail Waymark",
-          "density_per_sq_km": 0.5,
-          "light_color": [1.0, 0.85, 0.5],
-          "light_range": 16.0,
-          "light_energy": 1.8
-        }
-      ]
-    },
-    "swamp": {
-      "name": "Marshland Wetlands",
-      "description": "Mire wetlands, peat bogs, stagnant bayous, and floating reeds",
-      "color": [55, 90, 65, 255],
-      "elevation_range": [15.0, 24.0],
-      "max_slope_deg": 12.0,
-      "allowed_adjacent_biomes": [
-        "riverbank_wetlands",
-        "old_growth_forest",
-        "young_forest",
-        "coastal_beach"
-      ],
-      "ground_clutter": {
-        "clutter_types": ["cattails", "water_lilies", "river_reeds", "swamp_moss", "mud_bubbles"],
-        "clutter_density": 0.55,
-        "scale_range": [0.4, 1.7],
-        "wind_stiffness": 0.5
-      },
-      "default_objects": [
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 3,
-          "name": "Swamp Willow",
-          "density_per_sq_km": 40.0,
-          "noise_threshold": 0.30,
-          "scale_range": [1.0, 1.7]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 5,
-          "name": "Submerged Dead Snag",
-          "density_per_sq_km": 15.0,
-          "noise_threshold": 0.50,
-          "scale_range": [0.8, 1.4]
-        },
-        {
-          "object_type_name": "REEDS",
-          "name": "Dense Cattail Patch",
-          "density_per_sq_km": 50.0,
-          "scale_range": [0.6, 1.5]
-        },
-        {
-          "object_type_name": "CAMPFIRE",
-          "name": "Bog Explorer Campfire",
-          "density_per_sq_km": 0.4,
-          "light_color": [0.4, 0.9, 0.6],
-          "light_range": 14.0,
-          "light_energy": 2.0
-        }
-      ]
-    },
-    "rocky_fields": {
-      "name": "Alpine Scree & Boulder Fields",
-      "description": "Rugged glacial moraine, shattered talus slopes, and high scree fields",
-      "color": [135, 130, 125, 255],
-      "elevation_range": [50.0, 85.0],
-      "max_slope_deg": 45.0,
-      "allowed_adjacent_biomes": [
-        "mountain",
-        "tundra_plateau",
-        "old_growth_forest",
-        "young_forest",
-        "grassland",
-        "desert"
-      ],
-      "ground_clutter": {
-        "clutter_types": ["alpine_gravel", "slate_shards", "lichen_stones", "weathered_crags"],
-        "clutter_density": 0.40,
-        "scale_range": [0.5, 2.2],
-        "wind_stiffness": 0.9
-      },
-      "default_objects": [
-        {
-          "object_type_name": "BOULDER",
-          "name": "Glacial Erratic Boulder",
-          "density_per_sq_km": 45.0,
-          "scale_range": [1.0, 3.5]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 1,
-          "name": "Stunted Alpine Pine",
-          "density_per_sq_km": 10.0,
-          "noise_threshold": 0.60,
-          "scale_range": [0.6, 1.1]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 5,
-          "name": "Weathered Dead Trunk",
-          "density_per_sq_km": 6.0,
-          "scale_range": [0.7, 1.3]
-        }
-      ]
-    },
-    "mountain": {
-      "name": "High Massif Crags & Peaks",
-      "description": "Super-high elevation rock massifs, ridge crests, and sheer granite precipices",
-      "color": [95, 100, 108, 255],
-      "elevation_range": [70.0, 100.0],
-      "max_slope_deg": 65.0,
-      "allowed_adjacent_biomes": [
-        "rocky_fields",
-        "tundra_plateau",
-        "old_growth_forest"
-      ],
-      "ground_clutter": {
-        "clutter_types": ["mountain_slate", "glacial_ice_patches", "high_altitude_scree"],
-        "clutter_density": 0.25,
-        "scale_range": [0.8, 3.0],
-        "wind_stiffness": 1.0
-      },
-      "default_objects": [
-        {
-          "object_type_name": "BOULDER",
-          "name": "Granite Massif Peak Rock",
-          "density_per_sq_km": 60.0,
-          "scale_range": [2.0, 5.0]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 1,
-          "name": "High Summit Pine",
-          "density_per_sq_km": 4.0,
-          "noise_threshold": 0.75,
-          "scale_range": [0.5, 0.9]
-        },
-        {
-          "object_type_name": "BEACON_LANTERN",
-          "name": "Peak Beacon Light",
-          "density_per_sq_km": 0.3,
-          "light_color": [1.0, 0.4, 0.1],
-          "light_range": 30.0,
-          "light_energy": 3.0
-        }
-      ]
-    },
-    "coastal_beach": {
-      "name": "Shoreline & Alluvial Sands",
-      "description": "Perimeter sea beaches, delta sandbars, and alluvial gravel banks",
-      "color": [235, 215, 160, 255],
-      "elevation_range": [18.0, 24.0],
-      "max_slope_deg": 15.0,
-      "allowed_adjacent_biomes": [
-        "grassland",
-        "swamp",
-        "riverbank_wetlands",
-        "desert",
-        "young_forest"
-      ],
-      "ground_clutter": {
-        "clutter_types": ["coastal_shells", "driftwood_twigs", "quartz_pebbles", "dune_grass_shoots"],
-        "clutter_density": 0.20,
-        "scale_range": [0.3, 1.2],
-        "wind_stiffness": 0.7
-      },
-      "default_objects": [
-        {
-          "object_type_name": "FALLEN_LOG",
-          "name": "Coastal Driftwood Log",
-          "density_per_sq_km": 8.0,
-          "scale_range": [0.7, 1.6]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 3,
-          "name": "Coastal Willow",
-          "density_per_sq_km": 6.0,
-          "noise_threshold": 0.65,
-          "scale_range": [0.8, 1.3]
-        }
-      ]
-    },
-    "riverbank_wetlands": {
-      "name": "Riverbank & Riparian Corridor",
-      "description": "Continuous riparian strip flanking major rivers and lake inlets",
-      "color": [45, 130, 110, 255],
-      "elevation_range": [16.0, 28.0],
-      "max_slope_deg": 18.0,
-      "allowed_adjacent_biomes": [
-        "grassland",
-        "swamp",
-        "young_forest",
-        "old_growth_forest",
-        "coastal_beach",
-        "flower_fields"
-      ],
-      "ground_clutter": {
-        "clutter_types": ["river_reeds", "water_lilies", "driftwood_logs", "river_pebbles"],
-        "clutter_density": 0.45,
-        "scale_range": [0.4, 1.5],
-        "wind_stiffness": 0.65
-      },
-      "default_objects": [
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 3,
-          "name": "Riparian Willow",
-          "density_per_sq_km": 30.0,
-          "noise_threshold": 0.35,
-          "scale_range": [0.9, 1.5]
-        },
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 2,
-          "name": "Riparian Birch",
-          "density_per_sq_km": 25.0,
-          "noise_threshold": 0.40,
-          "scale_range": [0.8, 1.4]
-        },
-        {
-          "object_type_name": "REEDS",
-          "name": "Riverbank Reeds",
-          "density_per_sq_km": 35.0,
-          "scale_range": [0.5, 1.3]
-        }
-      ]
-    },
-    "tundra_plateau": {
-      "name": "High Alpine Tundra & Plateau",
-      "description": "Cold high-altitude permafrost plateau with lichen, dwarf shrubs, and moss",
-      "color": [160, 175, 185, 255],
-      "elevation_range": [65.0, 90.0],
-      "max_slope_deg": 25.0,
-      "allowed_adjacent_biomes": [
-        "mountain",
-        "rocky_fields",
-        "desert",
-        "old_growth_forest"
-      ],
-      "ground_clutter": {
-        "clutter_types": ["tundra_moss", "permafrost_pebbles", "stunted_brush"],
-        "clutter_density": 0.30,
-        "scale_range": [0.3, 1.1],
-        "wind_stiffness": 0.95
-      },
-      "default_objects": [
-        {
-          "object_type_name": "TREE",
-          "tree_variant": 1,
-          "name": "Tundra Dwarf Pine",
-          "density_per_sq_km": 12.0,
-          "noise_threshold": 0.55,
-          "scale_range": [0.5, 0.9]
-        },
-        {
-          "object_type_name": "BOULDER",
-          "name": "Tundra Glacial Stone",
-          "density_per_sq_km": 25.0,
-          "scale_range": [0.8, 2.0]
-        }
-      ]
-    }
-  }
+	"version": "2.0.0",
+	"biomes": {
+		"grassland": {
+			"name": "Lush Grass Plains",
+			"description": "Rolling meadow pastures, pastoral turf, and wild clover fields",
+			"color": [
+				60,
+				140,
+				42,
+				255
+			],
+			"elevation_range": [
+				20.0,
+				60.0
+			],
+			"max_slope_deg": 25.0,
+			"allowed_adjacent_biomes": [
+				"flower_fields",
+				"young_forest",
+				"old_growth_forest",
+				"coastal_beach",
+				"riverbank_wetlands",
+				"rocky_fields"
+			],
+			"ground_clutter": {
+				"clutter_types": [
+					"grass_tuft",
+					"wildflowers",
+					"dandelion_tufts",
+					"clover_patches"
+				],
+				"clutter_density": 0.4,
+				"scale_range": [
+					0.5,
+					1.5
+				],
+				"wind_stiffness": 0.8
+			},
+			"default_objects": [
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 0,
+					"name": "Oak Tree",
+					"density_per_sq_km": 15.0,
+					"noise_threshold": 0.55,
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 2,
+					"name": "Birch Tree",
+					"density_per_sq_km": 8.0,
+					"noise_threshold": 0.65,
+					"scale_range": [
+						0.7,
+						1.2
+					]
+				},
+				{
+					"object_type_name": "BOULDER",
+					"name": "Field Boulder",
+					"density_per_sq_km": 4.0,
+					"scale_range": [
+						0.5,
+						1.5
+					]
+				},
+				{
+					"object_type_name": "CAMPFIRE",
+					"name": "Traveler Campfire",
+					"density_per_sq_km": 0.5,
+					"light_color": [
+						1.0,
+						0.7,
+						0.3
+					],
+					"light_range": 15.0,
+					"light_energy": 2.0
+				}
+			]
+		},
+		"flower_fields": {
+			"name": "Wildflower Meadow",
+			"description": "Vibrant floral bloom pastures, lavender fields, and fragrant blossoms",
+			"color": [
+				180,
+				70,
+				160,
+				255
+			],
+			"elevation_range": [
+				22.0,
+				50.0
+			],
+			"max_slope_deg": 20.0,
+			"allowed_adjacent_biomes": [
+				"grassland",
+				"young_forest",
+				"riverbank_wetlands"
+			],
+			"ground_clutter": {
+				"clutter_types": [
+					"poppy_blooms",
+					"lavender_tufts",
+					"bluebell_clusters",
+					"golden_buttercups"
+				],
+				"clutter_density": 0.6,
+				"scale_range": [
+					0.4,
+					1.6
+				],
+				"wind_stiffness": 0.6
+			},
+			"default_objects": [
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 4,
+					"name": "Cherry Blossom Tree",
+					"density_per_sq_km": 12.0,
+					"noise_threshold": 0.5,
+					"scale_range": [
+						0.8,
+						1.4
+					]
+				},
+				{
+					"object_type_name": "BEACON_LANTERN",
+					"name": "Meadow Lantern",
+					"density_per_sq_km": 1.0,
+					"light_color": [
+						0.9,
+						0.8,
+						1.0
+					],
+					"light_range": 18.0,
+					"light_energy": 2.2
+				}
+			]
+		},
+		"young_forest": {
+			"name": "Young Growth Woodlands",
+			"description": "Dense sunlit woodland canopy of young oak, birch, and saplings",
+			"color": [
+				45,
+				115,
+				35,
+				255
+			],
+			"elevation_range": [
+				21.0,
+				65.0
+			],
+			"max_slope_deg": 35.0,
+			"allowed_adjacent_biomes": [
+				"grassland",
+				"flower_fields",
+				"old_growth_forest",
+				"swamp",
+				"riverbank_wetlands",
+				"rocky_fields"
+			],
+			"ground_clutter": {
+				"clutter_types": [
+					"small_twigs",
+					"wild_mushrooms",
+					"sprouting_roots",
+					"grass_tuft"
+				],
+				"clutter_density": 0.35,
+				"scale_range": [
+					0.4,
+					1.4
+				],
+				"wind_stiffness": 0.85
+			},
+			"default_objects": [
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 0,
+					"name": "Young Oak",
+					"density_per_sq_km": 40.0,
+					"noise_threshold": 0.35,
+					"scale_range": [
+						0.7,
+						1.2
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 2,
+					"name": "Young Birch",
+					"density_per_sq_km": 35.0,
+					"noise_threshold": 0.4,
+					"scale_range": [
+						0.7,
+						1.2
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 1,
+					"name": "Young Pine",
+					"density_per_sq_km": 20.0,
+					"noise_threshold": 0.5,
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				},
+				{
+					"object_type_name": "FALLEN_LOG",
+					"name": "Fallen Woodland Log",
+					"density_per_sq_km": 5.0,
+					"scale_range": [
+						0.8,
+						1.5
+					]
+				}
+			]
+		},
+		"old_growth_forest": {
+			"name": "Ancient Old-Growth Forest",
+			"description": "Towering primeval forest canopy with massive trunks, moss, and deep shade",
+			"color": [
+				25,
+				75,
+				25,
+				255
+			],
+			"elevation_range": [
+				22.0,
+				75.0
+			],
+			"max_slope_deg": 40.0,
+			"allowed_adjacent_biomes": [
+				"young_forest",
+				"swamp",
+				"riverbank_wetlands",
+				"rocky_fields",
+				"mountain"
+			],
+			"ground_clutter": {
+				"clutter_types": [
+					"humus_leaves",
+					"giant_ferns",
+					"mossy_boulders",
+					"rare_mushrooms",
+					"sprouting_roots"
+				],
+				"clutter_density": 0.5,
+				"scale_range": [
+					0.6,
+					2.0
+				],
+				"wind_stiffness": 0.95
+			},
+			"default_objects": [
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 10,
+					"name": "Ancient Giant Oak",
+					"density_per_sq_km": 60.0,
+					"noise_threshold": 0.25,
+					"scale_range": [
+						1.0,
+						1.3
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 11,
+					"name": "Ancient Giant Pine",
+					"density_per_sq_km": 45.0,
+					"noise_threshold": 0.3,
+					"scale_range": [
+						1.0,
+						1.3
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 12,
+					"name": "Ancient Giant Willow",
+					"density_per_sq_km": 20.0,
+					"noise_threshold": 0.45,
+					"scale_range": [
+						1.0,
+						1.2
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 13,
+					"name": "Ancient Giant Birch",
+					"density_per_sq_km": 15.0,
+					"noise_threshold": 0.5,
+					"scale_range": [
+						1.0,
+						1.2
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 5,
+					"name": "Standing Dead Tree",
+					"density_per_sq_km": 8.0,
+					"noise_threshold": 0.6,
+					"scale_range": [
+						0.9,
+						1.5
+					]
+				},
+				{
+					"object_type_name": "FALLEN_LOG",
+					"name": "Mossy Fallen Log",
+					"density_per_sq_km": 12.0,
+					"scale_range": [
+						1.0,
+						2.0
+					]
+				},
+				{
+					"object_type_name": "BONFIRE",
+					"name": "Forest Haven Bonfire",
+					"density_per_sq_km": 0.3,
+					"light_color": [
+						1.0,
+						0.6,
+						0.2
+					],
+					"light_range": 22.0,
+					"light_energy": 2.5
+				}
+			]
+		},
+		"desert": {
+			"name": "Arid Dunes & Badlands",
+			"description": "Sun-scorched silica sand dunes, wind-blown arroyos, and desert badlands",
+			"color": [
+				225,
+				190,
+				125,
+				255
+			],
+			"elevation_range": [
+				20.0,
+				80.0
+			],
+			"max_slope_deg": 30.0,
+			"allowed_adjacent_biomes": [
+				"coastal_beach",
+				"rocky_fields",
+				"tundra_plateau"
+			],
+			"ground_clutter": {
+				"clutter_types": [
+					"dune_grass_shoots",
+					"sandstone_shards",
+					"quartz_pebbles",
+					"arid_scrub"
+				],
+				"clutter_density": 0.1,
+				"scale_range": [
+					0.3,
+					1.1
+				],
+				"wind_stiffness": 0.4
+			},
+			"default_objects": [
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 5,
+					"name": "Desert Dead Wood",
+					"density_per_sq_km": 3.0,
+					"noise_threshold": 0.7,
+					"scale_range": [
+						0.6,
+						1.2
+					]
+				},
+				{
+					"object_type_name": "BOULDER",
+					"name": "Sandstone Monolith",
+					"density_per_sq_km": 8.0,
+					"scale_range": [
+						1.0,
+						3.0
+					]
+				},
+				{
+					"object_type_name": "LAMP_POST",
+					"name": "Desert Trail Waymark",
+					"density_per_sq_km": 0.5,
+					"light_color": [
+						1.0,
+						0.85,
+						0.5
+					],
+					"light_range": 16.0,
+					"light_energy": 1.8
+				}
+			]
+		},
+		"swamp": {
+			"name": "Marshland Wetlands",
+			"description": "Mire wetlands, peat bogs, stagnant bayous, and floating reeds",
+			"color": [
+				55,
+				90,
+				65,
+				255
+			],
+			"elevation_range": [
+				15.0,
+				24.0
+			],
+			"max_slope_deg": 12.0,
+			"allowed_adjacent_biomes": [
+				"riverbank_wetlands",
+				"old_growth_forest",
+				"young_forest",
+				"coastal_beach"
+			],
+			"ground_clutter": {
+				"clutter_types": [
+					"cattails",
+					"water_lilies",
+					"river_reeds",
+					"swamp_moss",
+					"mud_bubbles"
+				],
+				"clutter_density": 0.55,
+				"scale_range": [
+					0.4,
+					1.7
+				],
+				"wind_stiffness": 0.5
+			},
+			"default_objects": [
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 3,
+					"name": "Swamp Willow",
+					"density_per_sq_km": 40.0,
+					"noise_threshold": 0.3,
+					"scale_range": [
+						1.0,
+						1.7
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 5,
+					"name": "Submerged Dead Snag",
+					"density_per_sq_km": 15.0,
+					"noise_threshold": 0.5,
+					"scale_range": [
+						0.8,
+						1.4
+					]
+				},
+				{
+					"object_type_name": "REEDS",
+					"name": "Dense Cattail Patch",
+					"density_per_sq_km": 50.0,
+					"scale_range": [
+						0.6,
+						1.5
+					]
+				},
+				{
+					"object_type_name": "CAMPFIRE",
+					"name": "Bog Explorer Campfire",
+					"density_per_sq_km": 0.4,
+					"light_color": [
+						0.4,
+						0.9,
+						0.6
+					],
+					"light_range": 14.0,
+					"light_energy": 2.0
+				}
+			]
+		},
+		"rocky_fields": {
+			"name": "Alpine Scree & Boulder Fields",
+			"description": "Rugged glacial moraine, shattered talus slopes, and high scree fields",
+			"color": [
+				135,
+				130,
+				125,
+				255
+			],
+			"elevation_range": [
+				50.0,
+				85.0
+			],
+			"max_slope_deg": 45.0,
+			"allowed_adjacent_biomes": [
+				"mountain",
+				"tundra_plateau",
+				"old_growth_forest",
+				"young_forest",
+				"grassland",
+				"desert"
+			],
+			"ground_clutter": {
+				"clutter_types": [
+					"alpine_gravel",
+					"slate_shards",
+					"lichen_stones",
+					"weathered_crags"
+				],
+				"clutter_density": 0.4,
+				"scale_range": [
+					0.5,
+					2.2
+				],
+				"wind_stiffness": 0.9
+			},
+			"default_objects": [
+				{
+					"object_type_name": "BOULDER",
+					"name": "Glacial Erratic Boulder",
+					"density_per_sq_km": 45.0,
+					"scale_range": [
+						1.0,
+						3.5
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 1,
+					"name": "Stunted Alpine Pine",
+					"density_per_sq_km": 10.0,
+					"noise_threshold": 0.6,
+					"scale_range": [
+						0.6,
+						1.1
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 5,
+					"name": "Weathered Dead Trunk",
+					"density_per_sq_km": 6.0,
+					"scale_range": [
+						0.7,
+						1.3
+					]
+				}
+			]
+		},
+		"mountain": {
+			"name": "High Massif Crags & Peaks",
+			"description": "Super-high elevation rock massifs, ridge crests, and sheer granite precipices",
+			"color": [
+				95,
+				100,
+				108,
+				255
+			],
+			"elevation_range": [
+				70.0,
+				100.0
+			],
+			"max_slope_deg": 65.0,
+			"allowed_adjacent_biomes": [
+				"rocky_fields",
+				"tundra_plateau",
+				"old_growth_forest"
+			],
+			"ground_clutter": {
+				"clutter_types": [
+					"mountain_slate",
+					"glacial_ice_patches",
+					"high_altitude_scree"
+				],
+				"clutter_density": 0.25,
+				"scale_range": [
+					0.8,
+					3.0
+				],
+				"wind_stiffness": 1.0
+			},
+			"default_objects": [
+				{
+					"object_type_name": "BOULDER",
+					"name": "Granite Massif Peak Rock",
+					"density_per_sq_km": 60.0,
+					"scale_range": [
+						2.0,
+						5.0
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 1,
+					"name": "High Summit Pine",
+					"density_per_sq_km": 4.0,
+					"noise_threshold": 0.75,
+					"scale_range": [
+						0.5,
+						0.9
+					]
+				},
+				{
+					"object_type_name": "BEACON_LANTERN",
+					"name": "Peak Beacon Light",
+					"density_per_sq_km": 0.3,
+					"light_color": [
+						1.0,
+						0.4,
+						0.1
+					],
+					"light_range": 30.0,
+					"light_energy": 3.0
+				}
+			]
+		},
+		"coastal_beach": {
+			"name": "Shoreline & Alluvial Sands",
+			"description": "Perimeter sea beaches, delta sandbars, and alluvial gravel banks",
+			"color": [
+				235,
+				215,
+				160,
+				255
+			],
+			"elevation_range": [
+				18.0,
+				24.0
+			],
+			"max_slope_deg": 15.0,
+			"allowed_adjacent_biomes": [
+				"grassland",
+				"swamp",
+				"riverbank_wetlands",
+				"desert",
+				"young_forest"
+			],
+			"ground_clutter": {
+				"clutter_types": [
+					"coastal_shells",
+					"driftwood_twigs",
+					"quartz_pebbles",
+					"dune_grass_shoots"
+				],
+				"clutter_density": 0.2,
+				"scale_range": [
+					0.3,
+					1.2
+				],
+				"wind_stiffness": 0.7
+			},
+			"default_objects": [
+				{
+					"object_type_name": "FALLEN_LOG",
+					"name": "Coastal Driftwood Log",
+					"density_per_sq_km": 8.0,
+					"scale_range": [
+						0.7,
+						1.6
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 3,
+					"name": "Coastal Willow",
+					"density_per_sq_km": 6.0,
+					"noise_threshold": 0.65,
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			]
+		},
+		"riverbank_wetlands": {
+			"name": "Riverbank & Riparian Corridor",
+			"description": "Continuous riparian strip flanking major rivers and lake inlets",
+			"color": [
+				45,
+				130,
+				110,
+				255
+			],
+			"elevation_range": [
+				16.0,
+				28.0
+			],
+			"max_slope_deg": 18.0,
+			"allowed_adjacent_biomes": [
+				"grassland",
+				"swamp",
+				"young_forest",
+				"old_growth_forest",
+				"coastal_beach",
+				"flower_fields"
+			],
+			"ground_clutter": {
+				"clutter_types": [
+					"river_reeds",
+					"water_lilies",
+					"driftwood_logs",
+					"river_pebbles"
+				],
+				"clutter_density": 0.45,
+				"scale_range": [
+					0.4,
+					1.5
+				],
+				"wind_stiffness": 0.65
+			},
+			"default_objects": [
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 3,
+					"name": "Riparian Willow",
+					"density_per_sq_km": 30.0,
+					"noise_threshold": 0.35,
+					"scale_range": [
+						0.9,
+						1.5
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 2,
+					"name": "Riparian Birch",
+					"density_per_sq_km": 25.0,
+					"noise_threshold": 0.4,
+					"scale_range": [
+						0.8,
+						1.4
+					]
+				},
+				{
+					"object_type_name": "REEDS",
+					"name": "Riverbank Reeds",
+					"density_per_sq_km": 35.0,
+					"scale_range": [
+						0.5,
+						1.3
+					]
+				}
+			]
+		},
+		"tundra_plateau": {
+			"name": "High Alpine Tundra & Plateau",
+			"description": "Cold high-altitude permafrost plateau with lichen, dwarf shrubs, and moss",
+			"color": [
+				160,
+				175,
+				185,
+				255
+			],
+			"elevation_range": [
+				65.0,
+				90.0
+			],
+			"max_slope_deg": 25.0,
+			"allowed_adjacent_biomes": [
+				"mountain",
+				"rocky_fields",
+				"desert",
+				"old_growth_forest"
+			],
+			"ground_clutter": {
+				"clutter_types": [
+					"tundra_moss",
+					"permafrost_pebbles",
+					"stunted_brush"
+				],
+				"clutter_density": 0.3,
+				"scale_range": [
+					0.3,
+					1.1
+				],
+				"wind_stiffness": 0.95
+			},
+			"default_objects": [
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 1,
+					"name": "Tundra Dwarf Pine",
+					"density_per_sq_km": 12.0,
+					"noise_threshold": 0.55,
+					"scale_range": [
+						0.5,
+						0.9
+					]
+				},
+				{
+					"object_type_name": "BOULDER",
+					"name": "Tundra Glacial Stone",
+					"density_per_sq_km": 25.0,
+					"scale_range": [
+						0.8,
+						2.0
+					]
+				}
+			]
+		}
+	}
 }

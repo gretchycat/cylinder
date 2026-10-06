@@ -202,26 +202,34 @@ cmd_run() {
     "$GODOT_BIN" scenes/main.tscn
 }
 
-cmd_test() {
-    check_godot
-    "$GODOT_BIN" --headless -s scripts/test_map_pipeline.gd
-    "$GODOT_BIN" --headless -s scripts/test_map_scene.gd
-    "$GODOT_BIN" --headless -s scripts/test_map_imports.gd
-    "$GODOT_BIN" --headless -s scripts/test_map_library.gd
-    echo "[TEST] Running touch controls, world editing, and save/reload tests..."
-    "$GODOT_BIN" --headless -s scripts/test_edit_controls.gd
-    echo "[TEST] Running automated test suite in headless mode..."
+run_test_step() {
+    local script="$1"
+    local timeout_sec="${2:-120s}"
     if command -v timeout >/dev/null 2>&1; then
-        timeout 75s "$GODOT_BIN" --headless -s scripts/test_simulation.gd
+        timeout "$timeout_sec" "$GODOT_BIN" --headless -s "$script"
         local exit_code=$?
         if [ $exit_code -eq 124 ]; then
-            echo "[ERROR] Test suite timed out after 75 seconds!"
+            echo "[ERROR] Test script '$script' timed out after $timeout_sec!"
             exit 124
+        elif [ $exit_code -ne 0 ]; then
+            echo "[ERROR] Test script '$script' failed with exit code $exit_code!"
+            exit $exit_code
         fi
-        return $exit_code
     else
-        "$GODOT_BIN" --headless -s scripts/test_simulation.gd
+        "$GODOT_BIN" --headless -s "$script"
     fi
+}
+
+cmd_test() {
+    check_godot
+    run_test_step "scripts/test_map_pipeline.gd"
+    run_test_step "scripts/test_map_scene.gd"
+    run_test_step "scripts/test_map_imports.gd"
+    run_test_step "scripts/test_map_library.gd"
+    echo "[TEST] Running touch controls, world editing, and save/reload tests..."
+    run_test_step "scripts/test_edit_controls.gd"
+    echo "[TEST] Running automated test suite in headless mode..."
+    run_test_step "scripts/test_simulation.gd"
 }
 
 cmd_android() {

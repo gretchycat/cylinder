@@ -5,7 +5,7 @@ uniform sampler2D terrain_map : filter_nearest, repeat_enable;
 uniform vec2 terrain_map_size;
 uniform sampler2DArray biome_textures : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D biome_tints : source_color, filter_nearest, repeat_disable;
-// R = texture array layer, G = repeat size in metres, B = roughness.
+// R = texture array layer, G = repeat size in metres, B = roughness, A = biome blending enabled.
 uniform sampler2D biome_parameters : filter_nearest, repeat_disable;
 uniform sampler2D tex_end_cap_ribs : source_color, filter_linear_mipmap_anisotropic;
 uniform vec4 end_cap_tint : source_color;
@@ -23,8 +23,73 @@ uniform float axial_light_enabled = 1.0;
 uniform float endcap_emission_factor = 1.0;
 uniform float cloud_coverage;
 uniform float cloud_thickness;
+uniform float biome_blend_width_m;
 varying vec3 world_pos;
 varying float end_cap;
+
+float terrain_biome_id(vec2 cell) {
+	vec2 wrapped_cell = vec2(mod(cell.x, terrain_map_size.x), clamp(cell.y, 0.0, terrain_map_size.y - 1.0));
+	return round(texture(terrain_map, (wrapped_cell + 0.5) / terrain_map_size).r * 255.0);
+}
+
+vec2 hash22(vec2 p) {
+	vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+vec3 sample_tile_variant(sampler2DArray tex_array, float layer, vec2 tile_pos, vec2 local_f, float biome_id) {
+	vec2 h = hash22(tile_pos + vec2(biome_id * 17.13, biome_id * 31.71));
+	vec2 f = local_f;
+
+	if (h.x > 0.5) f.x = -f.x;
+	if (h.y > 0.5) f.y = -f.y;
+
+	float r = floor(h.x * 4.0);
+	if (r == 1.0) {
+		f = vec2(f.y, -f.x);
+	} else if (r == 2.0) {
+		f = vec2(-f.x, -f.y);
+	} else if (r == 3.0) {
+		f = vec2(-f.y, f.x);
+	}
+
+	vec2 final_uv = tile_pos + f + h;
+	return texture(tex_array, vec3(final_uv, layer)).rgb;
+}
+
+vec3 stochastic_biome_texture(sampler2DArray tex_array, float layer, vec2 uv, float biome_id) {
+	vec2 p = floor(uv);
+	vec2 f = fract(uv);
+	vec2 w = smoothstep(0.2, 0.8, f);
+
+	vec3 col00 = sample_tile_variant(tex_array, layer, p, f, biome_id);
+	vec3 col10 = sample_tile_variant(tex_array, layer, p + vec2(1.0, 0.0), f - vec2(1.0, 0.0), biome_id);
+	vec3 col01 = sample_tile_variant(tex_array, layer, p + vec2(0.0, 1.0), f - vec2(0.0, 1.0), biome_id);
+	vec3 col11 = sample_tile_variant(tex_array, layer, p + vec2(1.0, 1.0), f - vec2(1.0, 1.0), biome_id);
+
+	return mix(mix(col00, col10, w.x), mix(col01, col11, w.x), w.y);
+}
+
+vec4 terrain_biome_surface(float id, float u, float z) {
+	vec2 table_uv = vec2((id + 0.5) / 256.0, 0.5);
+	vec4 parameters = texture(biome_parameters, table_uv);
+	vec4 tint = texture(biome_tints, table_uv);
+	float repeats = max(round(TAU * cylinder_radius / parameters.g), 1.0);
+	vec2 uv = vec2(u * repeats, z / parameters.g);
+
+	vec3 tex;
+	if (parameters.a > 0.75) {
+		// Natural ground texture: stochastic pseudo-random rotation, flipping, and offset blending to eliminate tiling repetition and moiré
+		tex = stochastic_biome_texture(biome_textures, parameters.r, uv, id);
+	} else {
+		// Structural / non-blending texture (concrete/farmland) or rotation disabled: standard linear UV mapping
+		tex = texture(biome_textures, vec3(uv, parameters.r)).rgb;
+	}
+
+	return vec4(mix(tex, tex * tint.rgb, tint.a), parameters.b);
+}
+
 
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -42,17 +107,64 @@ void fragment() {
 		albedo = mix(tex, tex * end_cap_tint.rgb, end_cap_tint.a);
 		roughness_value = 0.9;
 	} else {
-		// Same nearest-sample convention as TerrainManager, clamp axial edges.
-		vec2 cell = vec2(mod(floor(u * terrain_map_size.x + 0.5), terrain_map_size.x), floor(v * (terrain_map_size.y - 1.0) + 0.5));
-		float id = round(texture(terrain_map, (cell + 0.5) / terrain_map_size).r * 255.0);
-		vec2 table_uv = vec2((id + 0.5) / 256.0, 0.5);
-		vec4 parameters = texture(biome_parameters, table_uv);
-		vec4 tint = texture(biome_tints, table_uv);
-		float repeats = max(round(TAU * cylinder_radius / parameters.g), 1.0);
-		vec2 uv = vec2(u * repeats, world_pos.z / parameters.g);
-		vec3 tex = texture(biome_textures, vec3(uv, parameters.r)).rgb;
-		albedo = mix(tex, tex * tint.rgb, tint.a);
-		roughness_value = parameters.b;
+		// Nearest-sampled biome ownership with continuous splat blending.
+		// Non-blending biomes (e.g. concrete/farmland) render 100% solid, and adjacent
+		// blending biomes substitute non-blending neighbor samples with their own ID
+		// so textures remain 100% pure right up to non-blending boundaries.
+		vec2 grid = vec2(u * terrain_map_size.x, v * (terrain_map_size.y - 1.0));
+		vec2 nearest_cell = floor(grid + 0.5);
+		float nearest_id = terrain_biome_id(nearest_cell);
+		vec4 nearest_params = texture(biome_parameters, vec2((nearest_id + 0.5) / 256.0, 0.5));
+
+		if (nearest_params.a <= 0.25) {
+			// Non-blending biome pixel (e.g. concrete or farmland): 100% solid surface
+			vec4 surface = terrain_biome_surface(nearest_id, u, world_pos.z);
+			albedo = surface.rgb;
+			roughness_value = surface.a;
+		} else {
+			// Blending biome pixel (e.g. dirt, grass, sand): interpolate smoothly across grid corners
+			vec2 cell0 = floor(grid);
+			vec2 f = grid - cell0;
+
+			vec2 cell00 = cell0;
+			vec2 cell10 = cell0 + vec2(1.0, 0.0);
+			vec2 cell01 = cell0 + vec2(0.0, 1.0);
+			vec2 cell11 = cell0 + vec2(1.0, 1.0);
+
+			float raw_id00 = terrain_biome_id(cell00);
+			float raw_id10 = terrain_biome_id(cell10);
+			float raw_id01 = terrain_biome_id(cell01);
+			float raw_id11 = terrain_biome_id(cell11);
+
+			vec4 p00 = texture(biome_parameters, vec2((raw_id00 + 0.5) / 256.0, 0.5));
+			vec4 p10 = texture(biome_parameters, vec2((raw_id10 + 0.5) / 256.0, 0.5));
+			vec4 p01 = texture(biome_parameters, vec2((raw_id01 + 0.5) / 256.0, 0.5));
+			vec4 p11 = texture(biome_parameters, vec2((raw_id11 + 0.5) / 256.0, 0.5));
+
+			// Substitute non-blending neighbors with nearest_id
+			float id00 = (p00.a > 0.25) ? raw_id00 : nearest_id;
+			float id10 = (p10.a > 0.25) ? raw_id10 : nearest_id;
+			float id01 = (p01.a > 0.25) ? raw_id01 : nearest_id;
+			float id11 = (p11.a > 0.25) ? raw_id11 : nearest_id;
+
+
+			float sx = smoothstep(0.0, 1.0, f.x);
+			float sy = smoothstep(0.0, 1.0, f.y);
+
+			float w00 = (1.0 - sx) * (1.0 - sy);
+			float w10 = sx * (1.0 - sy);
+			float w01 = (1.0 - sx) * sy;
+			float w11 = sx * sy;
+
+			vec4 surf00 = terrain_biome_surface(id00, u, world_pos.z);
+			vec4 surf10 = terrain_biome_surface(id10, u, world_pos.z);
+			vec4 surf01 = terrain_biome_surface(id01, u, world_pos.z);
+			vec4 surf11 = terrain_biome_surface(id11, u, world_pos.z);
+
+			vec4 surface = surf00 * w00 + surf10 * w10 + surf01 * w01 + surf11 * w11;
+			albedo = surface.rgb;
+			roughness_value = surface.a;
+		}
 	}
 	float distance_m = length(world_pos - CAMERA_POSITION_WORLD);
 	vec3 fog_color = air_color.rgb;
