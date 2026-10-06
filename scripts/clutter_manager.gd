@@ -304,10 +304,16 @@ func _build_chunk(cx: int, cz: int, _num_chunks_x: int, radius_m: float, length_
 					var var_r := rng.randf_range(0.95, 1.05) * var_brightness
 					var var_g := rng.randf_range(0.95, 1.05) * var_brightness
 					var var_b := rng.randf_range(0.95, 1.05) * var_brightness
+					var b_name: String = str(biome.get("name", "")).to_lower()
+					var is_forest: bool = ("forest" in b_name) or ("woodland" in b_name) or ("rainforest" in b_name) or ("jungle" in b_name) or ("taiga" in b_name)
+					if is_forest:
+						var_g *= 1.25
+						var_r *= 0.88
+						var_b *= 0.88
 					if ("shrub" in model_name) or ("bush" in model_name):
-						var_g *= 1.18
-						var_r *= 0.92
-						var_b *= 0.92
+						var_g *= 1.22
+						var_r *= 0.90
+						var_b *= 0.90
 					final_col = Color(
 						clampf(tex_avg.r * b_tint.r * var_r, 0.0, 1.0),
 						clampf(tex_avg.g * b_tint.g * var_g, 0.0, 1.0),
