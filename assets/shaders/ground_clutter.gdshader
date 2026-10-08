@@ -23,6 +23,9 @@ uniform vec4 air_color : source_color = vec4(0.52, 0.72, 0.88, 1.0);
 uniform float air_density : hint_range(0.0, 3.0) = 1.0;
 uniform float air_distance_min = 200.0;
 uniform float air_distance_max = 18000.0;
+uniform float cylinder_length = 18000.0;
+uniform sampler2D axial_light_lut : hint_default_white, filter_linear, repeat_disable;
+uniform float axial_light_enabled = 1.0;
 
 varying vec3 v_world_pos;
 varying float v_dist_fade;
@@ -123,10 +126,15 @@ void fragment() {
 		col = mix(col, deep_water_fog, water_fog * 0.94);
 		col = mix(col, deep_water_color.rgb, 0.25);
 	} else {
-		// Atmospheric aerial distance perspective: harmonize with terrain depth haze
-		float air_factor = clamp((cam_dist - air_distance_min) / max(air_distance_max - air_distance_min, 1.0), 0.0, 1.0);
-		float air_scatter = 1.0 - exp(-air_factor * 1.8);
-		col = mix(col, air_color.rgb, air_scatter * air_density * 0.5);
+		// Atmospheric aerial distance perspective: exact match with terrain depth haze
+		vec3 fog_color = air_color.rgb;
+		if (axial_light_enabled > 0.5) {
+			float v_coord = clamp(v_world_pos.z / cylinder_length + 0.5, 0.0, 1.0);
+			vec4 light = texture(axial_light_lut, vec2(v_coord, 0.5));
+			fog_color *= light.rgb * clamp(light.a, 0.0, 1.5);
+		}
+		float fog = clamp((1.0 - exp(-max(cam_dist - air_distance_min, 0.0) / max(air_distance_max - air_distance_min, 1.0) * 2.8)) * air_density, 0.0, 1.0);
+		col = mix(col, fog_color, fog);
 	}
 
 	ALBEDO = col;

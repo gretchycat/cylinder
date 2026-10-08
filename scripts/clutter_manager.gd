@@ -24,6 +24,7 @@ var parts_lod1: Dictionary = {}
 var update_timer: float = 0
 
 func _ready() -> void:
+	add_to_group("clutter_manager")
 	reload_clutter()
 
 var _texture_avg_cache: Dictionary = {}
@@ -126,6 +127,7 @@ func _collect_parts(node: Node, parent: Transform3D, definition: Dictionary, out
 			shader.set_shader_parameter("air_distance_min", cylinder_world.air_distance_min)
 			shader.set_shader_parameter("air_distance_max", cylinder_world.air_distance_max)
 			shader.set_shader_parameter("cylinder_radius", cylinder_world.radius)
+			shader.set_shader_parameter("cylinder_length", cylinder_world.cylinder_length)
 			shader.set_shader_parameter("water_level", cylinder_world.water_level)
 			shader.set_shader_parameter("deep_water_color", Config.color(map_config.environment.water.deep_color))
 			material = shader
@@ -152,10 +154,24 @@ func _clear_all_chunks() -> void:
 	last_update_pos = Vector3(INF, INF, INF)
 
 func _update_material_world_parameters() -> void:
+	if not cylinder_world:
+		return
 	for model in parts.values():
 		for part in model:
 			if part.material is ShaderMaterial:
 				part.material.set_shader_parameter("max_distance", _effective_draw_distance())
+				part.material.set_shader_parameter("air_color", cylinder_world.air_color)
+				part.material.set_shader_parameter("air_density", cylinder_world.air_density)
+				part.material.set_shader_parameter("air_distance_min", cylinder_world.air_distance_min)
+				part.material.set_shader_parameter("air_distance_max", cylinder_world.air_distance_max)
+				part.material.set_shader_parameter("cylinder_length", cylinder_world.cylinder_length)
+
+func update_lut(texture: Texture2D, bar_len: float) -> void:
+	for model in parts.values():
+		for part in model:
+			if part.material is ShaderMaterial:
+				part.material.set_shader_parameter("axial_light_lut", texture)
+				part.material.set_shader_parameter("cylinder_length", bar_len)
 
 func _process(delta: float) -> void:
 	if not enabled or not cylinder_world or map_config.is_empty():

@@ -202,6 +202,7 @@ func apply_environment() -> void:
 		env.fog_light_color = MapConfigClass.color(values.air_color)
 		env.fog_depth_begin = values.air_distance_min
 		env.fog_depth_end = values.air_distance_max
+		env.fog_depth_curve = 1.1
 
 func get_elevation_at(theta: float, z: float) -> float:
 	if not terrain_manager:

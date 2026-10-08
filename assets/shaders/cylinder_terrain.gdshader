@@ -180,15 +180,28 @@ void fragment() {
 		roughness_value = surface.a;
 	}
 	float distance_m = length(world_pos - CAMERA_POSITION_WORLD);
-	vec3 fog_color = air_color.rgb;
-	if (axial_light_enabled > 0.5) {
-		vec4 light = texture(axial_light_lut, vec2(v, 0.5));
-		fog_color *= light.rgb * clamp(light.a, 0.0, 1.5);
+	float cam_r = length(CAMERA_POSITION_WORLD.xy);
+	float water_r = cylinder_radius - water_level;
+	bool is_camera_underwater = (cam_r > water_r);
+
+	if (is_camera_underwater) {
+		// Water column depth attenuation and aquatic blue/cyan optical fog when camera is submerged
+		float water_visibility = 180.0;
+		float water_fog = 1.0 - exp(-distance_m / water_visibility);
+		vec3 deep_water_fog = deep_water_color.rgb;
+		vec3 underwater_albedo = mix(albedo, deep_water_fog, water_fog * 0.94);
+		albedo = mix(underwater_albedo, deep_water_color.rgb, 0.25);
+	} else {
+		// Atmospheric aerial distance perspective in air
+		vec3 fog_color = air_color.rgb;
+		if (axial_light_enabled > 0.5) {
+			vec4 light = texture(axial_light_lut, vec2(v, 0.5));
+			fog_color *= light.rgb * clamp(light.a, 0.0, 1.5);
+		}
+		float fog = clamp((1.0 - exp(-max(distance_m - air_distance_min, 0.0) / max(air_distance_max - air_distance_min, 1.0) * 2.8)) * air_density, 0.0, 1.0);
+		albedo = mix(albedo, fog_color, fog);
 	}
-	float fog = clamp((1.0 - exp(-max(distance_m - air_distance_min, 0.0) / max(air_distance_max - air_distance_min, 1.0) * 2.8)) * air_density, 0.0, 1.0);
-	if (length(CAMERA_POSITION_WORLD.xy) > cylinder_radius - water_level) {
-		fog_color = deep_water_color.rgb;
-	}
-	ALBEDO = mix(albedo, fog_color, fog);
+
+	ALBEDO = albedo;
 	ROUGHNESS = roughness_value;
 }

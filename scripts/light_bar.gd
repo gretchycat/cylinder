@@ -489,6 +489,9 @@ func _apply_lut_to_materials() -> void:
 		if cylinder_world.water_material is ShaderMaterial:
 			cylinder_world.water_material.set_shader_parameter("axial_light_lut", lut_texture)
 			cylinder_world.water_material.set_shader_parameter("cylinder_length", bar_length)
+	var clutter_mgr = get_tree().get_first_node_in_group("clutter_manager")
+	if clutter_mgr and clutter_mgr.has_method("update_lut"):
+		clutter_mgr.call("update_lut", lut_texture, bar_length)
 
 func _get_camera_z() -> float:
 	if not is_inside_tree():
@@ -562,6 +565,7 @@ func _sync_fog_and_atmosphere() -> void:
 		env.fog_light_energy = fog_energy
 		env.fog_depth_curve = 1.1
 		env.fog_depth_begin = cylinder_world.active_map_config.environment.air_distance_min if cylinder_world else env.fog_depth_begin
+		env.fog_depth_end = cylinder_world.active_map_config.environment.air_distance_max if cylinder_world else env.fog_depth_end
 		# Update end‑cap emission based on scene brightness
 		if cylinder_world and cylinder_world.surface_material is ShaderMaterial:
 			cylinder_world.surface_material.set_shader_parameter("endcap_emission_factor", intensity_norm)
