@@ -1,0 +1,74 @@
+{
+	"id": "desert",
+	"name": "Arid Dunes & Badlands",
+	"description": "Sun-scorched silica sand dunes, wind-blown arroyos, and desert badlands",
+	"type": "terrain",
+	"raster_id": 5.0,
+	"color": [
+		225,
+		190,
+		125,
+		255
+	],
+	"weight": 0.04,
+	"environmental_values": {
+		"temperature": 0.8,
+		"moisture": 0.15,
+		"elevation_range_m": [
+			20.0,
+			80.0
+		],
+		"max_slope_deg": 30.0,
+		"submerged": false
+	},
+	"terrain_material": {
+		"texture": "res://assets/textures/terrain/desert_dunes.png",
+		"texture_size_m": 4.0,
+		"roughness": 0.9,
+		"tint": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"blended": true
+	},
+	"allowed_adjacent_biomes": [
+		"coastal_beach",
+		"rocky_fields",
+		"tundra_plateau"
+	],
+	"objects": [
+		{
+			"asset": "tree_5",
+			"density_per_sq_km": 36.0,
+			"scale_range": [
+				1.0,
+				4.0
+			]
+		}
+	],
+	"clutter": [
+		{
+			"density_per_m2": 0.003,
+			"model": "pebbles",
+			"palette": [
+				[
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				]
+			],
+			"scale_range": [
+				0.8,
+				1.3
+			]
+		}
+	],
+	"poi_settings": {
+		"add_to_poi_list": false,
+		"poi_type": "desert",
+		"poi_name_prefix": "Arid Dunes & Badlands"
+	}
+}

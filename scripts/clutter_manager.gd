@@ -295,7 +295,9 @@ func _build_chunk(cx: int, cz: int, _num_chunks_x: int, radius_m: float, length_
 				var right = up.cross(forward).normalized()
 				var basis = Basis(right, up, right.cross(up)).orthonormalized().rotated(up, rng.randf() * TAU)
 				var scale_value = rng.randf_range(rule.scale_range[0], rule.scale_range[1])
-				transforms.append(Transform3D(basis.scaled(Vector3.ONE * scale_value), point.position))
+				# Embed clutter 0.05m along -up normal into terrain surface mesh so grass/pebbles are firmly rooted
+				var clutter_pos = point.position - up * 0.05
+				transforms.append(Transform3D(basis.scaled(Vector3.ONE * scale_value), clutter_pos))
 
 				var b_tint: Color = Config.color(biome.tint)
 				var final_col: Color

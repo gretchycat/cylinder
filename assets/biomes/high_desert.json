@@ -1,0 +1,44 @@
+{
+	"id": "high_desert",
+	"name": "High Desert",
+	"description": "High_Desert biome",
+	"type": "terrain",
+	"raster_id": 16.0,
+	"color": [
+		100,
+		150,
+		100,
+		255
+	],
+	"weight": 0.0,
+	"environmental_values": {
+		"temperature": 0.5,
+		"moisture": 0.5,
+		"elevation_range_m": [
+			0.0,
+			100.0
+		],
+		"max_slope_deg": 45.0,
+		"submerged": false
+	},
+	"terrain_material": {
+		"texture": "res://assets/textures/terrain/high_desert.png",
+		"texture_size_m": 20.0,
+		"roughness": 0.85,
+		"tint": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"blended": true
+	},
+	"allowed_adjacent_biomes": [],
+	"objects": [],
+	"clutter": [],
+	"poi_settings": {
+		"add_to_poi_list": false,
+		"poi_type": "high_desert",
+		"poi_name_prefix": "High Desert"
+	}
+}

@@ -1,0 +1,44 @@
+{
+	"id": "waterbed",
+	"name": "Waterbed",
+	"description": "Waterbed biome",
+	"type": "terrain",
+	"raster_id": 0.0,
+	"color": [
+		100,
+		150,
+		100,
+		255
+	],
+	"weight": 0.18,
+	"environmental_values": {
+		"temperature": 0.5,
+		"moisture": 0.5,
+		"elevation_range_m": [
+			0.0,
+			20.0
+		],
+		"max_slope_deg": 90.0,
+		"submerged": true
+	},
+	"terrain_material": {
+		"texture": "res://assets/textures/terrain/sand_dunes.png",
+		"texture_size_m": 4.0,
+		"roughness": 0.9,
+		"tint": [
+			0.6,
+			0.65,
+			0.7,
+			1.0
+		],
+		"blended": true
+	},
+	"allowed_adjacent_biomes": [],
+	"objects": [],
+	"clutter": [],
+	"poi_settings": {
+		"add_to_poi_list": false,
+		"poi_type": "waterbed",
+		"poi_name_prefix": "Waterbed"
+	}
+}

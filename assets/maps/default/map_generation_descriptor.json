@@ -1,8 +1,8 @@
 {
-  "descriptor_version": "1.0.0",
+  "descriptor_version": "2.0.0",
   "map_name": "default_procedural",
-  "display_name": "O'Neill Cylinder Procedural World",
-  "description": "Map generation descriptor defining biome proportions, elevation profiles, hydrology rules, and natural object placement parameters.",
+  "display_name": "O'Neill Cylinder Modular Procedural World",
+  "description": "Advanced map generation descriptor linking modular biome JSON files, primary/filler coverage ratios, meta biomes, geometric artificial biomes, path biomes, and POI registry.",
   "author": "Habitat Architecture Systems",
   "geometry": {
     "cylinder_radius_m": 4000.0,
@@ -17,75 +17,147 @@
     "terrain_width": 512,
     "terrain_height": 256
   },
-  "biome_proportions": {
-    "grassland": 0.20,
-    "flower_fields": 0.10,
-    "young_forest": 0.15,
-    "old_growth_forest": 0.15,
-    "swamp": 0.08,
-    "riverbank_wetlands": 0.05,
-    "coastal_beach": 0.05,
-    "rocky_fields": 0.08,
-    "mountain": 0.08,
-    "desert": 0.04,
-    "tundra_plateau": 0.02
-  },
-  "elevation_profile": {
-    "water_sea_level_m": 20.0,
-    "max_elevation_m": 100.0,
-    "water_area_ratio": 0.18,
-    "lowland_area_ratio": 0.45,
-    "highland_area_ratio": 0.25,
-    "mountain_area_ratio": 0.12,
-    "noise": {
-      "frequency": 0.005,
-      "octaves": 5,
-      "persistence": 0.5,
-      "lacunarity": 2.0
+  "biomes": [
+    {
+      "biome_file": "res://assets/biomes/grassland.json",
+      "target_percentage": 20.0,
+      "variance_percent": 4.0,
+      "role": "primary"
     },
-    "massifs": [
-      {
-        "name": "South Alpine Massif",
-        "u": 0.18,
-        "v": 0.82,
-        "peak_elevation_m": 96.0,
-        "radius": 0.15
-      },
-      {
-        "name": "North Alpine Massif",
-        "u": 0.82,
-        "v": 0.18,
-        "peak_elevation_m": 98.0,
-        "radius": 0.15
-      }
-    ]
-  },
-  "hydrology_profile": {
-    "central_sea_enabled": true,
-    "central_sea_v_center": 0.5,
-    "central_sea_v_width": 0.14,
-    "central_sea_depth_m": 18.0,
-    "inland_lakes": [
-      {
-        "name": "Inland Freshwater Lake",
-        "u_center": 0.35,
-        "v_center": 0.22,
-        "depth_m": 9.0,
-        "radius": 0.08
-      }
-    ],
-    "rivers": [
-      {
-        "name": "Grand Trunk River",
-        "start": "Inland Lake",
-        "end": "Central Sea",
-        "guaranteed_channel_depth_m": 7.0
-      }
-    ]
-  },
-  "settlement_profile": {
-    "city_centers_count": 1,
-    "villages_count": 10,
-    "connect_roads": true
+    {
+      "biome_file": "res://assets/biomes/flower_fields.json",
+      "target_percentage": 10.0,
+      "variance_percent": 2.0,
+      "role": "primary"
+    },
+    {
+      "biome_file": "res://assets/biomes/young_forest.json",
+      "target_percentage": 15.0,
+      "variance_percent": 3.0,
+      "role": "primary"
+    },
+    {
+      "biome_file": "res://assets/biomes/old_growth_forest.json",
+      "target_percentage": 15.0,
+      "variance_percent": 3.0,
+      "role": "primary"
+    },
+    {
+      "biome_file": "res://assets/biomes/mountain.json",
+      "target_percentage": 8.0,
+      "variance_percent": 2.0,
+      "role": "primary"
+    },
+    {
+      "biome_file": "res://assets/biomes/forest_undergrowth.json",
+      "target_percentage": 10.0,
+      "variance_percent": 2.0,
+      "role": "filler"
+    },
+    {
+      "biome_file": "res://assets/biomes/swamp.json",
+      "target_percentage": 6.0,
+      "variance_percent": 1.5,
+      "role": "filler"
+    },
+    {
+      "biome_file": "res://assets/biomes/riverbank_wetlands.json",
+      "target_percentage": 5.0,
+      "variance_percent": 1.0,
+      "role": "filler"
+    },
+    {
+      "biome_file": "res://assets/biomes/coastal_beach.json",
+      "target_percentage": 4.0,
+      "variance_percent": 1.0,
+      "role": "filler"
+    },
+    {
+      "biome_file": "res://assets/biomes/rocky_fields.json",
+      "target_percentage": 5.0,
+      "variance_percent": 1.0,
+      "role": "filler"
+    },
+    {
+      "biome_file": "res://assets/biomes/tundra_plateau.json",
+      "target_percentage": 2.0,
+      "variance_percent": 0.5,
+      "role": "filler"
+    }
+  ],
+  "meta_biomes": [
+    {
+      "biome_file": "res://assets/biomes/lake.json",
+      "condition": "submerged_inland_lake",
+      "add_to_poi_list": true,
+      "poi_name": "Inland Freshwater Lake",
+      "poi_type": "lake"
+    },
+    {
+      "biome_file": "res://assets/biomes/river.json",
+      "condition": "river_channels",
+      "add_to_poi_list": true,
+      "poi_name": "Grand Trunk River",
+      "poi_type": "river"
+    },
+    {
+      "biome_file": "res://assets/biomes/waterbed.json",
+      "condition": "central_sea_bed",
+      "add_to_poi_list": true,
+      "poi_name": "Central Basin Sea",
+      "poi_type": "sea"
+    }
+  ],
+  "artificial_biomes": [
+    {
+      "biome_file": "res://assets/biomes/village.json",
+      "shape": "circle",
+      "area_km2": 0.25,
+      "radius_m": 282.0,
+      "center_u_frac": 0.5,
+      "center_v_frac": 0.4,
+      "add_to_poi_list": true,
+      "poi_name": "Central Colony Village",
+      "poi_type": "village_center"
+    },
+    {
+      "biome_file": "res://assets/biomes/farmland.json",
+      "shape": "rectangle",
+      "width_m": 600.0,
+      "length_m": 400.0,
+      "center_u_frac": 0.3,
+      "center_v_frac": 0.6,
+      "rotation_deg": 15.0,
+      "add_to_poi_list": true,
+      "poi_name": "Agricultural District",
+      "poi_type": "farmland"
+    },
+    {
+      "biome_file": "res://assets/biomes/dirt.json",
+      "shape": "square",
+      "size_m": 250.0,
+      "center_u_frac": 0.7,
+      "center_v_frac": 0.3,
+      "rotation_deg": 0.0,
+      "add_to_poi_list": true,
+      "poi_name": "Excavation Outpost",
+      "poi_type": "outpost"
+    }
+  ],
+  "path_biomes": [
+    {
+      "biome_file": "res://assets/biomes/cobblestone_path.json",
+      "width_m": 12.0,
+      "connect_pois": [
+        "Central Colony Village",
+        "Agricultural District",
+        "Excavation Outpost"
+      ],
+      "add_to_poi_list": false
+    }
+  ],
+  "points_of_interest": {
+    "generate_manifest": true,
+    "output_filename": "pois.json"
   }
 }

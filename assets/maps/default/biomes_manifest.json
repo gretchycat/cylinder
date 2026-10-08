@@ -42,7 +42,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 0,
 					"name": "Oak Tree",
-					"density_per_sq_km": 15.0,
+					"density_per_sq_km": 11.25,
 					"noise_threshold": 0.55,
 					"scale_range": [
 						0.8,
@@ -53,7 +53,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 2,
 					"name": "Birch Tree",
-					"density_per_sq_km": 8.0,
+					"density_per_sq_km": 6.0,
 					"noise_threshold": 0.65,
 					"scale_range": [
 						0.7,
@@ -121,7 +121,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 4,
 					"name": "Cherry Blossom Tree",
-					"density_per_sq_km": 12.0,
+					"density_per_sq_km": 9.0,
 					"noise_threshold": 0.5,
 					"scale_range": [
 						0.8,
@@ -183,7 +183,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 0,
 					"name": "Young Oak",
-					"density_per_sq_km": 40.0,
+					"density_per_sq_km": 30.0,
 					"noise_threshold": 0.35,
 					"scale_range": [
 						0.7,
@@ -194,7 +194,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 2,
 					"name": "Young Birch",
-					"density_per_sq_km": 35.0,
+					"density_per_sq_km": 26.25,
 					"noise_threshold": 0.4,
 					"scale_range": [
 						0.7,
@@ -205,7 +205,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 1,
 					"name": "Young Pine",
-					"density_per_sq_km": 20.0,
+					"density_per_sq_km": 15.0,
 					"noise_threshold": 0.5,
 					"scale_range": [
 						0.8,
@@ -264,7 +264,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 10,
 					"name": "Ancient Giant Oak",
-					"density_per_sq_km": 60.0,
+					"density_per_sq_km": 45.0,
 					"noise_threshold": 0.25,
 					"scale_range": [
 						1.0,
@@ -275,7 +275,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 11,
 					"name": "Ancient Giant Pine",
-					"density_per_sq_km": 45.0,
+					"density_per_sq_km": 33.75,
 					"noise_threshold": 0.3,
 					"scale_range": [
 						1.0,
@@ -286,7 +286,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 12,
 					"name": "Ancient Giant Willow",
-					"density_per_sq_km": 20.0,
+					"density_per_sq_km": 15.0,
 					"noise_threshold": 0.45,
 					"scale_range": [
 						1.0,
@@ -297,7 +297,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 13,
 					"name": "Ancient Giant Birch",
-					"density_per_sq_km": 15.0,
+					"density_per_sq_km": 11.25,
 					"noise_threshold": 0.5,
 					"scale_range": [
 						1.0,
@@ -308,7 +308,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 5,
 					"name": "Standing Dead Tree",
-					"density_per_sq_km": 8.0,
+					"density_per_sq_km": 6.0,
 					"noise_threshold": 0.6,
 					"scale_range": [
 						0.9,
@@ -376,7 +376,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 5,
 					"name": "Desert Dead Wood",
-					"density_per_sq_km": 3.0,
+					"density_per_sq_km": 2.25,
 					"noise_threshold": 0.7,
 					"scale_range": [
 						0.6,
@@ -446,7 +446,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 3,
 					"name": "Swamp Willow",
-					"density_per_sq_km": 40.0,
+					"density_per_sq_km": 30.0,
 					"noise_threshold": 0.3,
 					"scale_range": [
 						1.0,
@@ -457,7 +457,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 5,
 					"name": "Submerged Dead Snag",
-					"density_per_sq_km": 15.0,
+					"density_per_sq_km": 11.25,
 					"noise_threshold": 0.5,
 					"scale_range": [
 						0.8,
@@ -537,7 +537,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 1,
 					"name": "Stunted Alpine Pine",
-					"density_per_sq_km": 10.0,
+					"density_per_sq_km": 7.5,
 					"noise_threshold": 0.6,
 					"scale_range": [
 						0.6,
@@ -548,7 +548,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 5,
 					"name": "Weathered Dead Trunk",
-					"density_per_sq_km": 6.0,
+					"density_per_sq_km": 4.5,
 					"scale_range": [
 						0.7,
 						1.3
@@ -602,7 +602,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 1,
 					"name": "High Summit Pine",
-					"density_per_sq_km": 4.0,
+					"density_per_sq_km": 3.0,
 					"noise_threshold": 0.75,
 					"scale_range": [
 						0.5,
@@ -672,7 +672,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 3,
 					"name": "Coastal Willow",
-					"density_per_sq_km": 6.0,
+					"density_per_sq_km": 4.5,
 					"noise_threshold": 0.65,
 					"scale_range": [
 						0.8,
@@ -722,7 +722,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 3,
 					"name": "Riparian Willow",
-					"density_per_sq_km": 30.0,
+					"density_per_sq_km": 22.5,
 					"noise_threshold": 0.35,
 					"scale_range": [
 						0.9,
@@ -733,7 +733,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 2,
 					"name": "Riparian Birch",
-					"density_per_sq_km": 25.0,
+					"density_per_sq_km": 18.75,
 					"noise_threshold": 0.4,
 					"scale_range": [
 						0.8,
@@ -789,7 +789,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 1,
 					"name": "Tundra Dwarf Pine",
-					"density_per_sq_km": 12.0,
+					"density_per_sq_km": 9.0,
 					"noise_threshold": 0.55,
 					"scale_range": [
 						0.5,

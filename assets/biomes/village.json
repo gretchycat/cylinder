@@ -1,0 +1,83 @@
+{
+	"id": "village",
+	"name": "Colony Village",
+	"description": "Handcrafted settlement district with lanterns, campfires, and stone paths",
+	"type": "artificial",
+	"raster_id": 30.0,
+	"color": [
+		220,
+		160,
+		80,
+		255
+	],
+	"weight": 0.05,
+	"environmental_values": {
+		"temperature": 0.5,
+		"moisture": 0.5,
+		"elevation_range_m": [
+			10.0,
+			40.0
+		],
+		"max_slope_deg": 15.0,
+		"submerged": false
+	},
+	"terrain_material": {
+		"texture": "res://assets/textures/terrain/farmland.png",
+		"texture_size_m": 10.0,
+		"roughness": 0.8,
+		"tint": [
+			1.0,
+			0.95,
+			0.9,
+			1.0
+		],
+		"blended": true
+	},
+	"allowed_adjacent_biomes": [
+		"grassland",
+		"farmland",
+		"young_forest",
+		"gravel_path"
+	],
+	"objects": [
+		{
+			"asset": "beacon_lantern",
+			"density_per_sq_km": 15.0,
+			"scale_range": [
+				1.0,
+				1.2
+			]
+		},
+		{
+			"asset": "campfire",
+			"density_per_sq_km": 8.0,
+			"scale_range": [
+				0.9,
+				1.1
+			]
+		}
+	],
+	"clutter": [
+		{
+			"model": "grass_tuft",
+			"density_per_m2": 0.005,
+			"scale_range": [
+				0.8,
+				1.2
+			],
+			"palette": [
+				[
+					0.4,
+					0.7,
+					0.2,
+					1.0
+				]
+			]
+		}
+	],
+	"poi_settings": {
+		"add_to_poi_list": true,
+		"poi_type": "village_center",
+		"poi_name_prefix": "Colony Village"
+	}
+}

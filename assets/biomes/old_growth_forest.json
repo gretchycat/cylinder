@@ -1,0 +1,142 @@
+{
+	"id": "old_growth_forest",
+	"name": "Ancient Old-Growth Forest",
+	"description": "Towering primeval forest canopy with massive trunks, moss, and deep shade",
+	"type": "terrain",
+	"raster_id": 4.0,
+	"color": [
+		25,
+		75,
+		25,
+		255
+	],
+	"weight": 0.15,
+	"environmental_values": {
+		"temperature": 0.5,
+		"moisture": 0.8,
+		"elevation_range_m": [
+			22.0,
+			75.0
+		],
+		"max_slope_deg": 40.0,
+		"submerged": false
+	},
+	"terrain_material": {
+		"texture": "res://assets/textures/terrain/old_growth_forest_undergrowth.png",
+		"texture_size_m": 4.0,
+		"roughness": 0.9,
+		"tint": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"blended": true
+	},
+	"allowed_adjacent_biomes": [
+		"young_forest",
+		"swamp",
+		"riverbank_wetlands",
+		"rocky_fields",
+		"mountain"
+	],
+	"objects": [
+		{
+			"asset": "tree_10",
+			"density_per_sq_km": 720.0,
+			"scale_range": [
+				1.0,
+				4.0
+			]
+		},
+		{
+			"asset": "tree_11",
+			"density_per_sq_km": 540.0,
+			"scale_range": [
+				1.0,
+				4.0
+			]
+		},
+		{
+			"asset": "tree_12",
+			"density_per_sq_km": 240.0,
+			"scale_range": [
+				1.0,
+				4.0
+			]
+		},
+		{
+			"asset": "tree_13",
+			"density_per_sq_km": 180.0,
+			"scale_range": [
+				1.0,
+				4.0
+			]
+		},
+		{
+			"asset": "tree_5",
+			"density_per_sq_km": 96.0,
+			"scale_range": [
+				1.0,
+				4.0
+			]
+		}
+	],
+	"clutter": [
+		{
+			"density_per_m2": 0.003,
+			"model": "shrubs",
+			"palette": [
+				[
+					0.22,
+					0.58,
+					0.14,
+					1.0
+				],
+				[
+					0.28,
+					0.65,
+					0.18,
+					1.0
+				]
+			],
+			"scale_range": [
+				0.8,
+				1.3
+			]
+		},
+		{
+			"density_per_m2": 0.003,
+			"model": "mushrooms",
+			"palette": [
+				[
+					0.62,
+					0.24,
+					0.21,
+					1.0
+				],
+				[
+					0.44,
+					0.31,
+					0.22,
+					1.0
+				],
+				[
+					0.82,
+					0.72,
+					0.5,
+					1.0
+				]
+			],
+			"scale_range": [
+				0.8,
+				1.3
+			]
+		}
+	],
+	"poi_settings": {
+		"add_to_poi_list": false,
+		"poi_type": "old_growth_forest",
+		"poi_name_prefix": "Ancient Old-Growth Forest"
+	}
+}

@@ -1,0 +1,49 @@
+{
+	"id": "river",
+	"name": "River Channel",
+	"description": "Flowing freshwater channel with alluvial sediment and reeds",
+	"type": "meta",
+	"raster_id": 31.0,
+	"color": [
+		40,
+		100,
+		200,
+		255
+	],
+	"weight": 0.04,
+	"environmental_values": {
+		"temperature": 0.5,
+		"moisture": 0.9,
+		"elevation_range_m": [
+			0.0,
+			20.0
+		],
+		"max_slope_deg": 30.0,
+		"submerged": true
+	},
+	"terrain_material": {
+		"texture": "res://assets/textures/terrain/water_bed.png",
+		"texture_size_m": 20.0,
+		"roughness": 0.3,
+		"tint": [
+			0.8,
+			0.9,
+			1.0,
+			1.0
+		],
+		"blended": true
+	},
+	"allowed_adjacent_biomes": [
+		"riverbank_wetlands",
+		"grassland",
+		"swamp",
+		"waterbed"
+	],
+	"objects": [],
+	"clutter": [],
+	"poi_settings": {
+		"add_to_poi_list": true,
+		"poi_type": "river",
+		"poi_name_prefix": "Serpentine River"
+	}
+}

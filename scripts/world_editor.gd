@@ -181,12 +181,17 @@ func place() -> SurfaceLightObject:
 	if normal.dot(player.camera.global_position - hit.position) < 0.0:
 		normal = -normal
 	var entry := current_object()
+	var catalog_entry: Dictionary = references.active_map_config.objects.model_catalog.get(entry.id, entry)
+	var ground_offset = Config.get_object_ground_offset(catalog_entry, entry.id)
+	var align_norm = Config.get_object_align_to_normal(catalog_entry, entry.id)
 	var position: Vector3 = hit.position + normal * 0.03
 	var player_fwd: Vector3 = -player.global_basis.z if player else Vector3.ZERO
 	var object := SurfaceLightObject.create_on_cylinder(
 		entry.type as SurfaceLightObject.ObjectType, atan2(position.y, position.x), position.z,
 		references.active_map_config.geometry.cylinder_radius_m, 0.0, Config.color(entry.light_color), float(entry.light_range_m),
-		0.0, normal, position, entry.variant, entry.path, player_fwd)
+		0.0, normal, position, entry.variant, entry.path, player_fwd,
+		ground_offset, align_norm
+	)
 	object.asset_id = entry.id
 	object.instance_id = "object_%d" % Time.get_ticks_usec()
 	object.tint = Config.color(entry.tint)

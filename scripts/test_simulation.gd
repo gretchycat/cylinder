@@ -54,7 +54,9 @@ func _init() -> void:
 	print("[PASS] Core scene nodes verified: Player, CylinderWorld, AxisLightBar, UI.")
 
 	# Wait for player to settle firmly on cylinder inner floor
-	for f in range(25):
+	for f in range(300):
+		if player.is_on_floor():
+			break
 		await physics_frame
 
 	# --- TEST 1: Cylinder Wall & Perpendicular Centrifugal Gravity ---

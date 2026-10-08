@@ -396,7 +396,11 @@ static func create_on_cylinder(
 	custom_pos: Vector3 = Vector3.ZERO,
 	tree_variant_idx: int = -1,
 	model_path: String = "",
-	player_facing_fwd: Vector3 = Vector3.ZERO
+	player_facing_fwd: Vector3 = Vector3.ZERO,
+	ground_offset_m: float = 0.0,
+	should_align_to_normal: bool = false,
+	pitch_angle_rad: float = 0.0,
+	roll_angle_rad: float = 0.0
 ) -> SurfaceLightObject:
 	var obj = SurfaceLightObject.new()
 	obj.object_type = type
@@ -413,17 +417,25 @@ static func create_on_cylinder(
 	var pos = custom_pos
 	if pos == Vector3.ZERO:
 		var surface_r = cylinder_radius - elevation
-		pos = Vector3(surface_r * cos(theta), surface_r * sin(theta), z)
+		var d_theta = TAU / 144.0
+		var phi = fposmod(theta, d_theta) - d_theta * 0.5
+		var chord_r = surface_r * (cos(d_theta * 0.5) / maxf(cos(phi), 0.001))
+		pos = Vector3(chord_r * cos(theta), chord_r * sin(theta), z)
 
-	# Local coordinate basis on the curved surface:
-	# Y points radially inward towards the rotational axis (flat to centrifugal gravity).
-	# Object faces 180 degrees off from the player (facing back towards the player).
+	# Determine Up vector based on normal alignment preference
 	var up := Vector3.UP
-	var r_xz := Vector2(pos.x, pos.y).length()
-	if r_xz > 500.0:
-		var cyl_up := Vector3(-pos.x, -pos.y, 0.0).normalized()
-		if not cyl_up.is_zero_approx():
-			up = cyl_up
+	if should_align_to_normal and custom_normal != Vector3.ZERO and not custom_normal.is_zero_approx():
+		up = custom_normal.normalized()
+	else:
+		var r_xz := Vector2(pos.x, pos.y).length()
+		if r_xz > 500.0:
+			var cyl_up := Vector3(-pos.x, -pos.y, 0.0).normalized()
+			if not cyl_up.is_zero_approx():
+				up = cyl_up
+
+	# Apply ground offset (sinking curved bases or lifting surface items)
+	if ground_offset_m != 0.0:
+		pos += up * ground_offset_m
 
 	var fwd = -player_facing_fwd
 	if fwd != Vector3.ZERO:
@@ -440,6 +452,10 @@ static func create_on_cylinder(
 
 	if not is_zero_approx(yaw_angle_rad):
 		basis = basis.rotated(up, yaw_angle_rad)
+	if not is_zero_approx(pitch_angle_rad):
+		basis = basis.rotated(basis.x, pitch_angle_rad)
+	if not is_zero_approx(roll_angle_rad):
+		basis = basis.rotated(basis.z, roll_angle_rad)
 
 	obj.position = pos
 	obj.basis = basis

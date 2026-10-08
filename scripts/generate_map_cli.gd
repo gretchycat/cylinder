@@ -14,6 +14,7 @@ func _run():
 	var has_seed_override := false
 
 	var positionals: Array[String] = []
+	var skip_objects_flag := false
 	var i := 0
 	while i < raw_args.size():
 		var arg: String = raw_args[i]
@@ -27,6 +28,9 @@ func _run():
 			seed_override = int(raw_args[i + 1])
 			has_seed_override = true
 			i += 2
+		elif arg == "--skip-objects" or arg == "--no-objects" or arg == "-S":
+			skip_objects_flag = true
+			i += 1
 		elif not arg.begins_with("-"):
 			positionals.append(arg)
 			i += 1
@@ -42,8 +46,8 @@ func _run():
 		has_seed_override = true
 
 	if map_dir.is_empty() or output_dir.is_empty():
-		printerr("Usage: generate_map.sh MAP_DIRECTORY OUTPUT_DIRECTORY [SEED]")
-		printerr("   or: generate_map.sh --map MAP_DIRECTORY --output-dir OUTPUT_DIRECTORY [--seed SEED]")
+		printerr("Usage: generate_map.sh MAP_DIRECTORY OUTPUT_DIRECTORY [SEED] [--skip-objects]")
+		printerr("   or: generate_map.sh --map MAP_DIRECTORY --output-dir OUTPUT_DIRECTORY [--seed SEED] [--skip-objects]")
 		quit(2)
 		return
 
@@ -58,20 +62,26 @@ func _run():
 		quit(2)
 		return
 
+	if not doc.has("generation"):
+		doc["generation"] = {}
 	if has_seed_override:
-		if not doc.has("generation"):
-			doc["generation"] = {}
 		doc.generation["seed"] = seed_override
+	else:
+		doc.generation["seed"] = (int(Time.get_ticks_usec()) ^ randi()) & 0x7fffffff
+	if skip_objects_flag:
+		doc.generation["skip_objects"] = true
 
-	var result = await Generator.generate(doc, func(value, message):
-		print("%d%% %s" % [int(value * 100), message]))
+	var cb = func(value, message):
+		print("%d%% %s" % [int(value * 100), message])
+
+	var result = await Generator.generate(doc, cb)
 
 	if result.has("error"):
 		printerr(result.error)
 		quit(1)
 		return
 
-	if not Generator.save_generated_map_package(result, output_dir):
+	if not Generator.save_generated_map_package(result, output_dir, cb):
 		printerr("Failed to save generated map package")
 		quit(1)
 		return

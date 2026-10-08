@@ -131,7 +131,7 @@ static func validate(doc: Dictionary) -> String:
 	var gen: Dictionary = doc.generation
 	var dims = get_grid_dimensions(doc)
 	if not gen.has("sample_pitch_m") and not gen.has("elevation_width"):
-		gen["sample_pitch_m"] = 4.0
+		gen["sample_pitch_m"] = 8.0
 		dims = get_grid_dimensions(doc)
 	if gen.has("sample_pitch_m"):
 		if not finite_number(gen.sample_pitch_m) or gen.sample_pitch_m <= 0.01 or gen.sample_pitch_m > 1000.0:
@@ -140,6 +140,9 @@ static func validate(doc: Dictionary) -> String:
 		gen["elevation_height"] = dims.elevation_height
 		gen["terrain_width"] = dims.terrain_width
 		gen["terrain_height"] = dims.terrain_height
+
+	if not gen.has("seed"):
+		gen["seed"] = (int(Time.get_ticks_usec()) ^ randi()) & 0x7fffffff
 
 	for key in ["seed", "elevation_width", "elevation_height", "terrain_width", "terrain_height", "noise_wavelength_m", "detail_wavelength_m", "climate_wavelength_m", "base_height_m", "relief_m", "ridge_height_m", "erosion_iterations", "talus_slope_deg", "sea_center_v", "sea_width_m", "sea_depth_m", "coast_wavelength_m", "coast_variation_m", "lake_count", "lake_radius_m", "lake_depth_m", "river_count", "river_width_m", "river_depth_m", "spawn_clearance_m", "object_limit", "noise_octaves", "noise_gain", "detail_strength", "biome_region_wavelength_m", "biome_region_strength", "balance_iterations"]:
 		if not gen.has(key) or not finite_number(gen[key]):
@@ -272,12 +275,55 @@ static func validate(doc: Dictionary) -> String:
 			return "Invalid object RGBA: " + id
 		if not finite_number(entry.light_energy) or entry.light_energy < 0 or not finite_number(entry.light_range_m) or entry.light_range_m < 0:
 			return "Invalid light energy/range: " + id
+		if entry.has("ground_offset_m") and not finite_number(entry.ground_offset_m):
+			return "Invalid ground_offset_m: " + id
+		if entry.has("align_to_normal") and not entry.align_to_normal is bool:
+			return "align_to_normal must be boolean: " + id
+		if entry.has("random_yaw") and not entry.random_yaw is bool:
+			return "random_yaw must be boolean: " + id
+		if entry.has("allow_on_side") and not entry.allow_on_side is bool:
+			return "allow_on_side must be boolean: " + id
+		if entry.has("on_side_chance") and (not finite_number(entry.on_side_chance) or entry.on_side_chance < 0 or entry.on_side_chance > 1):
+			return "on_side_chance must be in range 0..1: " + id
 	for key in ["lake_count", "river_count"]:
 		if gen[key] < 0 or gen[key] > 32 or gen[key] != int(gen[key]):
 			return key + " must be an integer in 0..32"
 	if gen.talus_slope_deg < 0 or gen.talus_slope_deg >= 90 or gen.sea_center_v < 0 or gen.sea_center_v > 1:
 		return "Invalid talus slope or sea centre"
 	return ""
+
+static func get_object_ground_offset(entry: Dictionary, asset_id: String = "") -> float:
+	if entry.has("ground_offset_m") and finite_number(entry.get("ground_offset_m")):
+		return float(entry.ground_offset_m)
+	if asset_id == "tree_5" or str(entry.get("name", "")) == "Dead Tree" or float(entry.get("variant", -1)) == 5.0:
+		return -0.4
+	return 0.0
+
+static func get_object_align_to_normal(entry: Dictionary, asset_id: String = "") -> bool:
+	if entry.has("align_to_normal") and entry.get("align_to_normal") is bool:
+		return bool(entry.align_to_normal)
+	if asset_id == "campfire" or str(entry.get("name", "")) == "Campfire" or float(entry.get("behavior_type", -1)) == 0.0:
+		return true
+	return false
+
+static func get_object_random_yaw(entry: Dictionary, asset_id: String = "") -> bool:
+	if entry.has("random_yaw") and entry.get("random_yaw") is bool:
+		return bool(entry.random_yaw)
+	return true
+
+static func get_object_allow_on_side(entry: Dictionary, asset_id: String = "") -> bool:
+	if entry.has("allow_on_side") and entry.get("allow_on_side") is bool:
+		return bool(entry.allow_on_side)
+	if asset_id == "tree_5" or str(entry.get("name", "")) == "Dead Tree" or float(entry.get("variant", -1)) == 5.0:
+		return true
+	return false
+
+static func get_object_on_side_chance(entry: Dictionary, asset_id: String = "") -> float:
+	if entry.has("on_side_chance") and finite_number(entry.get("on_side_chance")):
+		return float(entry.on_side_chance)
+	if get_object_allow_on_side(entry, asset_id):
+		return 0.25
+	return 0.0
 
 static func finite_number(value: Variant) -> bool:
 	return (value is float or value is int) and is_finite(float(value))
@@ -505,6 +551,10 @@ static func copy_directory(source: String, target: String, copy_layers: bool = t
 		error = copy_tree(source.path_join("assets"), target.path_join("assets"))
 		if error != OK:
 			return error
+	if DirAccess.dir_exists_absolute(source.path_join("biomes")):
+		error = copy_tree(source.path_join("biomes"), target.path_join("biomes"))
+		if error != OK:
+			return error
 	error = save_document(doc, target)
 	if error != OK and last_error.is_empty():
 		return copy_failure("save definition", target, error)
@@ -583,7 +633,7 @@ static func get_grid_dimensions(doc: Dictionary) -> Dictionary:
 		var eh = int(gen.elevation_height)
 		var tw = int(gen.get("terrain_width", ew))
 		var th = int(gen.get("terrain_height", eh))
-		var calc_pitch = (2.0 * PI * r_m) / float(ew) if ew > 0 else 4.0
+		var calc_pitch = (2.0 * PI * r_m) / float(ew) if ew > 0 else 8.0
 		if gen.has("sample_pitch_m"):
 			var user_pitch = float(gen.sample_pitch_m)
 			if user_pitch > 0 and absf(user_pitch - calc_pitch) > 0.05:
@@ -604,9 +654,9 @@ static func get_grid_dimensions(doc: Dictionary) -> Dictionary:
 			"sample_pitch_m": calc_pitch
 		}
 
-	var pitch = float(gen.get("sample_pitch_m", 4.0))
+	var pitch = float(gen.get("sample_pitch_m", 8.0))
 	if pitch <= 0.0:
-		pitch = 4.0
+		pitch = 8.0
 	var ew = max(16, int(round((2.0 * PI * r_m) / pitch)))
 	var eh = max(16, int(round(l_m / pitch)))
 	return {

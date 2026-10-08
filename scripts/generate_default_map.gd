@@ -37,11 +37,13 @@ func _run() -> void:
 
 	# CLI Overrides if passed
 	if cli.has("pitch") or cli.has("sample_pitch") or cli.has("sample_pitch_m"):
-		var p_val = float(cli.get("pitch", cli.get("sample_pitch", cli.get("sample_pitch_m", 4.0))))
+		var p_val = float(cli.get("pitch", cli.get("sample_pitch", cli.get("sample_pitch_m", 8.0))))
 		if p_val > 0:
 			doc.generation["sample_pitch_m"] = p_val
 	if cli.has("seed"):
 		doc.generation["seed"] = int(cli.seed)
+	else:
+		doc.generation["seed"] = (int(Time.get_ticks_usec()) ^ randi()) & 0x7fffffff
 	if cli.has("radius") or cli.has("cylinder_radius_m"):
 		doc.geometry["cylinder_radius_m"] = float(cli.get("radius", cli.get("cylinder_radius_m", 4000.0)))
 	if cli.has("length") or cli.has("cylinder_length_m"):
@@ -82,7 +84,7 @@ func _run() -> void:
 	print("\nTerrain generation complete in %.2f seconds." % (elapsed / 1000.0))
 	print("Saving generated layers to %s..." % map_dir)
 	
-	if not MapGenerator.save_generated_map_package(result, map_dir):
+	if not MapGenerator.save_generated_map_package(result, map_dir, cb):
 		printerr("ERROR: Failed to save generated map package!")
 		if not Config.last_error.is_empty():
 			printerr("Save error details: ", Config.last_error)

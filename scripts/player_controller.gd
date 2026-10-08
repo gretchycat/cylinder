@@ -214,13 +214,23 @@ func _enforce_surface_and_habitat_bounds() -> void:
 	var theta = atan2(global_position.y, global_position.x)
 	var z = global_position.z
 	var elev = 0.0
-	if cyl_world and cyl_world.has_method("get_elevation_at"):
+	var surface_mesh_r = 0.0
+	if cyl_world and cyl_world.has_method("get_surface_mesh_point_and_normal"):
+		var pt_info = cyl_world.get_surface_mesh_point_and_normal(theta, z)
+		if not pt_info.is_empty() and pt_info.has("position"):
+			surface_mesh_r = Vector2(pt_info.position.x, pt_info.position.y).length()
+			elev = pt_info.get("elevation", 0.0)
+	elif cyl_world and cyl_world.has_method("get_elevation_at"):
 		elev = cyl_world.get_elevation_at(theta, z)
 
-	var surface_r = cylinder_radius - elev
+	if surface_mesh_r <= 0.0:
+		var surface_r = cylinder_radius - elev
+		var d_theta = TAU / 144.0
+		var phi = fposmod(theta, d_theta) - d_theta * 0.5
+		surface_mesh_r = surface_r * (cos(d_theta * 0.5) / maxf(cos(phi), 0.001))
+
 	var player_xy = Vector2(global_position.x, global_position.y)
 	var current_r = player_xy.length()
-	var max_allowed_r = surface_r - 0.90 # Player half-height 0.925m (prevents floor penetration)
 
 	var half_len = cylinder_length * 0.5
 	var abs_z = absf(z)
@@ -240,7 +250,7 @@ func _enforce_surface_and_habitat_bounds() -> void:
 
 	# 2. Cylindrical terrain floor containment (failsafe: only if player has fallen deep through collision mesh or is flying)
 	if not is_on_floor() or is_flying:
-		var max_failsafe_r = surface_r - 0.70
+		var max_failsafe_r = surface_mesh_r - 0.10
 		if current_r > max_failsafe_r:
 			if current_r > 0.01:
 				var clamped_xy = player_xy.normalized() * max_failsafe_r

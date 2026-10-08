@@ -18,9 +18,13 @@ static func field(n: FastNoiseLite, u: float, v: float, geometry: Dictionary) ->
 
 static func progress(cb: Callable, fraction: float, message: String) -> void:
 	if cb.is_valid():
-		cb.call_deferred(fraction, message)
+		if OS.get_thread_caller_id() == OS.get_main_thread_id():
+			cb.call(fraction, message)
+		else:
+			cb.call_deferred(fraction, message)
 
 static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
+	await progress(cb, 0.00, "Initialization: Validating map configuration and grid parameters")
 	var error = Config.validate(doc)
 	if not error.is_empty():
 		return {"error": error}
@@ -40,6 +44,7 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 	if tw * th * active_biomes > 536870912:
 		return {"error": "Biome generation exceeds its mobile memory budget. Reduce terrain resolution or disable unused biomes; the loaded map remains unchanged."}
 	
+	await progress(cb, 0.02, "Initialization: Setting up FastNoiseLite fields and lake coordinates")
 	var n = noise(int(p.seed), p.noise_wavelength_m, p)
 	var detail = noise(int(p.seed) + 1, p.detail_wavelength_m, p)
 	var coast = noise(int(p.seed) + 2, p.coast_wavelength_m, p)
@@ -71,11 +76,10 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 	var elev_var: float = g.elevation_variance_m
 	var river_count: int = int(p.river_count)
 
-	await progress(cb, 0.05, "Elevation Generation: Building physical relief")
-
 	var gw = mini(w, 2048)
 	var gh = mini(h, 1024)
-	
+
+	await progress(cb, 0.04, "Initialization: Precomputing radial & axial lookup matrices (%d × %d)" % [gw, gh])
 	var cos_gw = PackedFloat32Array()
 	cos_gw.resize(gw)
 	var sin_gw = PackedFloat32Array()
@@ -99,6 +103,10 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 	var num_chunks = mini(gh, num_cpu_cores)
 	var rows_per_chunk = int(ceil(float(gh) / float(num_chunks)))
 
+	await progress(cb, 0.05, "Elevation Generation: Building physical relief noise (%d chunks)" % num_chunks)
+
+	var relief_mutex = Mutex.new()
+	var relief_done = [0]
 	var relief_task_id = WorkerThreadPool.add_group_task(func(chunk_idx: int):
 		var y_start = chunk_idx * rows_per_chunk
 		var y_end = mini(y_start + rows_per_chunk, gh)
@@ -135,6 +143,12 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 					height -= channel * river_d
 				
 				relief_bytes[row_off + x] = clampf(height / elev_var, 0.0, 1.0)
+
+		relief_mutex.lock()
+		relief_done[0] += 1
+		var done_count = relief_done[0]
+		relief_mutex.unlock()
+		progress(cb, 0.05 + 0.20 * (float(done_count) / float(num_chunks)), "Elevation Generation: Building physical relief (Chunk %d/%d)" % [done_count, num_chunks])
 	, num_chunks)
 	
 	WorkerThreadPool.wait_for_group_task_completion(relief_task_id)
@@ -143,6 +157,7 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 	if gw == w and gh == h:
 		heights = relief_bytes
 	else:
+		await progress(cb, 0.26, "Elevation Generation: Rescaling physical relief map to grid dimensions (%d × %d)" % [w, h])
 		var img_h = Image.create_from_data(gw, gh, false, Image.FORMAT_RF, relief_bytes.to_byte_array())
 		img_h.resize(w, h, Image.INTERPOLATE_BILINEAR)
 		heights = img_h.get_data().to_float32_array()
@@ -157,6 +172,9 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 		hist.resize(4096)
 		local_histograms.append(hist)
 
+	await progress(cb, 0.28, "Elevation Generation: Analyzing elevation distribution histogram (%d chunks)" % num_h_chunks)
+	var hist_mutex = Mutex.new()
+	var hist_done = [0]
 	var hist_task_id = WorkerThreadPool.add_group_task(func(chunk_idx: int):
 		var y_start = chunk_idx * h_rows_per_chunk
 		var y_end = mini(y_start + h_rows_per_chunk, h)
@@ -165,6 +183,12 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 			var row_off = y * w
 			for x in w:
 				local_hist[mini(4095, int(heights[row_off + x] * 4095.0))] += 1
+		
+		hist_mutex.lock()
+		hist_done[0] += 1
+		var done_count = hist_done[0]
+		hist_mutex.unlock()
+		progress(cb, 0.28 + 0.03 * (float(done_count) / float(num_h_chunks)), "Elevation Generation: Analyzing elevation distribution (Chunk %d/%d)" % [done_count, num_h_chunks])
 	, num_h_chunks)
 	WorkerThreadPool.wait_for_group_task_completion(hist_task_id)
 
@@ -207,14 +231,23 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 	var lut_chunks = mini(heights.size(), num_cpu_cores)
 	var lut_chunk_size = int(ceil(float(heights.size()) / float(lut_chunks)))
 
+	var lut_mutex = Mutex.new()
+	var lut_done = [0]
 	var lut_task_id = WorkerThreadPool.add_group_task(func(chunk_idx: int):
 		var start = chunk_idx * lut_chunk_size
 		var finish = mini(start + lut_chunk_size, heights.size())
 		for i in range(start, finish):
 			heights[i] = lut[mini(4095, int(heights[i] * 4095.0))]
+		
+		lut_mutex.lock()
+		lut_done[0] += 1
+		var done_count = lut_done[0]
+		lut_mutex.unlock()
+		progress(cb, 0.31 + 0.02 * (float(done_count) / float(lut_chunks)), "Elevation Generation: Reshaping elevation toward biomes (Chunk %d/%d)" % [done_count, lut_chunks])
 	, lut_chunks)
 	WorkerThreadPool.wait_for_group_task_completion(lut_task_id)
 
+	await progress(cb, 0.33, "Elevation Generation: Initializing talus slope erosion parameters")
 	var dx: float = TAU * rad_m / float(w)
 	var dz: float = len_m / float(maxi(h - 1, 1))
 	var talus = tan(deg_to_rad(p.talus_slope_deg)) / elev_var
@@ -227,7 +260,7 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 	heights_b.resize(w * h)
 
 	for iteration in num_erosion_passes:
-		await progress(cb, 0.33 + 0.12 * float(iteration) / maxf(num_erosion_passes, 1.0), "Elevation Generation: Relaxing steep terrain (Pass %d/%d)" % [iteration + 1, num_erosion_passes])
+		await progress(cb, 0.33 + 0.10 * float(iteration) / maxf(num_erosion_passes, 1.0), "Elevation Generation: Relaxing steep terrain (Pass %d/%d)" % [iteration + 1, num_erosion_passes])
 		
 		var even = (iteration % 2 == 0)
 		var src_h = heights_a if even else heights_b
@@ -264,9 +297,9 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 
 	heights = heights_a if (num_erosion_passes % 2 == 0) else heights_b
 
-	await progress(cb, 0.45, "Elevation Generation: Computing slope angles")
+	await progress(cb, 0.44, "Elevation Generation: Computing slope angles across heightmap")
 	var elevation = Image.create_from_data(w, h, false, Image.FORMAT_RF, heights.to_byte_array())
-	var slopes = compute_slopes_grid(heights, w, h, g)
+	var slopes = compute_slopes_grid(heights, w, h, g, cb)
 	
 	var terrain_bytes = PackedByteArray()
 	terrain_bytes.resize(tw * th)
@@ -304,6 +337,9 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 		rg.resize(cgw * cgh)
 		reg_grids.append(rg)
 
+	await progress(cb, 0.46, "Terrain Generation: Sampling 3D temperature, moisture, and region noise fields (%d chunks)" % climate_chunks)
+	var climate_mutex = Mutex.new()
+	var climate_done = [0]
 	var climate_noise_task_id = WorkerThreadPool.add_group_task(func(chunk_idx: int):
 		var y_start = chunk_idx * climate_rows_per_chunk
 		var y_end = mini(y_start + climate_rows_per_chunk, cgh)
@@ -321,6 +357,12 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 				moist_grid[idx] = moisture.get_noise_3d(cx, sx, v_z) * 0.5 + 0.5
 				for k in score_stride:
 					reg_grids[k][idx] = region_fields[k].get_noise_3d(cx, sx, v_z)
+
+		climate_mutex.lock()
+		climate_done[0] += 1
+		var done_count = climate_done[0]
+		climate_mutex.unlock()
+		progress(cb, 0.46 + 0.03 * (float(done_count) / float(climate_chunks)), "Terrain Generation: Sampling climate fields (Chunk %d/%d)" % [done_count, climate_chunks])
 	, climate_chunks)
 	WorkerThreadPool.wait_for_group_task_completion(climate_noise_task_id)
 
@@ -333,6 +375,7 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 		moist_upscaled = moist_grid
 		reg_upscaled = reg_grids
 	else:
+		await progress(cb, 0.49, "Terrain Generation: Rescaling climate maps to terrain grid resolution (%d × %d)" % [tw, th])
 		var img_t = Image.create_from_data(cgw, cgh, false, Image.FORMAT_RF, temp_grid.to_byte_array())
 		img_t.resize(tw, th, Image.INTERPOLATE_BILINEAR)
 		temp_upscaled = img_t.get_data().to_float32_array()
@@ -373,7 +416,7 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 		b_moist[k] = float(b.moisture)
 		b_raster_id[k] = int(b.raster_id)
 
-	await progress(cb, 0.46, "Terrain Generation: Fitting climate and biome regions")
+	await progress(cb, 0.50, "Terrain Generation: Fitting climate and biome region suitability")
 
 	var th_chunks = mini(th, num_cpu_cores)
 	var th_rows_per_chunk = int(ceil(float(th) / float(th_chunks)))
@@ -386,6 +429,8 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 	var scores = PackedFloat32Array()
 	scores.resize(tw * th * score_stride)
 
+	var fit_mutex = Mutex.new()
+	var fit_done = [0]
 	var fit_task_id = WorkerThreadPool.add_group_task(func(chunk_idx: int):
 		var y_start = chunk_idx * th_rows_per_chunk
 		var y_end = mini(y_start + th_rows_per_chunk, th)
@@ -431,6 +476,12 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 					scores[cell_offset + k] = -(dt * dt) - (dm * dm) + reg_val * biome_reg_str - penalty
 				
 				unsuitable[cell_idx] = 1 if valid_options == 0 else 0
+
+		fit_mutex.lock()
+		fit_done[0] += 1
+		var done_count = fit_done[0]
+		fit_mutex.unlock()
+		progress(cb, 0.50 + 0.08 * (float(done_count) / float(th_chunks)), "Terrain Generation: Evaluating biome suitability (Chunk %d/%d)" % [done_count, th_chunks])
 	, th_chunks)
 	
 	WorkerThreadPool.wait_for_group_task_completion(fit_task_id)
@@ -459,6 +510,7 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 		chunk_ids.append(arr)
 
 	var num_bal_iterations = int(p.balance_iterations)
+	await progress(cb, 0.58, "Terrain Generation: Initializing biome area balancing passes (%d passes)" % num_bal_iterations)
 	for iteration in num_bal_iterations:
 		await progress(cb, 0.59 + float(iteration) / num_bal_iterations * 0.18, "Terrain Generation: Balancing requested biome areas (Pass %d/%d)" % [iteration + 1, num_bal_iterations])
 		counts.fill(0)
@@ -536,63 +588,94 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 	tm.terrain_data = terrain_bytes
 	
 	var objects: Array = []
-	await progress(cb, 0.78, "Object Placement: Scattering biome objects")
-	var total_area_km2: float = (TAU * rad_m * len_m) / 1000000.0
-	for b_id in doc.biomes:
-		var biome: Dictionary = doc.biomes[b_id]
-		if biome.get("weight", 0.0) <= 0.0 or not biome.has("objects") or not (biome.objects is Array) or biome.objects.is_empty():
-			continue
-		var r_id = int(biome.raster_id)
-		var cell_indices: Array[Vector2i] = []
-		for y in th:
-			var row_off = y * tw
-			for x in tw:
-				if terrain_bytes[row_off + x] == r_id:
-					cell_indices.append(Vector2i(x, y))
-		if cell_indices.is_empty():
-			continue
-		var biome_area_fraction = float(cell_indices.size()) / float(tw * th)
-		var biome_area_km2 = total_area_km2 * biome_area_fraction
+	var skip_objects: bool = p.get("skip_objects", false)
+	if skip_objects:
+		await progress(cb, 0.84, "Object Placement: Skipping object scattering as requested (performance mode)")
+	else:
+		await progress(cb, 0.78, "Object Placement: Calculating biome surface areas for object scattering")
+		var total_area_km2: float = (TAU * rad_m * len_m) / 1000000.0
+		var biome_keys = doc.biomes.keys()
+		var num_biome_keys = biome_keys.size()
+		for b_idx in range(num_biome_keys):
+			var b_id = biome_keys[b_idx]
+			var biome: Dictionary = doc.biomes[b_id]
+			await progress(cb, 0.78 + 0.06 * (float(b_idx + 1) / float(maxi(num_biome_keys, 1))), "Object Placement: Scattering objects for biome '%s'" % biome.get("name", b_id))
+			if biome.get("weight", 0.0) <= 0.0 or not biome.has("objects") or not (biome.objects is Array) or biome.objects.is_empty():
+				continue
+			var r_id = int(biome.raster_id)
+			var cell_indices: Array[Vector2i] = []
+			for y in th:
+				var row_off = y * tw
+				for x in tw:
+					if terrain_bytes[row_off + x] == r_id:
+						cell_indices.append(Vector2i(x, y))
+			if cell_indices.is_empty():
+				continue
+			var biome_area_fraction = float(cell_indices.size()) / float(tw * th)
+			var biome_area_km2 = total_area_km2 * biome_area_fraction
 
-		for rule in biome.objects:
-			if not rule is Dictionary or not rule.has("asset") or not rule.has("density_per_sq_km"):
-				continue
-			var target_count = mini(int(round(biome_area_km2 * float(rule.density_per_sq_km))), 800)
-			if target_count <= 0:
-				continue
-			var scale_min = 1.0
-			var scale_max = 1.0
-			if rule.has("scale_range") and rule.scale_range is Array and rule.scale_range.size() >= 2:
-				scale_min = float(rule.scale_range[0])
-				scale_max = float(rule.scale_range[1])
-			
-			var attempts = 0
-			var max_attempts = target_count * 5
-			var placed_for_rule = 0
-			while placed_for_rule < target_count and attempts < max_attempts:
-				attempts += 1
-				var cell = cell_indices[rng.randi() % cell_indices.size()]
-				var u = (float(cell.x) + rng.randf()) / float(tw)
-				var v = (float(cell.y) + rng.randf()) / float(th)
-				var e = sample_heights(heights, w, h, u, v) * elev_var
-				var slope = sample_heights(slopes, w, h, u, v)
-				if not biome.get("submerged", false) and e < water_sea_m:
+			for rule in biome.objects:
+				if not rule is Dictionary or not rule.has("asset") or not rule.has("density_per_sq_km"):
 					continue
-				if slope > float(biome.get("max_slope_deg", 90.0)):
+				var target_count = mini(int(round(biome_area_km2 * float(rule.density_per_sq_km))), 800)
+				if target_count <= 0:
 					continue
-				var theta = u * TAU
-				var z = (v - 0.5) * len_m
-				var scale_val = rng.randf_range(scale_min, scale_max) if scale_max > scale_min else scale_min
-				objects.append({
-					"id": "obj_%s_%d" % [rule.asset, objects.size() + 1],
-					"asset": rule.asset,
-					"theta": theta,
-					"z": z,
-					"elevation": e,
-					"yaw_rad": rng.randf() * TAU,
-					"scale": scale_val
-				})
-				placed_for_rule += 1
+				var scale_min = 1.0
+				var scale_max = 1.0
+				if rule.has("scale_range") and rule.scale_range is Array and rule.scale_range.size() >= 2:
+					scale_min = float(rule.scale_range[0])
+					scale_max = float(rule.scale_range[1])
+
+				var catalog_entry: Dictionary = doc.objects.model_catalog.get(rule.asset, {})
+				var catalog_offset = Config.get_object_ground_offset(catalog_entry, rule.asset)
+				var catalog_align = Config.get_object_align_to_normal(catalog_entry, rule.asset)
+				var catalog_random_yaw = Config.get_object_random_yaw(catalog_entry, rule.asset)
+				var catalog_on_side = Config.get_object_allow_on_side(catalog_entry, rule.asset)
+				var catalog_side_chance = Config.get_object_on_side_chance(catalog_entry, rule.asset)
+				
+				var attempts = 0
+				var max_attempts = target_count * 5
+				var placed_for_rule = 0
+				while placed_for_rule < target_count and attempts < max_attempts:
+					attempts += 1
+					var cell = cell_indices[rng.randi() % cell_indices.size()]
+					var u = (float(cell.x) + rng.randf()) / float(tw)
+					var v = (float(cell.y) + rng.randf()) / float(th)
+					var e = sample_heights(heights, w, h, u, v) * elev_var
+					var slope = sample_heights(slopes, w, h, u, v)
+					if not biome.get("submerged", false) and e < water_sea_m:
+						continue
+					if slope > float(biome.get("max_slope_deg", 90.0)):
+						continue
+					var theta = u * TAU
+					var z = (v - 0.5) * len_m
+					var scale_val = rng.randf_range(scale_min, scale_max) if scale_max > scale_min else scale_min
+
+					var yaw_val = rng.randf() * TAU if catalog_random_yaw else 0.0
+					var pitch_val = 0.0
+					var roll_val = 0.0
+					var item_offset = catalog_offset
+
+					var is_fallen = catalog_on_side and rng.randf() < catalog_side_chance
+					if is_fallen:
+						pitch_val = rng.randf_range(deg_to_rad(75.0), deg_to_rad(105.0))
+						roll_val = rng.randf() * TAU
+						item_offset = -0.25
+
+					objects.append({
+						"id": "obj_%s_%d" % [rule.asset, objects.size() + 1],
+						"asset": rule.asset,
+						"theta": theta,
+						"z": z,
+						"elevation": e,
+						"yaw_rad": yaw_val,
+						"pitch_rad": pitch_val,
+						"roll_rad": roll_val,
+						"scale": scale_val,
+						"ground_offset_m": item_offset,
+						"align_to_normal": catalog_align
+					})
+					placed_for_rule += 1
 
 	var spawn: Dictionary = {}
 	var best_spawn = -INF
@@ -623,9 +706,52 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 
 	if spawn.is_empty():
 		return {"error": "No dry spawn with the requested clearance; adjust biome elevations or sea level"}
-	return {"warnings": warnings, "document": doc.duplicate(true), "elevation_image": elevation, "terrain_image": terrain, "objects_data": {"objects": objects, "spawn_points": [spawn]}, "report": report}
 
-static func compute_slopes_grid(heights: PackedFloat32Array, w: int, h: int, g: Dictionary) -> PackedFloat32Array:
+	# Collect Points of Interest (POIs)
+	var pois: Array = []
+	for i in int(p.lake_count):
+		var lu = lake_x[i]
+		var lv = lake_y[i]
+		var theta = lu * TAU
+		var z_m = (lv - 0.5) * len_m
+		var px = rad_m * cos(theta)
+		var py = rad_m * sin(theta)
+		var p_elev = sample_heights(heights, w, h, lu, lv) * elev_var
+		pois.append({
+			"id": "poi_lake_" + str(i + 1),
+			"name": "Freshwater Lake " + str(i + 1),
+			"type": "lake",
+			"u_frac": lu,
+			"v_frac": lv,
+			"coordinates_3d": {"x": px, "y": py, "z": z_m},
+			"elevation_m": p_elev
+		})
+
+	if doc.has("generation_descriptor") and doc.generation_descriptor is Dictionary:
+		var desc: Dictionary = doc.generation_descriptor
+		for art in desc.get("artificial_biomes", []):
+			if art is Dictionary and art.get("add_to_poi_list", false):
+				var au = float(art.get("center_u_frac", 0.5))
+				var av = float(art.get("center_v_frac", 0.5))
+				var theta = au * TAU
+				var z_m = (av - 0.5) * len_m
+				var px = rad_m * cos(theta)
+				var py = rad_m * sin(theta)
+				var p_elev = sample_heights(heights, w, h, au, av) * elev_var
+				pois.append({
+					"id": "poi_art_" + str(pois.size() + 1),
+					"name": str(art.get("poi_name", "Artificial Landmark")),
+					"type": str(art.get("poi_type", "landmark")),
+					"u_frac": au,
+					"v_frac": av,
+					"coordinates_3d": {"x": px, "y": py, "z": z_m},
+					"elevation_m": p_elev
+				})
+
+	await progress(cb, 0.90, "Map Package: Assembling generated elevation, terrain, and object structures")
+	return {"warnings": warnings, "document": doc.duplicate(true), "elevation_image": elevation, "terrain_image": terrain, "objects_data": {"objects": objects, "spawn_points": [spawn]}, "report": report, "pois": pois}
+
+static func compute_slopes_grid(heights: PackedFloat32Array, w: int, h: int, g: Dictionary, cb: Callable = Callable()) -> PackedFloat32Array:
 	var slopes = PackedFloat32Array()
 	slopes.resize(w * h)
 	var num_cpu_cores = 1 if (DisplayServer.get_name() == "dummy" or OS.has_feature("single_threaded")) else maxi(OS.get_processor_count(), 1)
@@ -638,6 +764,8 @@ static func compute_slopes_grid(heights: PackedFloat32Array, w: int, h: int, g: 
 	var dv: float = 1.0 / float(maxi(h - 1, 1))
 	var du_dist: float = 2.0 * du * TAU * rad_m
 	
+	var slopes_mutex = Mutex.new()
+	var slopes_done = [0]
 	var task_id = WorkerThreadPool.add_group_task(func(chunk_idx: int):
 		var y_start = chunk_idx * rows_per_chunk
 		var y_end = mini(y_start + rows_per_chunk, h)
@@ -654,6 +782,12 @@ static func compute_slopes_grid(heights: PackedFloat32Array, w: int, h: int, g: 
 				var sx = (heights[row_offset + x_r] - heights[row_offset + x_l]) * elev_var / du_dist
 				var sz = (heights[up_offset + x] - heights[dn_offset + x]) * elev_var / dz_dist
 				slopes[row_offset + x] = rad_to_deg(atan(sqrt(sx * sx + sz * sz)))
+		
+		slopes_mutex.lock()
+		slopes_done[0] += 1
+		var done_count = slopes_done[0]
+		slopes_mutex.unlock()
+		progress(cb, 0.44 + 0.02 * (float(done_count) / float(num_chunks)), "Elevation Generation: Computing slope angles (Chunk %d/%d)" % [done_count, num_chunks])
 	, num_chunks)
 	WorkerThreadPool.wait_for_group_task_completion(task_id)
 	return slopes
@@ -696,26 +830,37 @@ static func slope_at(img: Image, u: float, v: float, g: Dictionary) -> float:
 	var sz = (Terrain.sample_image(img, u, minf(1, v + dv)) - Terrain.sample_image(img, u, maxf(0, v - dv))) * g.elevation_variance_m / (maxf(minf(1, v + dv) - maxf(0, v - dv), dv) * g.cylinder_length_m)
 	return rad_to_deg(atan(Vector2(sx, sz).length()))
 
-static func save_generated_map_package(result: Dictionary, directory: String) -> bool:
+static func save_generated_map_package(result: Dictionary, directory: String, cb: Callable = Callable()) -> bool:
 	if result.has("error"):
 		Config.last_error = str(result.error)
 		return false
+	progress(cb, 0.91, "Map Package: Preparing destination directory %s" % directory)
 	var doc: Dictionary = result.document
 	var error = Config.copy_directory(doc.map_directory, directory, false)
 	if error != OK:
 		return false
+	progress(cb, 0.93, "Map Package: Writing float32 elevation heightmap binary (.cylh)")
 	error = Terrain.write_elevation(directory.path_join(doc.files.elevation_map), result.elevation_image)
 	if error != OK:
 		Config.copy_failure("save elevation", directory.path_join(doc.files.elevation_map), error)
 		return false
+	progress(cb, 0.95, "Map Package: Saving PNG biome terrain map (.png)")
 	error = result.terrain_image.save_png(directory.path_join(doc.files.terrain_map))
 	if error != OK:
 		Config.copy_failure("save biomes", directory.path_join(doc.files.terrain_map), error)
 		return false
+	progress(cb, 0.97, "Map Package: Saving object placements JSON map (.json)")
 	error = Config.write_json(directory.path_join(doc.files.object_map), result.objects_data)
 	if error != OK:
 		Config.copy_failure("save placements", directory.path_join(doc.files.object_map), error)
 		return false
+	if result.has("pois") and not (result.pois as Array).is_empty():
+		progress(cb, 0.98, "Map Package: Saving POI list manifest (pois.json)")
+		Config.write_json(directory.path_join("pois.json"), {"points_of_interest": result.pois})
 	doc["generation_report"] = result.report
 	doc["generation_warnings"] = result.warnings
-	return Config.save_document(doc, directory) == OK
+	progress(cb, 0.99, "Map Package: Saving descriptor document metadata")
+	var saved_ok = Config.save_document(doc, directory) == OK
+	if saved_ok:
+		progress(cb, 1.00, "Map Package: Generation and package save complete")
+	return saved_ok

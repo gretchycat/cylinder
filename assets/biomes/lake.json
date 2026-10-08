@@ -1,0 +1,48 @@
+{
+	"id": "lake",
+	"name": "Interior Lake",
+	"description": "Calm cylindrical basin water reservoir",
+	"type": "meta",
+	"raster_id": 32.0,
+	"color": [
+		30,
+		80,
+		180,
+		255
+	],
+	"weight": 0.05,
+	"environmental_values": {
+		"temperature": 0.5,
+		"moisture": 1.0,
+		"elevation_range_m": [
+			0.0,
+			19.5
+		],
+		"max_slope_deg": 25.0,
+		"submerged": true
+	},
+	"terrain_material": {
+		"texture": "res://assets/textures/terrain/water_bed.png",
+		"texture_size_m": 30.0,
+		"roughness": 0.2,
+		"tint": [
+			0.7,
+			0.85,
+			1.0,
+			1.0
+		],
+		"blended": true
+	},
+	"allowed_adjacent_biomes": [
+		"riverbank_wetlands",
+		"coastal_beach",
+		"waterbed"
+	],
+	"objects": [],
+	"clutter": [],
+	"poi_settings": {
+		"add_to_poi_list": true,
+		"poi_type": "lake",
+		"poi_name_prefix": "Lover Lake"
+	}
+}

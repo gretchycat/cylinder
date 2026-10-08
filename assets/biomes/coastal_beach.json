@@ -1,0 +1,76 @@
+{
+	"id": "coastal_beach",
+	"name": "Shoreline & Alluvial Sands",
+	"description": "Perimeter sea beaches, delta sandbars, and alluvial gravel banks",
+	"type": "terrain",
+	"raster_id": 9.0,
+	"color": [
+		235,
+		215,
+		160,
+		255
+	],
+	"weight": 0.05,
+	"environmental_values": {
+		"temperature": 0.5,
+		"moisture": 0.5,
+		"elevation_range_m": [
+			18.0,
+			24.0
+		],
+		"max_slope_deg": 15.0,
+		"submerged": false
+	},
+	"terrain_material": {
+		"texture": "res://assets/textures/terrain/beach.png",
+		"texture_size_m": 4.0,
+		"roughness": 0.9,
+		"tint": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"blended": true
+	},
+	"allowed_adjacent_biomes": [
+		"grassland",
+		"swamp",
+		"riverbank_wetlands",
+		"desert",
+		"young_forest"
+	],
+	"objects": [
+		{
+			"asset": "tree_3",
+			"density_per_sq_km": 72.0,
+			"scale_range": [
+				1.0,
+				4.0
+			]
+		}
+	],
+	"clutter": [
+		{
+			"density_per_m2": 0.003,
+			"model": "pebbles",
+			"palette": [
+				[
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				]
+			],
+			"scale_range": [
+				0.8,
+				1.3
+			]
+		}
+	],
+	"poi_settings": {
+		"add_to_poi_list": false,
+		"poi_type": "coastal_beach",
+		"poi_name_prefix": "Shoreline & Alluvial Sands"
+	}
+}

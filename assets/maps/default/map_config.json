@@ -57,7 +57,7 @@
 			"objects": [
 				{
 					"asset": "tree_3",
-					"density_per_sq_km": 96.0,
+					"density_per_sq_km": 72.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -134,7 +134,7 @@
 			"objects": [
 				{
 					"asset": "tree_5",
-					"density_per_sq_km": 48.0,
+					"density_per_sq_km": 36.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -211,7 +211,7 @@
 			"blended": true,
 			"clutter": [
 				{
-					"density_per_m2": 0.025,
+					"density_per_m2": 0.003,
 					"model": "grass_tuft",
 					"palette": [
 						[
@@ -239,7 +239,7 @@
 					]
 				},
 				{
-					"density_per_m2": 0.003,
+					"density_per_m2": 0.035,
 					"model": "wildflowers",
 					"palette": [
 						[
@@ -295,7 +295,7 @@
 			"objects": [
 				{
 					"asset": "tree_4",
-					"density_per_sq_km": 192.0,
+					"density_per_sq_km": 144.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -430,7 +430,7 @@
 			"objects": [
 				{
 					"asset": "tree_0",
-					"density_per_sq_km": 240.0,
+					"density_per_sq_km": 180.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -438,7 +438,7 @@
 				},
 				{
 					"asset": "tree_2",
-					"density_per_sq_km": 128.0,
+					"density_per_sq_km": 96.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -523,7 +523,7 @@
 			"objects": [
 				{
 					"asset": "tree_1",
-					"density_per_sq_km": 64.0,
+					"density_per_sq_km": 48.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -608,14 +608,6 @@
 			"objects": [
 				{
 					"asset": "tree_10",
-					"density_per_sq_km": 960.0,
-					"scale_range": [
-						1.0,
-						4.0
-					]
-				},
-				{
-					"asset": "tree_11",
 					"density_per_sq_km": 720.0,
 					"scale_range": [
 						1.0,
@@ -623,15 +615,15 @@
 					]
 				},
 				{
-					"asset": "tree_12",
-					"density_per_sq_km": 320.0,
+					"asset": "tree_11",
+					"density_per_sq_km": 540.0,
 					"scale_range": [
 						1.0,
 						4.0
 					]
 				},
 				{
-					"asset": "tree_13",
+					"asset": "tree_12",
 					"density_per_sq_km": 240.0,
 					"scale_range": [
 						1.0,
@@ -639,8 +631,16 @@
 					]
 				},
 				{
+					"asset": "tree_13",
+					"density_per_sq_km": 180.0,
+					"scale_range": [
+						1.0,
+						4.0
+					]
+				},
+				{
 					"asset": "tree_5",
-					"density_per_sq_km": 128.0,
+					"density_per_sq_km": 96.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -725,7 +725,7 @@
 			"objects": [
 				{
 					"asset": "tree_3",
-					"density_per_sq_km": 480.0,
+					"density_per_sq_km": 360.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -733,7 +733,7 @@
 				},
 				{
 					"asset": "tree_2",
-					"density_per_sq_km": 400.0,
+					"density_per_sq_km": 300.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -810,7 +810,7 @@
 			"objects": [
 				{
 					"asset": "tree_1",
-					"density_per_sq_km": 160.0,
+					"density_per_sq_km": 120.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -818,7 +818,7 @@
 				},
 				{
 					"asset": "tree_5",
-					"density_per_sq_km": 96.0,
+					"density_per_sq_km": 72.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -981,7 +981,7 @@
 			"objects": [
 				{
 					"asset": "tree_3",
-					"density_per_sq_km": 640.0,
+					"density_per_sq_km": 480.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -989,7 +989,7 @@
 				},
 				{
 					"asset": "tree_5",
-					"density_per_sq_km": 240.0,
+					"density_per_sq_km": 180.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -1048,7 +1048,7 @@
 			"objects": [
 				{
 					"asset": "tree_1",
-					"density_per_sq_km": 192.0,
+					"density_per_sq_km": 144.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -1182,7 +1182,7 @@
 			"objects": [
 				{
 					"asset": "tree_0",
-					"density_per_sq_km": 640.0,
+					"density_per_sq_km": 480.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -1190,7 +1190,7 @@
 				},
 				{
 					"asset": "tree_2",
-					"density_per_sq_km": 560.0,
+					"density_per_sq_km": 420.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -1198,7 +1198,7 @@
 				},
 				{
 					"asset": "tree_1",
-					"density_per_sq_km": 320.0,
+					"density_per_sq_km": 240.0,
 					"scale_range": [
 						1.0,
 						4.0
@@ -1317,8 +1317,8 @@
 		"coast_wavelength_m": 2200.0,
 		"detail_strength": 0.12,
 		"detail_wavelength_m": 450.0,
-		"elevation_height": 1125,
-		"elevation_width": 1571,
+		"elevation_height": 2250,
+		"elevation_width": 3142,
 		"erosion_iterations": 8.0,
 		"lake_count": 2.0,
 		"lake_depth_m": 12.0,
@@ -1332,63 +1332,63 @@
 		"river_count": 3.0,
 		"river_depth_m": 6.0,
 		"river_width_m": 90.0,
-		"sample_pitch_m": 16.0,
+		"sample_pitch_m": 8.0,
 		"sea_center_v": 0.5,
 		"sea_depth_m": 18.0,
 		"sea_width_m": 1800.0,
-		"seed": 42.0,
+		"seed": 1885394272,
 		"spawn_clearance_m": 3.0,
 		"talus_slope_deg": 32.0,
-		"terrain_height": 1125,
-		"terrain_width": 1571
+		"terrain_height": 2250,
+		"terrain_width": 3142
 	},
 	"generation_report": {
 		"coastal_beach": {
-			"achieved": 0.0403479736897942,
+			"achieved": 0.0405110686752953,
 			"requested": 0.0423728813559322
 		},
 		"desert": {
-			"achieved": 0.0361411698139897,
+			"achieved": 0.0362210906004668,
 			"requested": 0.0338983050847458
 		},
 		"flower_fields": {
-			"achieved": 0.0855602234952967,
+			"achieved": 0.0854013720913785,
 			"requested": 0.0847457627118644
 		},
 		"grassland": {
-			"achieved": 0.170130277954594,
+			"achieved": 0.169800693118325,
 			"requested": 0.169491525423729
 		},
 		"mountain": {
-			"achieved": 0.0673592191809887,
+			"achieved": 0.0679799137138411,
 			"requested": 0.0677966101694915
 		},
 		"old_growth_forest": {
-			"achieved": 0.12805941014216,
+			"achieved": 0.127672536954523,
 			"requested": 0.127118644067797
 		},
 		"riverbank_wetlands": {
-			"achieved": 0.0387925595869581,
+			"achieved": 0.0390508522526346,
 			"requested": 0.0423728813559322
 		},
 		"rocky_fields": {
-			"achieved": 0.0697282693259778,
+			"achieved": 0.0693926020227739,
 			"requested": 0.0677966101694915
 		},
 		"swamp": {
-			"achieved": 0.0640288563547634,
+			"achieved": 0.0633486102270316,
 			"requested": 0.0677966101694915
 		},
 		"tundra_plateau": {
-			"achieved": 0.0192958483626848,
+			"achieved": 0.0202432986774171,
 			"requested": 0.0169491525423729
 		},
 		"waterbed": {
-			"achieved": 0.152618431289342,
+			"achieved": 0.152618006931183,
 			"requested": 0.152542372881356
 		},
 		"young_forest": {
-			"achieved": 0.127937760803451,
+			"achieved": 0.12775995473513,
 			"requested": 0.127118644067797
 		}
 	},
@@ -1694,8 +1694,10 @@
 				"variant": -1.0
 			},
 			"campfire": {
+				"align_to_normal": true,
 				"behavior_type": 0.0,
 				"flicker": true,
+				"ground_offset_m": 0.0,
 				"light_color": [
 					1.0,
 					0.58,
@@ -1705,6 +1707,7 @@
 				"light_energy": 5.5,
 				"light_range_m": 55.0,
 				"name": "Campfire",
+				"random_yaw": true,
 				"scene_path": "res://assets/maps/default/models/objects/campfire.tscn",
 				"tint": [
 					1.0,
@@ -1967,8 +1970,11 @@
 				"variant": 4.0
 			},
 			"tree_5": {
+				"align_to_normal": false,
+				"allow_on_side": true,
 				"behavior_type": 6.0,
 				"flicker": false,
+				"ground_offset_m": -0.4,
 				"light_color": [
 					1.0,
 					1.0,
@@ -1978,6 +1984,8 @@
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
 				"name": "Dead Tree",
+				"on_side_chance": 0.25,
+				"random_yaw": true,
 				"scene_path": "res://assets/maps/default/models/objects/tree_dead.tscn",
 				"tint": [
 					1.0,
@@ -2030,7 +2038,7 @@
 		"length_segments": 180.0,
 		"radial_segments": 144.0
 	},
-	"saved_at_unix": 1791309379.58288,
+	"saved_at_unix": 1791421473.47611,
 	"schema_version": 4.0,
 	"shader_parameters": {
 		"campfire_flame.gdshader": {

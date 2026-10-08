@@ -632,7 +632,7 @@ func _execute_map_regeneration() -> void:
 		return
 	var directory = MapConfig.new_user_directory("generated")
 	await cb.call(0.93, "Saving generated map")
-	if not generator.save_generated_map_package(result, directory):
+	if not generator.save_generated_map_package(result, directory, cb):
 		_map_failure("Unable to save generated map: " + MapConfig.last_error)
 		return
 	var previous: Dictionary = map_editor.document

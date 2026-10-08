@@ -1,0 +1,119 @@
+{
+	"id": "riverbank_wetlands",
+	"name": "Riverbank & Riparian Corridor",
+	"description": "Continuous riparian strip flanking major rivers and lake inlets",
+	"type": "terrain",
+	"raster_id": 10.0,
+	"color": [
+		45,
+		130,
+		110,
+		255
+	],
+	"weight": 0.05,
+	"environmental_values": {
+		"temperature": 0.5,
+		"moisture": 0.8,
+		"elevation_range_m": [
+			16.0,
+			28.0
+		],
+		"max_slope_deg": 18.0,
+		"submerged": false
+	},
+	"terrain_material": {
+		"texture": "res://assets/textures/terrain/water_eroded_clay.png",
+		"texture_size_m": 4.0,
+		"roughness": 0.9,
+		"tint": [
+			1.0,
+			1.0,
+			1.0,
+			1.0
+		],
+		"blended": true
+	},
+	"allowed_adjacent_biomes": [
+		"grassland",
+		"swamp",
+		"young_forest",
+		"old_growth_forest",
+		"coastal_beach",
+		"flower_fields"
+	],
+	"objects": [
+		{
+			"asset": "tree_3",
+			"density_per_sq_km": 360.0,
+			"scale_range": [
+				1.0,
+				4.0
+			]
+		},
+		{
+			"asset": "tree_2",
+			"density_per_sq_km": 300.0,
+			"scale_range": [
+				1.0,
+				4.0
+			]
+		}
+	],
+	"clutter": [
+		{
+			"density_per_m2": 0.003,
+			"model": "shrubs",
+			"palette": [
+				[
+					0.22,
+					0.58,
+					0.14,
+					1.0
+				],
+				[
+					0.28,
+					0.65,
+					0.18,
+					1.0
+				]
+			],
+			"scale_range": [
+				0.8,
+				1.3
+			]
+		},
+		{
+			"density_per_m2": 0.003,
+			"model": "mushrooms",
+			"palette": [
+				[
+					0.62,
+					0.24,
+					0.21,
+					1.0
+				],
+				[
+					0.44,
+					0.31,
+					0.22,
+					1.0
+				],
+				[
+					0.82,
+					0.72,
+					0.5,
+					1.0
+				]
+			],
+			"scale_range": [
+				0.8,
+				1.3
+			]
+		}
+	],
+	"poi_settings": {
+		"add_to_poi_list": false,
+		"poi_type": "riverbank_wetlands",
+		"poi_name_prefix": "Riverbank & Riparian Corridor"
+	}
+}

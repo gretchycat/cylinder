@@ -97,8 +97,12 @@ Located in `assets/maps/<mapname>/models/`:
 * **`lamp_post.tscn`**: Structural perimeter pathway lantern post.
 * **`beacon_lantern.tscn`**: High-visibility navigation lantern.
 * **`bridge.tscn`**: Walkable stone and steel roadway river bridge with support piers, protective railings, and dual post lantern illumination.
+* **`tree_cherry_blossom.tscn` & `trees/cherry_blossom.glb`**:
+  * **Description:** Stylized Japanese Cherry Blossom (Sakura) model with organic curved bark trunk, wide spreading canopy boughs, multi-layered rose pink blossom foliage clusters, and vertex color variation.
+  * **Source:** Procedural GLTF 2.0 foliage mesh generator for O'Neill Cylinder Habitat Engine (`scripts/build_cherry_blossom_gltf.py`), styled after CC0 nature models from Poly Haven / Quaternius.
+  * **License:** Creative Commons CC0 1.0 Universal (Public Domain Dedication).
 * **`models/ground_clutter/*.tscn`**: Separate map-owned grass, wildflower, stone, crop, shrub, and mushroom models. Their mesh processing scripts are stored alongside them.
-* **`models/source/generators/`**: Blender and OpenSCAD source generators for the map's model assets.
+* **`models/source/generators/`**: Blender, OpenSCAD, and Python GLTF source generators for the map's model assets.
 
 The shared runtime loaders remain in `scripts/`; model scene paths are resolved from each map's `map_config.json` so each map can provide its own model package.
 

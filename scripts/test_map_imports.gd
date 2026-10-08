@@ -79,9 +79,11 @@ func _test_generation_without_source_layers():
 	check(layers.load_layers(destination.path_join(doc.files.elevation_map), destination.path_join(doc.files.terrain_map)), "Generated layers reload from writable storage")
 
 func _run():
+	Config.activate("res://assets/maps/default")
 	_test_packed_map()
 	_test_packed_map(true)
 	_test_generation_without_source_layers()
+	Config.activate("res://assets/maps/default")
 	var panel = preload("res://scripts/map_editor_panel.gd").new()
 	root.add_child(panel)
 	panel.file_dialog.set_meta("kind", "model")
@@ -110,7 +112,8 @@ func _run():
 	check(Config.save_document(panel.document, directory) == OK, "Imported definitions save")
 	var doc = Config.load_map_config(directory)
 	check(doc.biomes.grassland.texture.begins_with("assets/") and doc.objects.model_catalog.imported_tree.scene_path.begins_with("assets/"), "Imported references become package-relative")
-	check(Config.validate_assets(doc).is_empty(), "Packaged asset references resolve")
+	var val_err = Config.validate_assets(doc)
+	check(val_err.is_empty(), "Packaged asset references resolve: " + val_err)
 	var relocated = directory + "_relocated"
 	check(Config.copy_directory(directory, relocated) == OK, "Map relocates with imported assets")
 	doc = Config.load_map_config(relocated)
