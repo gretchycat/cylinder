@@ -195,6 +195,7 @@ func rebuild_light_bar() -> void:
 	spine_mat.albedo_color = _map_color("spine")
 	spine_mat.metallic = 0.85
 	spine_mat.roughness = 0.25
+	spine_mat.disable_fog = true
 
 	truss_node = MeshInstance3D.new()
 	truss_node.name = "CentralTruss"
@@ -219,7 +220,8 @@ func rebuild_light_bar() -> void:
 		tube_mesh.rings = 1
 
 		var seg_mat = StandardMaterial3D.new()
-		seg_mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+		seg_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		seg_mat.disable_fog = true
 		seg_mat.albedo_color = Color.WHITE
 		seg_mat.emission_enabled = true
 		seg_mat.emission = Color.WHITE
@@ -269,11 +271,19 @@ func _process(delta: float) -> void:
 	if preset == LightingPreset.DAY_NIGHT_WAVE or preset == LightingPreset.NEON_AURORA:
 		wave_time += delta * wave_speed
 		_update_animated_wave()
-	elif preset == LightingPreset.GRADIENT or preset == LightingPreset.SOLAR_CYCLE:
-		var cam_z = _get_camera_z()
-		if absf(cam_z - last_cam_z) > 15.0:
-			last_cam_z = cam_z
-			_sync_fog_and_atmosphere()
+
+	var cam_pos = _get_camera_position()
+	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
+	var is_underwater = false
+	if cylinder_world:
+		var cam_r = Vector3(cam_pos.x, cam_pos.y, 0.0).length()
+		var water_r = cylinder_world.radius - cylinder_world.water_level
+		is_underwater = (cam_r > water_r)
+
+	if is_underwater != was_camera_underwater or cam_pos.distance_squared_to(last_cam_pos) > 25.0:
+		was_camera_underwater = is_underwater
+		last_cam_pos = cam_pos
+		_sync_fog_and_atmosphere()
 
 func _apply_current_preset() -> void:
 	if segment_colors.size() != num_segments:
@@ -404,6 +414,7 @@ func _refresh_all_segments() -> void:
 			mat.albedo_color = col
 			mat.emission = col
 			mat.emission_energy_multiplier = energy * 1.5
+			mat.disable_fog = true
 
 		avg_col += col
 		avg_intensity += segment_intensities[i] * col.a
@@ -493,15 +504,24 @@ func _apply_lut_to_materials() -> void:
 	if clutter_mgr and clutter_mgr.has_method("update_lut"):
 		clutter_mgr.call("update_lut", lut_texture, bar_length)
 
-func _get_camera_z() -> float:
+var last_cam_pos := Vector3(INF, INF, INF)
+var was_camera_underwater := false
+
+func _get_camera_position() -> Vector3:
 	if not is_inside_tree():
-		return 0.0
+		return Vector3.ZERO
 	var viewport = get_viewport()
 	if viewport:
 		var cam = viewport.get_camera_3d()
 		if cam:
-			return cam.global_position.z
-	return 0.0
+			return cam.global_position
+	var player = get_tree().get_first_node_in_group("player") as Node3D
+	if player:
+		return player.global_position
+	return Vector3.ZERO
+
+func _get_camera_z() -> float:
+	return _get_camera_position().z
 
 func get_light_at_z(z: float) -> Dictionary:
 	if num_segments <= 0 or segment_colors.is_empty():
@@ -556,17 +576,31 @@ func _sync_fog_and_atmosphere() -> void:
 	var fog_energy = fog_props["fog_energy"] as float
 	var intensity_norm = fog_props["intensity_norm"] as float
 
-	# Declare cylinder_world once here to avoid illegal forward references below
 	var cylinder_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
+
+	var is_underwater = false
+	if cylinder_world:
+		var cam_pos = _get_camera_position()
+		var cam_r = Vector3(cam_pos.x, cam_pos.y, 0.0).length()
+		var water_r = cylinder_world.radius - cylinder_world.water_level
+		is_underwater = (cam_r > water_r)
 
 	if world_environment and world_environment.environment:
 		var env = world_environment.environment
-		env.fog_light_color = fog_col
-		env.fog_light_energy = fog_energy
-		env.fog_depth_curve = 1.1
-		env.fog_depth_begin = cylinder_world.active_map_config.environment.air_distance_min if cylinder_world else env.fog_depth_begin
-		env.fog_depth_end = cylinder_world.active_map_config.environment.air_distance_max if cylinder_world else env.fog_depth_end
-		# Update end‑cap emission based on scene brightness
+		if is_underwater and cylinder_world and cylinder_world.active_map_config.has("environment"):
+			var deep_col = preload("res://scripts/map_config.gd").color(cylinder_world.active_map_config.environment.water.deep_color)
+			env.fog_light_color = deep_col
+			env.fog_light_energy = 1.4
+			env.fog_depth_curve = 1.05
+			env.fog_depth_begin = 0.0
+			env.fog_depth_end = 220.0
+		else:
+			env.fog_light_color = fog_col
+			env.fog_light_energy = fog_energy
+			env.fog_depth_curve = 1.1
+			env.fog_depth_begin = cylinder_world.active_map_config.environment.air_distance_min if cylinder_world else env.fog_depth_begin
+			env.fog_depth_end = cylinder_world.active_map_config.environment.air_distance_max if cylinder_world else env.fog_depth_end
+
 		if cylinder_world and cylinder_world.surface_material is ShaderMaterial:
 			cylinder_world.surface_material.set_shader_parameter("endcap_emission_factor", intensity_norm)
 

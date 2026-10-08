@@ -219,13 +219,15 @@ void fragment() {
 
 	// Check if viewing the water surface from below (camera underwater)
 	if (is_camera_underwater) {
-		// Uniform crystal-clear surface translucency independent of viewing angle
+		// Surface light transmission & caustics when viewed from below
 		float under_c1 = sin(surface_pos.x * 0.15 + TIME * 2.2 * wave_speed) * cos(surface_pos.y * 0.18 - TIME * 1.8 * wave_speed);
 		float under_c2 = cos(surface_pos.x * 0.28 - TIME * 1.5 * wave_speed) * sin(surface_pos.y * 0.24 + TIME * 2.4 * wave_speed);
 		float under_caustics = pow(clamp((under_c1 + under_c2) * 0.5 + 0.5, 0.0, 1.0), 2.5);
-		vec3 caustic_glow = caustic_color.rgb * (under_caustics * 0.25 * clamp(axial_lum, 0.0, 1.5));
+		vec3 caustic_glow = caustic_color.rgb * (under_caustics * 0.35 * clamp(axial_lum, 0.0, 1.5));
 
-		final_color = air_color.rgb + caustic_glow;
+		// Light transmission from central light bar and sky through water surface
+		vec3 sky_transmission = air_color.rgb * axial_col * (0.8 + 0.65 * axial_lum);
+		final_color = sky_transmission + caustic_glow + axial_col * (axis_reflection_glint * 0.85);
 		final_alpha = 0.05;
 	} else {
 		// Focused directional specular sparkle and glint (no opaque washing out)

@@ -123,8 +123,9 @@ void fragment() {
 		float water_visibility = 180.0;
 		float water_fog = 1.0 - exp(-cam_dist / water_visibility);
 		vec3 deep_water_fog = deep_water_color.rgb;
-		col = mix(col, deep_water_fog, water_fog * 0.94);
-		col = mix(col, deep_water_color.rgb, 0.25);
+		float fog_factor = clamp(water_fog * 0.88, 0.0, 0.92);
+		col = col * (1.0 - fog_factor);
+		EMISSION = deep_water_fog * fog_factor;
 	} else {
 		// Atmospheric aerial distance perspective: exact match with terrain depth haze
 		vec3 fog_color = air_color.rgb;

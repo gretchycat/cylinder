@@ -189,8 +189,9 @@ void fragment() {
 		float water_visibility = 180.0;
 		float water_fog = 1.0 - exp(-distance_m / water_visibility);
 		vec3 deep_water_fog = deep_water_color.rgb;
-		vec3 underwater_albedo = mix(albedo, deep_water_fog, water_fog * 0.94);
-		albedo = mix(underwater_albedo, deep_water_color.rgb, 0.25);
+		float fog_factor = clamp(water_fog * 0.88, 0.0, 0.92);
+		albedo = albedo * (1.0 - fog_factor);
+		EMISSION = deep_water_fog * fog_factor;
 	} else {
 		// Atmospheric aerial distance perspective in air
 		vec3 fog_color = air_color.rgb;
