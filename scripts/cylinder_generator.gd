@@ -256,17 +256,53 @@ func get_surface_mesh_point_and_normal(theta: float, z: float) -> Dictionary:
 	var pos: Vector3
 	var normal: Vector3
 
-	# Triangulation matching _build_terrain_mesh:
-	# Tri 1: (v00, v10, v01) for s + t <= 1.0
-	# Tri 2: (v10, v11, v01) for s + t > 1.0
-	if (s + t) <= 1.0:
-		pos = v00 + s * (v10 - v00) + t * (v01 - v00)
-		normal = (v01 - v00).cross(v10 - v00).normalized()
+	# Shortest-diagonal / contour-aligned triangulation matching _build_terrain_mesh:
+	var diff_main = absf(e00 - e11)
+	var diff_anti = absf(e10 - e01)
+
+	var use_main: bool = false
+	if diff_main < diff_anti:
+		use_main = true
+	elif diff_anti < diff_main:
+		use_main = false
 	else:
-		var u2 = 1.0 - s
-		var v2 = 1.0 - t
-		pos = v11 + u2 * (v01 - v11) + v2 * (v10 - v11)
-		normal = (v10 - v11).cross(v01 - v11).normalized()
+		var t00 = terrain_manager.get_terrain_type(theta_0, z_0, cylinder_length)
+		var t10 = terrain_manager.get_terrain_type(theta_1, z_0, cylinder_length)
+		var t01 = terrain_manager.get_terrain_type(theta_0, z_1, cylinder_length)
+		var t11 = terrain_manager.get_terrain_type(theta_1, z_1, cylinder_length)
+		if t00 == t11 and t10 != t01:
+			use_main = true
+		elif t10 == t01 and t00 != t11:
+			use_main = false
+		else:
+			use_main = (e00 + e11) <= (e10 + e01)
+
+	if use_main:
+		# Main diagonal split (v00, v11) for top-left to bottom-right stair steps
+		if s >= t:
+			# Tri 1: (v00, v10, v11)
+			var b00 = 1.0 - s
+			var b10 = s - t
+			var b11 = t
+			pos = b00 * v00 + b10 * v10 + b11 * v11
+			normal = (v10 - v00).cross(v11 - v00).normalized()
+		else:
+			# Tri 2: (v00, v11, v01)
+			var b00 = 1.0 - t
+			var b11 = s
+			var b01 = t - s
+			pos = b00 * v00 + b11 * v11 + b01 * v01
+			normal = (v11 - v00).cross(v01 - v00).normalized()
+	else:
+		# Anti-diagonal split (v10, v01) for top-right to bottom-left stair steps
+		if (s + t) <= 1.0:
+			pos = v00 + s * (v10 - v00) + t * (v01 - v00)
+			normal = (v01 - v00).cross(v10 - v00).normalized()
+		else:
+			var u2 = 1.0 - s
+			var v2 = 1.0 - t
+			pos = v11 + u2 * (v01 - v11) + v2 * (v10 - v11)
+			normal = (v10 - v11).cross(v01 - v11).normalized()
 
 	var elev = lerpf(lerpf(e00, e10, s), lerpf(e01, e11, s), t)
 	var t_type = terrain_manager.get_terrain_type(theta, z, cylinder_length)
@@ -642,20 +678,61 @@ func _build_terrain_mesh() -> void:
 
 	var stride = radial_segments + 1
 	for j in range(length_segments):
+		var z0 = -half_len + float(j) * d_z
+		var z1 = -half_len + float(j + 1) * d_z
 		for i in range(radial_segments):
+			var theta0 = float(i) * d_theta
+			var theta1 = float(i + 1) * d_theta
+
 			var i00 = j * stride + i
 			var i10 = j * stride + (i + 1)
 			var i01 = (j + 1) * stride + i
 			var i11 = (j + 1) * stride + (i + 1)
 
-			# Inward facing triangles (CCW when viewed from cylinder axis)
-			st.add_index(i00)
-			st.add_index(i10)
-			st.add_index(i01)
+			var e00 = terrain_manager.get_elevation(theta0, z0, cylinder_length)
+			var e10 = terrain_manager.get_elevation(theta1, z0, cylinder_length)
+			var e01 = terrain_manager.get_elevation(theta0, z1, cylinder_length)
+			var e11 = terrain_manager.get_elevation(theta1, z1, cylinder_length)
 
-			st.add_index(i10)
-			st.add_index(i11)
-			st.add_index(i01)
+			var diff_main = absf(e00 - e11)
+			var diff_anti = absf(e10 - e01)
+
+			var use_main: bool = false
+			if diff_main < diff_anti:
+				use_main = true
+			elif diff_anti < diff_main:
+				use_main = false
+			else:
+				var t00 = terrain_manager.get_terrain_type(theta0, z0, cylinder_length)
+				var t10 = terrain_manager.get_terrain_type(theta1, z0, cylinder_length)
+				var t01 = terrain_manager.get_terrain_type(theta0, z1, cylinder_length)
+				var t11 = terrain_manager.get_terrain_type(theta1, z1, cylinder_length)
+				if t00 == t11 and t10 != t01:
+					use_main = true
+				elif t10 == t01 and t00 != t11:
+					use_main = false
+				else:
+					use_main = (e00 + e11) <= (e10 + e01)
+
+			# Inward facing triangles (CCW when viewed from cylinder axis)
+			if use_main:
+				# Main diagonal split (i00, i11): aligns with top-left to bottom-right stair steps
+				st.add_index(i00)
+				st.add_index(i10)
+				st.add_index(i11)
+
+				st.add_index(i00)
+				st.add_index(i11)
+				st.add_index(i01)
+			else:
+				# Anti-diagonal split (i10, i01): aligns with top-right to bottom-left stair steps
+				st.add_index(i00)
+				st.add_index(i10)
+				st.add_index(i01)
+
+				st.add_index(i10)
+				st.add_index(i11)
+				st.add_index(i01)
 
 	# --- Generate Concentric Hemispherical End Cap Bulkheads (if enabled) ---
 	if include_end_caps:

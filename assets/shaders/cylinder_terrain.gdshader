@@ -107,64 +107,77 @@ void fragment() {
 		albedo = mix(tex, tex * end_cap_tint.rgb, end_cap_tint.a);
 		roughness_value = 0.9;
 	} else {
-		// Nearest-sampled biome ownership with continuous splat blending.
-		// Non-blending biomes (e.g. concrete/farmland) render 100% solid, and adjacent
-		// blending biomes substitute non-blending neighbor samples with their own ID
-		// so textures remain 100% pure right up to non-blending boundaries.
+		// Smooth continuous splat blending across adaptive cell diagonals
 		vec2 grid = vec2(u * terrain_map_size.x, v * (terrain_map_size.y - 1.0));
-		vec2 nearest_cell = floor(grid + 0.5);
-		float nearest_id = terrain_biome_id(nearest_cell);
-		vec4 nearest_params = texture(biome_parameters, vec2((nearest_id + 0.5) / 256.0, 0.5));
+		vec2 cell0 = floor(grid);
+		vec2 f = grid - cell0;
 
-		if (nearest_params.a <= 0.25) {
-			// Non-blending biome pixel (e.g. concrete or farmland): 100% solid surface
-			vec4 surface = terrain_biome_surface(nearest_id, u, world_pos.z);
-			albedo = surface.rgb;
-			roughness_value = surface.a;
+		vec2 cell00 = cell0;
+		vec2 cell10 = cell0 + vec2(1.0, 0.0);
+		vec2 cell01 = cell0 + vec2(0.0, 1.0);
+		vec2 cell11 = cell0 + vec2(1.0, 1.0);
+
+		float id00 = terrain_biome_id(cell00);
+		float id10 = terrain_biome_id(cell10);
+		float id01 = terrain_biome_id(cell01);
+		float id11 = terrain_biome_id(cell11);
+
+		// Adaptive diagonal selection: align diagonal with biome boundary
+		float match_main = (id00 == id11) ? 1.0 : 0.0;
+		float match_anti = (id10 == id01) ? 1.0 : 0.0;
+		bool use_main = (match_main >= match_anti);
+
+		float w00 = 0.0, w10 = 0.0, w01 = 0.0, w11 = 0.0;
+		if (use_main) {
+			// Main diagonal split connecting (0,0) to (1,1) along line fx = fy
+			if (f.x >= f.y) {
+				float b00 = 1.0 - f.x;
+				float b10 = f.x - f.y;
+				float b11 = f.y;
+				w00 = smoothstep(0.0, 1.0, b00);
+				w10 = smoothstep(0.0, 1.0, b10);
+				w11 = smoothstep(0.0, 1.0, b11);
+			} else {
+				float b00 = 1.0 - f.y;
+				float b01 = f.y - f.x;
+				float b11 = f.x;
+				w00 = smoothstep(0.0, 1.0, b00);
+				w01 = smoothstep(0.0, 1.0, b01);
+				w11 = smoothstep(0.0, 1.0, b11);
+			}
 		} else {
-			// Blending biome pixel (e.g. dirt, grass, sand): interpolate smoothly across grid corners
-			vec2 cell0 = floor(grid);
-			vec2 f = grid - cell0;
-
-			vec2 cell00 = cell0;
-			vec2 cell10 = cell0 + vec2(1.0, 0.0);
-			vec2 cell01 = cell0 + vec2(0.0, 1.0);
-			vec2 cell11 = cell0 + vec2(1.0, 1.0);
-
-			float raw_id00 = terrain_biome_id(cell00);
-			float raw_id10 = terrain_biome_id(cell10);
-			float raw_id01 = terrain_biome_id(cell01);
-			float raw_id11 = terrain_biome_id(cell11);
-
-			vec4 p00 = texture(biome_parameters, vec2((raw_id00 + 0.5) / 256.0, 0.5));
-			vec4 p10 = texture(biome_parameters, vec2((raw_id10 + 0.5) / 256.0, 0.5));
-			vec4 p01 = texture(biome_parameters, vec2((raw_id01 + 0.5) / 256.0, 0.5));
-			vec4 p11 = texture(biome_parameters, vec2((raw_id11 + 0.5) / 256.0, 0.5));
-
-			// Substitute non-blending neighbors with nearest_id
-			float id00 = (p00.a > 0.25) ? raw_id00 : nearest_id;
-			float id10 = (p10.a > 0.25) ? raw_id10 : nearest_id;
-			float id01 = (p01.a > 0.25) ? raw_id01 : nearest_id;
-			float id11 = (p11.a > 0.25) ? raw_id11 : nearest_id;
-
-
-			float sx = smoothstep(0.0, 1.0, f.x);
-			float sy = smoothstep(0.0, 1.0, f.y);
-
-			float w00 = (1.0 - sx) * (1.0 - sy);
-			float w10 = sx * (1.0 - sy);
-			float w01 = (1.0 - sx) * sy;
-			float w11 = sx * sy;
-
-			vec4 surf00 = terrain_biome_surface(id00, u, world_pos.z);
-			vec4 surf10 = terrain_biome_surface(id10, u, world_pos.z);
-			vec4 surf01 = terrain_biome_surface(id01, u, world_pos.z);
-			vec4 surf11 = terrain_biome_surface(id11, u, world_pos.z);
-
-			vec4 surface = surf00 * w00 + surf10 * w10 + surf01 * w01 + surf11 * w11;
-			albedo = surface.rgb;
-			roughness_value = surface.a;
+			// Anti-diagonal split connecting (1,0) to (0,1) along line fx + fy = 1.0
+			if ((f.x + f.y) <= 1.0) {
+				float b00 = 1.0 - f.x - f.y;
+				float b10 = f.x;
+				float b01 = f.y;
+				w00 = smoothstep(0.0, 1.0, b00);
+				w10 = smoothstep(0.0, 1.0, b10);
+				w01 = smoothstep(0.0, 1.0, b01);
+			} else {
+				float b11 = f.x + f.y - 1.0;
+				float b10 = 1.0 - f.y;
+				float b01 = 1.0 - f.x;
+				w11 = smoothstep(0.0, 1.0, b11);
+				w10 = smoothstep(0.0, 1.0, b10);
+				w01 = smoothstep(0.0, 1.0, b01);
+			}
 		}
+
+		float total_w = max(w00 + w10 + w01 + w11, 0.0001);
+		w00 /= total_w;
+		w10 /= total_w;
+		w01 /= total_w;
+		w11 /= total_w;
+
+		vec4 surf00 = terrain_biome_surface(id00, u, world_pos.z);
+		vec4 surf10 = terrain_biome_surface(id10, u, world_pos.z);
+		vec4 surf01 = terrain_biome_surface(id01, u, world_pos.z);
+		vec4 surf11 = terrain_biome_surface(id11, u, world_pos.z);
+
+		vec4 surface = surf00 * w00 + surf10 * w10 + surf01 * w01 + surf11 * w11;
+		albedo = surface.rgb;
+		roughness_value = surface.a;
 	}
 	float distance_m = length(world_pos - CAMERA_POSITION_WORLD);
 	vec3 fog_color = air_color.rgb;

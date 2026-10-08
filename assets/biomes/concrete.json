@@ -31,7 +31,8 @@
 			1.0,
 			1.0
 		],
-		"blended": true
+		"blended": true,
+		"rotate": true
 	},
 	"allowed_adjacent_biomes": [],
 	"objects": [],
