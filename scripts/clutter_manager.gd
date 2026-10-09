@@ -511,7 +511,13 @@ func _compute_chunk_data(cx: int, cz: int, _num_chunks_x: int, radius_m: float, 
 				var right = up.cross(forward).normalized()
 				var basis = Basis(right, up, right.cross(up)).orthonormalized().rotated(up, rng.randf() * TAU)
 
-				var scale_range = rule.get("scale_range", [0.7, 1.2])
+				var scale_range: Array = rule.get("scale_range", [0.7, 1.2])
+				# The procedural woodland bush is authored at its 1x native size.
+				# Keep every ground-clutter bush in the full native-to-large range,
+				# even while older biome descriptors are still using the former 0.5x
+				# floor.
+				if str(rule.model) == "shrubs":
+					scale_range = [1.0, 3.0]
 				var scale_value = rng.randf_range(float(scale_range[0]), float(scale_range[1]))
 				var clutter_pos = point.position - up * 0.05
 				transforms.append(Transform3D(basis.scaled(Vector3.ONE * scale_value), clutter_pos))

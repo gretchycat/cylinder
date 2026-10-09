@@ -110,6 +110,17 @@ func check_clutter_descriptors() -> void:
 		check(data.total == 16, "Clutter uses descriptor density regardless of model/biome name or raster ID %d" % raster_id)
 		if not data.batch_table.is_empty():
 			check(data.batch_table[0].colors[0].is_equal_approx(Color(0.2, 0.4, 0.6)), "Clutter uses descriptor palette without name-based recoloring")
+	# Bushes use native-to-large variation regardless of legacy descriptor floors.
+	rule.model = "shrubs"
+	rule.scale_range = [0.5, 4.0]
+	clutter.parts = {"shrubs": [part]}
+	var shrub_data: Dictionary = clutter._compute_chunk_data(314, 4, 629, world.radius, world.cylinder_length)
+	var shrub_scales_valid: bool = true
+	if not shrub_data.batch_table.is_empty():
+		for transform: Transform3D in shrub_data.batch_table[0].transforms:
+			var shrub_scale: float = transform.basis.get_scale().x
+			shrub_scales_valid = shrub_scales_valid and shrub_scale >= 1.0 and shrub_scale <= 3.0
+	check(shrub_scales_valid, "Bush ground clutter scales stay within 1x to 3x")
 	biome.clutter = []
 	check(clutter._compute_chunk_data(314, 4, 629, world.radius, world.cylinder_length).total == 0,
 		"Empty clutter descriptor never receives fallback grass")
