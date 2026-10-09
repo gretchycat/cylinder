@@ -74,50 +74,56 @@ static func _ring_point(center: Vector3, radius: float, angle: float) -> Vector3
 	return center + Vector3(cos(angle) * radius, 0.0, sin(angle) * radius)
 
 
-# Grass: several real 3-D tapered blades rather than intersecting cards.
+# Grass: photoreal alpha-cutout cards arranged in a crossed tuft.  The cards
+# keep the generated foliage asset cheap enough for MultiMesh instancing while
+# still giving each instance real blade detail and silhouette variation.
 static func grass(width_m: float = 0.55, height_m: float = 0.85, _lod_level: int = 0) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	var blade_count := 9
-	var tuft_center_offset := Vector3(0.0, -height_m * 0.20, 0.0)
-	for i in range(blade_count):
-		var a := TAU * float(i) / float(blade_count)
-		var lean := Vector3(cos(a), 0.0, sin(a)) * width_m * 0.22
-		var side := Vector3(-sin(a), 0.0, cos(a))
-		var root := Vector3.ZERO
-		var mid := lean * 0.55 + Vector3(0.0, height_m * 0.55, 0.0)
-		var tip := lean + Vector3(0.0, height_m, 0.0)
-
-		var root_w := width_m * 0.075
-		var mid_w := width_m * 0.055
-
-		var r1 := root - side * root_w
-		var r2 := root + side * root_w
-		var m1 := mid - side * mid_w
-		var m2 := mid + side * mid_w
-
-		# Calculate per-vertex outward radial/upward foliage normals for realistic point light reflections
-		var dir_out := Vector3(cos(a), 0.0, sin(a))
-		var dir_up := Vector3(0.0, 1.0, 0.0)
-
-		var nr1 := (dir_out * 0.70 + dir_up * 0.40).normalized()
-		var nr2 := nr1
-		var nm1 := ((m1 - tuft_center_offset).normalized() * 0.60 + dir_out * 0.40 + dir_up * 0.30).normalized()
-		var nm2 := ((m2 - tuft_center_offset).normalized() * 0.60 + dir_out * 0.40 + dir_up * 0.30).normalized()
-		var ntip := ((tip - tuft_center_offset).normalized() * 0.50 + dir_up * 0.50).normalized()
-
-		# Calculate subtle pseudo-random luminance variation per blade
-		var var_v := 0.94 + 0.12 * sin(float(i * 3 + 1))
-
-		var col_root := Color(0.35 * var_v, 0.35 * var_v, 0.35 * var_v, 1.0)
-		var col_mid  := Color(0.68 * var_v, 0.68 * var_v, 0.68 * var_v, 1.0)
-		var col_tip  := Color(1.00 * var_v, 1.00 * var_v, 1.00 * var_v, 1.0)
-
-		_add_quad_colored_with_normals(st, r1, nr1, col_root, r2, nr2, col_root, m2, nm2, col_mid, m1, nm1, col_mid)
-		_add_triangle_colored_with_normals(st, m1, nm1, col_mid, m2, nm2, col_mid, tip, ntip, col_tip)
+	var card_width := width_m * 0.82
+	var card_height := height_m * 1.16
+	for i in range(2):
+		var angle := TAU * float(i) / 2.0 + 0.12 * sin(float(i) * 4.7)
+		var lean := Vector3(cos(angle), 0.0, sin(angle)) * width_m * (0.10 + 0.04 * float(i))
+		_add_textured_grass_card(st, angle, card_width, card_height, lean)
 
 	return st.commit()
+
+
+static func _add_textured_grass_card(st: SurfaceTool, angle: float, width_m: float, height_m: float, lean: Vector3) -> void:
+	var side := Vector3(-sin(angle), 0.0, cos(angle)) * width_m * 0.5
+	var bottom := Vector3(0.0, 0.0, 0.0)
+	var top := Vector3(0.0, height_m, 0.0) + lean
+	var normal := Vector3(cos(angle), 0.08, sin(angle)).normalized()
+	var white := Color(1.0, 1.0, 1.0, 1.0)
+
+	# UVs map the entire transparent grass cutout onto each crossed card.
+	st.set_normal(normal)
+	st.set_color(white)
+	st.set_uv(Vector2(0.0, 1.0))
+	st.add_vertex(bottom - side)
+	st.set_normal(normal)
+	st.set_color(white)
+	st.set_uv(Vector2(1.0, 1.0))
+	st.add_vertex(bottom + side)
+	st.set_normal(normal)
+	st.set_color(white)
+	st.set_uv(Vector2(1.0, 0.0))
+	st.add_vertex(top + side * 0.08)
+
+	st.set_normal(normal)
+	st.set_color(white)
+	st.set_uv(Vector2(0.0, 1.0))
+	st.add_vertex(bottom - side)
+	st.set_normal(normal)
+	st.set_color(white)
+	st.set_uv(Vector2(1.0, 0.0))
+	st.add_vertex(top + side * 0.08)
+	st.set_normal(normal)
+	st.set_color(white)
+	st.set_uv(Vector2(0.0, 0.0))
+	st.add_vertex(top - side * 0.08)
 
 
 # A flower with a cylindrical stem, two small leaves, and a faceted blossom.
@@ -260,29 +266,9 @@ static func crop(width_m: float = 0.50, height_m: float = 1.15, _lod_level: int 
 	return st.commit()
 
 
-# Shrub: a compact cluster of low-poly leaf blobs around short stems.
-static func shrub(width_m: float = 1.10, height_m: float = 0.95, _lod_level: int = 0) -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-
-	var bush_center := Vector3(0.0, height_m * 0.45, 0.0)
-
-	for i in range(7):
-		var a := TAU * float(i) / 7.0
-		var radius := width_m * (0.20 + 0.12 * float(i % 3))
-		var center := Vector3(
-			cos(a) * radius,
-			height_m * (0.35 + 0.08 * float(i % 2)),
-			sin(a) * radius
-		)
-		var var_v := 0.92 + 0.14 * sin(float(i * 3 + 1))
-		st.set_color(Color(0.70 * var_v, 0.70 * var_v, 0.70 * var_v, 1.0))
-		_add_uv_sphere(st, center, width_m * (0.20 + 0.025 * float(i % 3)), 6, 4, bush_center)
-
-	st.set_color(Color(0.95, 0.95, 0.95, 1.0))
-	_add_uv_sphere(st, Vector3(0, height_m * 0.62, 0), width_m * 0.30, 7, 4, bush_center)
-
-	return st.commit()
+# Keep the existing model/catalog entry while delegating the woodland asset.
+static func shrub(width_m: float = 1.10, height_m: float = 0.95, lod_level: int = 0) -> ArrayMesh:
+	return preload("res://assets/maps/default/models/ground_clutter/woodland_bush.gd").build(width_m, height_m, lod_level)
 
 
 static func _add_cylinder(
@@ -424,4 +410,3 @@ static func _add_uv_sphere(
 				n11 = ((p11 - bush_center).normalized() * 0.65 + n11 * 0.35).normalized()
 
 			_add_quad_with_normals(st, p00, n00, p01, n01, p11, n11, p10, n10)
-

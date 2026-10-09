@@ -286,14 +286,15 @@ func get_surface_mesh_point_and_normal(theta: float, z: float) -> Dictionary:
 			var b10 = s - t
 			var b11 = t
 			pos = b00 * v00 + b10 * v10 + b11 * v11
-			normal = (v10 - v00).cross(v11 - v00).normalized()
+			# Surface up points inward, toward the cylinder axis.
+			normal = (v11 - v00).cross(v10 - v00).normalized()
 		else:
 			# Tri 2: (v00, v11, v01)
 			var b00 = 1.0 - t
 			var b11 = s
 			var b01 = t - s
 			pos = b00 * v00 + b11 * v11 + b01 * v01
-			normal = (v11 - v00).cross(v01 - v00).normalized()
+			normal = (v01 - v00).cross(v11 - v00).normalized()
 	else:
 		# Anti-diagonal split (v10, v01) for top-right to bottom-left stair steps
 		if (s + t) <= 1.0:
@@ -525,6 +526,10 @@ func _update_terrain_material_textures(mat: ShaderMaterial = null) -> void:
 	var images: Array[Image] = []
 	var tints = Image.create(256, 1, false, Image.FORMAT_RGBA8)
 	var parameters = Image.create(256, 1, false, Image.FORMAT_RGBAF)
+	for i in range(256):
+		tints.set_pixel(i, 0, Color(1.0, 1.0, 1.0, 0.0))
+		parameters.set_pixel(i, 0, Color(0.0, 4.0, 0.9, 1.0))
+
 	var resolution = int(active_map_config.rendering.biome_texture_resolution)
 	for biome in active_map_config.biomes.values():
 		var img = MapAssetLoaderClass.load_image(MapConfigClass.resolve_map_asset_path(active_map_config, biome.texture))

@@ -26,6 +26,7 @@ enum TreeVariant {
 const MapConfigClass = preload("res://scripts/map_config.gd")
 const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 const MapRuntimeClass = preload("res://scripts/map_runtime.gd")
+const TWO_SIDED_FOLIAGE_SHADER = preload("res://assets/shaders/two_sided_foliage.gdshader")
 
 @export var object_type: ObjectType = ObjectType.CAMPFIRE:
 	set(val):
@@ -290,6 +291,16 @@ func apply_appearance(instance: Node = null) -> void:
 			continue
 		for surface in mesh_instance.mesh.get_surface_count():
 			var source = mesh_instance.get_active_material(surface)
+			if source is BaseMaterial3D and source.albedo_texture and source.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+				var foliage_material := ShaderMaterial.new()
+				foliage_material.shader = TWO_SIDED_FOLIAGE_SHADER
+				foliage_material.set_shader_parameter("albedo_texture", source.albedo_texture)
+				foliage_material.set_shader_parameter("albedo_color", source.albedo_color * tint)
+				foliage_material.set_shader_parameter("alpha_scissor", 0.2)
+				foliage_material.set_shader_parameter("roughness", source.roughness)
+				foliage_material.set_shader_parameter("metallic", source.metallic)
+				mesh_instance.set_surface_override_material(surface, foliage_material)
+				continue
 			if source == null or source is BaseMaterial3D:
 				var material = source.duplicate() as BaseMaterial3D if source else StandardMaterial3D.new()
 				material.albedo_color *= tint

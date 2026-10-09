@@ -50,7 +50,7 @@
 	],
 	"clutter": [
 		{
-			"density_per_m2": 0.003,
+			"density_per_m2": 0.000375,
 			"model": "pebbles",
 			"palette": [
 				[
@@ -61,8 +61,8 @@
 				]
 			],
 			"scale_range": [
-				0.8,
-				1.3
+				0.25,
+				1.0
 			]
 		}
 	],

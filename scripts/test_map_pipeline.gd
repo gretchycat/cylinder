@@ -49,7 +49,105 @@ func _initialize():
 	_watchdog(60.0)
 	_run.call_deferred()
 
+func check_surface_normals() -> void:
+	var world: CylinderGenerator = CylinderGenerator.new()
+	var terrain: TerrainManager = Terrain.new()
+	world.terrain_manager = terrain
+	world.radius = 4000.0
+	world.cylinder_length = 400.0
+	world.radial_segments = 256
+	world.length_segments = 4
+	terrain.elevation_grid_u = 256
+	terrain.elevation_grid_v = 5
+	terrain.elevation_data.resize(256 * 5)
+	terrain.elevation_data.fill(30.0)
+	terrain.elevation_data[1] = 31.0
+	terrain.elevation_data[256] = 32.0
+	for main_split: bool in [true, false]:
+		# Opposite corners select the main or anti-diagonal respectively.
+		terrain.elevation_data[257] = 30.0 if main_split else 34.0
+		for uv: Vector2 in [Vector2(0.7, 0.2), Vector2(0.3, 0.8)]:
+			var theta: float = uv.x * TAU / 256.0
+			var point: Dictionary = world.get_surface_mesh_point_and_normal(theta, -200.0 + uv.y * 100.0)
+			var radial_up: Vector3 = Vector3(-cos(theta), -sin(theta), 0.0)
+			var normal: Vector3 = point.normal
+			var slope_deg: float = rad_to_deg(acos(clampf(normal.dot(radial_up), -1.0, 1.0)))
+			check(normal.is_normalized() and slope_deg < 5.0,
+				"Gentle terrain faces inward and passes clutter slope filtering (main=%s, uv=%s, slope=%.2f)" % [main_split, uv, slope_deg])
+	world.free()
+
+func check_clutter_descriptors() -> void:
+	var world: CylinderGenerator = CylinderGenerator.new()
+	var terrain: TerrainManager = Terrain.new()
+	world.terrain_manager = terrain
+	world.radius = 4000.0
+	world.cylinder_length = 400.0
+	world.water_level = 20.0
+	world.radial_segments = 256
+	world.length_segments = 4
+	terrain.elevation_grid_u = 256
+	terrain.elevation_grid_v = 5
+	terrain.elevation_data.resize(256 * 5)
+	terrain.elevation_data.fill(30.0)
+	terrain.terrain_grid_u = 256
+	terrain.terrain_grid_v = 5
+	terrain.terrain_data.resize(256 * 5)
+	var clutter: ClutterManager = ClutterManager.new()
+	clutter.cylinder_world = world
+	clutter.chunk_size = 40.0
+	var rule: Dictionary = {"model": "pebbles", "density_per_m2": 0.01,
+		"scale_range": [1.0, 1.0], "palette": [[0.2, 0.4, 0.6, 1.0]]}
+	var biome: Dictionary = {"raster_id": 31, "name": "River Road", "max_slope_deg": 45.0,
+		"submerged": false, "clutter": [rule]}
+	clutter.map_config = {"ground_clutter": {"seed": 123}, "biomes": {"custom": biome}}
+	var part: Dictionary = {"mesh": BoxMesh.new(), "material": null, "transform": Transform3D.IDENTITY}
+	clutter.parts = {"pebbles": [part], "grass_tuft": [part]}
+	for raster_id: int in [0, 20, 30, 31, 32]:
+		biome.raster_id = raster_id
+		terrain.terrain_data.fill(raster_id)
+		clutter._build_biome_registry()
+		var data: Dictionary = clutter._compute_chunk_data(314, 4, 629, world.radius, world.cylinder_length)
+		check(data.total == 16, "Clutter uses descriptor density regardless of model/biome name or raster ID %d" % raster_id)
+		if not data.batch_table.is_empty():
+			check(data.batch_table[0].colors[0].is_equal_approx(Color(0.2, 0.4, 0.6)), "Clutter uses descriptor palette without name-based recoloring")
+	biome.clutter = []
+	check(clutter._compute_chunk_data(314, 4, 629, world.radius, world.cylinder_length).total == 0,
+		"Empty clutter descriptor never receives fallback grass")
+	biome.clutter = [rule]
+	rule.density_per_m2 = 0.0
+	check(clutter._compute_chunk_data(314, 4, 629, world.radius, world.cylinder_length).total == 0,
+		"Zero descriptor density never receives fallback grass")
+	rule.density_per_m2 = 0.01
+	terrain.terrain_data.fill(20)
+	check(clutter._compute_chunk_data(314, 4, 629, world.radius, world.cylinder_length).total == 0,
+		"Unregistered biome never inherits neighboring clutter rules")
+	terrain.terrain_data.fill(32)
+	terrain.elevation_data.fill(10.0)
+	check(clutter._compute_chunk_data(314, 4, 629, world.radius, world.cylinder_length).total == 0,
+		"Dry-land biome clutter is rejected underwater")
+	biome.submerged = true
+	check(clutter._compute_chunk_data(314, 4, 629, world.radius, world.cylinder_length).total == 16,
+		"Submerged descriptor can explicitly place underwater clutter")
+	clutter.needed_chunks_cache = {Vector2i(1, 1): true, Vector2i(2, 2): true}
+	clutter.active_chunks = {Vector2i(9, 9): null}
+	clutter.pending_chunk_results = {Vector2i(1, 1): {}}
+	check(clutter._has_missing_needed_chunks(), "Stale chunks cannot hide missing nearby clutter")
+	clutter.active_chunks.clear()
+	clutter.pending_chunk_results[Vector2i(2, 2)] = {}
+	check(not clutter._has_missing_needed_chunks(), "Completed results cover their own required chunks")
+	clutter.pending_chunk_results.clear()
+	clutter.needed_chunks_cache.clear()
+	var theta: float = (314.5 * clutter.chunk_size) / world.radius - PI
+	var camera: Vector3 = Vector3(3990.0 * cos(theta), 3990.0 * sin(theta), 0.0)
+	var near_priority: Dictionary = clutter._evaluate_chunk_priority(314, 4, 629, world.radius, world.cylinder_length, camera, Vector3.BACK)
+	var far_priority: Dictionary = clutter._evaluate_chunk_priority(314, 8, 629, world.radius, world.cylinder_length, camera, Vector3.BACK)
+	check(near_priority.score < far_priority.score, "Nearby clutter behind player loads before distant clutter ahead")
+	clutter.free()
+	world.free()
+
 func _run():
+	check_surface_normals()
+	check_clutter_descriptors()
 	var doc = Config.load_map_config("default")
 	check(not doc.is_empty(), "Bundled map validates: " + Config.last_error)
 	if doc.is_empty():

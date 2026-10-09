@@ -35,7 +35,46 @@
 	},
 	"allowed_adjacent_biomes": [],
 	"objects": [],
-	"clutter": [],
+	"clutter": [
+		{
+			"density_per_m2": 0.022,
+			"model": "grass_tuft",
+			"palette": [
+				[
+					0.28,
+					0.62,
+					0.20,
+					1.0
+				],
+				[
+					0.22,
+					0.52,
+					0.16,
+					1.0
+				]
+			],
+			"scale_range": [
+				0.7,
+				1.2
+			]
+		},
+		{
+			"density_per_m2": 0.005,
+			"model": "shrubs",
+			"palette": [
+				[
+					0.25,
+					0.60,
+					0.15,
+					1.0
+				]
+			],
+		"scale_range": [
+			0.5,
+			3.0
+		]
+		}
+	],
 	"poi_settings": {
 		"add_to_poi_list": false,
 		"poi_type": "forest_undergrowth",

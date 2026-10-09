@@ -84,7 +84,29 @@
 	],
 	"clutter": [
 		{
-			"density_per_m2": 0.003,
+			"density_per_m2": 0.020,
+			"model": "grass_tuft",
+			"palette": [
+				[
+					0.25,
+					0.55,
+					0.18,
+					1.0
+				],
+				[
+					0.20,
+					0.48,
+					0.15,
+					1.0
+				]
+			],
+			"scale_range": [
+				0.7,
+				1.2
+			]
+		},
+		{
+			"density_per_m2": 0.005,
 			"model": "shrubs",
 			"palette": [
 				[
@@ -100,13 +122,13 @@
 					1.0
 				]
 			],
-			"scale_range": [
-				0.8,
-				1.3
-			]
+		"scale_range": [
+			0.5,
+			3.0
+		]
 		},
 		{
-			"density_per_m2": 0.003,
+			"density_per_m2": 0.004,
 			"model": "mushrooms",
 			"palette": [
 				[

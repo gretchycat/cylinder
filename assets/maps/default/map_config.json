@@ -31,7 +31,7 @@
 			"blended": true,
 			"clutter": [
 				{
-					"density_per_m2": 0.003,
+					"density_per_m2": 0.000375,
 					"model": "pebbles",
 					"palette": [
 						[
@@ -42,8 +42,8 @@
 						]
 					],
 					"scale_range": [
-						0.8,
-						1.3
+						0.25,
+						1.0
 					]
 				}
 			],
@@ -108,7 +108,7 @@
 			"blended": true,
 			"clutter": [
 				{
-					"density_per_m2": 0.003,
+					"density_per_m2": 0.000375,
 					"model": "pebbles",
 					"palette": [
 						[
@@ -119,8 +119,8 @@
 						]
 					],
 					"scale_range": [
-						0.8,
-						1.3
+						0.25,
+						1.0
 					]
 				}
 			],
@@ -211,7 +211,7 @@
 			"blended": true,
 			"clutter": [
 				{
-					"density_per_m2": 0.003,
+					"density_per_m2": 0.02,
 					"model": "grass_tuft",
 					"palette": [
 						[
@@ -234,8 +234,8 @@
 						]
 					],
 					"scale_range": [
-						0.8,
-						1.3
+						0.25,
+						1.0
 					]
 				},
 				{
@@ -280,8 +280,8 @@
 						]
 					],
 					"scale_range": [
-						0.8,
-						1.3
+						0.25,
+						1.0
 					]
 				}
 			],
@@ -318,7 +318,46 @@
 		},
 		"forest_undergrowth": {
 			"blended": true,
-			"clutter": [],
+			"clutter": [
+				{
+					"density_per_m2": 0.022,
+					"model": "grass_tuft",
+					"palette": [
+						[
+							0.28,
+							0.62,
+							0.2,
+							1.0
+						],
+						[
+							0.22,
+							0.52,
+							0.16,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.7,
+						1.2
+					]
+				},
+				{
+					"density_per_m2": 0.005,
+					"model": "shrubs",
+					"palette": [
+						[
+							0.25,
+							0.6,
+							0.15,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.5,
+						3.0
+					]
+				}
+			],
 			"elevation_range_m": [
 				0.0,
 				100.0
@@ -497,7 +536,7 @@
 			"blended": true,
 			"clutter": [
 				{
-					"density_per_m2": 0.003,
+					"density_per_m2": 0.000375,
 					"model": "pebbles",
 					"palette": [
 						[
@@ -508,8 +547,8 @@
 						]
 					],
 					"scale_range": [
-						0.8,
-						1.3
+						0.25,
+						1.0
 					]
 				}
 			],
@@ -548,7 +587,29 @@
 			"blended": true,
 			"clutter": [
 				{
-					"density_per_m2": 0.003,
+					"density_per_m2": 0.02,
+					"model": "grass_tuft",
+					"palette": [
+						[
+							0.25,
+							0.55,
+							0.18,
+							1.0
+						],
+						[
+							0.2,
+							0.48,
+							0.15,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.7,
+						1.2
+					]
+				},
+				{
+					"density_per_m2": 0.005,
 					"model": "shrubs",
 					"palette": [
 						[
@@ -565,12 +626,12 @@
 						]
 					],
 					"scale_range": [
-						0.8,
-						1.3
+						0.5,
+						3.0
 					]
 				},
 				{
-					"density_per_m2": 0.003,
+					"density_per_m2": 0.004,
 					"model": "mushrooms",
 					"palette": [
 						[
@@ -665,7 +726,29 @@
 			"blended": true,
 			"clutter": [
 				{
-					"density_per_m2": 0.003,
+					"density_per_m2": 0.02,
+					"model": "grass_tuft",
+					"palette": [
+						[
+							0.28,
+							0.65,
+							0.2,
+							1.0
+						],
+						[
+							0.32,
+							0.7,
+							0.25,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.7,
+						1.2
+					]
+				},
+				{
+					"density_per_m2": 0.005,
 					"model": "shrubs",
 					"palette": [
 						[
@@ -682,8 +765,8 @@
 						]
 					],
 					"scale_range": [
-						0.8,
-						1.3
+						0.5,
+						3.0
 					]
 				},
 				{
@@ -784,7 +867,7 @@
 			"blended": true,
 			"clutter": [
 				{
-					"density_per_m2": 0.003,
+					"density_per_m2": 0.000375,
 					"model": "pebbles",
 					"palette": [
 						[
@@ -795,8 +878,8 @@
 						]
 					],
 					"scale_range": [
-						0.8,
-						1.3
+						0.25,
+						1.0
 					]
 				}
 			],
@@ -893,7 +976,46 @@
 		},
 		"sparse_forest_undergrowth": {
 			"blended": true,
-			"clutter": [],
+			"clutter": [
+				{
+					"density_per_m2": 0.018,
+					"model": "grass_tuft",
+					"palette": [
+						[
+							0.3,
+							0.65,
+							0.22,
+							1.0
+						],
+						[
+							0.25,
+							0.55,
+							0.18,
+							1.0
+						]
+					],
+					"scale_range": [
+						0.7,
+						1.2
+					]
+				},
+				{
+					"density_per_m2": 0.003,
+					"model": "wildflowers",
+					"palette": [
+						[
+							0.95,
+							0.85,
+							0.15,
+							0.9
+						]
+					],
+					"scale_range": [
+						0.8,
+						1.3
+					]
+				}
+			],
 			"elevation_range_m": [
 				0.0,
 				100.0
@@ -938,8 +1060,8 @@
 						]
 					],
 					"scale_range": [
-						0.8,
-						1.3
+						0.5,
+						3.0
 					]
 				},
 				{
@@ -1033,8 +1155,8 @@
 						]
 					],
 					"scale_range": [
-						0.8,
-						1.3
+						0.25,
+						1.0
 					]
 				}
 			],
@@ -1494,14 +1616,14 @@
 			},
 			"shrubs": {
 				"base_color": [
-					0.7,
-					0.7,
-					0.7,
+					1.0,
+					1.0,
+					1.0,
 					1.0
 				],
 				"category": "foliage",
 				"gradient_extent_m": 0.65,
-				"gradient_mode": "radial",
+				"gradient_mode": "none",
 				"roughness": 0.85,
 				"scene_path": "res://assets/maps/default/models/ground_clutter/shrubs.tscn",
 				"tip_color": [
@@ -1512,7 +1634,7 @@
 				],
 				"type": "procedural_mesh",
 				"wind_speed": 1.5,
-				"wind_strength": 0.12
+				"wind_strength": 0.018
 			},
 			"wildflowers": {
 				"base_color": [

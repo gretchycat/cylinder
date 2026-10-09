@@ -142,8 +142,13 @@ void fragment() {
 	ROUGHNESS = roughness;
 	METALLIC = metallic;
 
-	// Ensure double-sided foliage (cull_disabled) reflects point light sources in the correct direction
-	if (!FRONT_FACING) {
+	// Ensure double-sided foliage receives ambient/point lighting regardless of
+	// card winding.  FRONT_FACING is tied to raster winding, which can leave
+	// some crossed-card blades dark when their outer face is reversed.  Orient
+	// the interpolated normal toward the camera instead, giving both sides of a
+	// thin foliage card the same useful lighting response.
+	NORMAL = normalize(NORMAL);
+	if (dot(NORMAL, VIEW) < 0.0) {
 		NORMAL = -NORMAL;
 	}
 	
@@ -152,5 +157,4 @@ void fragment() {
 		BACKLIGHT = col * 0.05;
 	}
 }
-
 

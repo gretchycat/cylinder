@@ -223,6 +223,7 @@ run_test_step() {
 cmd_test() {
     check_godot
     run_test_step "scripts/test_map_pipeline.gd"
+    run_test_step "scripts/preview_woodland_bush.gd"
     run_test_step "scripts/test_map_scene.gd"
     run_test_step "scripts/test_map_imports.gd"
     run_test_step "scripts/test_map_library.gd"

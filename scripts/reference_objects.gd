@@ -157,8 +157,42 @@ func _get_terrain_elevation(theta: float, z: float) -> float:
 func _get_model_path(type: SurfaceLightObject.ObjectType, tree_variant_idx: int = -1) -> String:
 	return MapConfigClass.get_object_model_path(active_map_config, int(type), tree_variant_idx)
 
+const STREAM_CHUNK_SIZE_M := 500.0
+var spatial_chunks: Dictionary = {} # Vector2i(cx, cz) -> Array[Dictionary]
+
+func _pos_to_spatial_chunk_key(surf_pos: Vector2) -> Vector2i:
+	var r := maxf(cylinder_radius, 1.0)
+	var l := maxf(cylinder_length, 1.0)
+	var u := fposmod(surf_pos.x + PI, TAU) * r
+	var z_m := surf_pos.y + l * 0.5
+	var cx := int(floor(u / STREAM_CHUNK_SIZE_M))
+	var cz := int(floor(z_m / STREAM_CHUNK_SIZE_M))
+	return Vector2i(cx, cz)
+
+func _rebuild_spatial_chunks() -> void:
+	spatial_chunks.clear()
+	var r := maxf(cylinder_radius, 1.0)
+	var l := maxf(cylinder_length, 1.0)
+	var num_chunks_x := int(ceil((TAU * r) / STREAM_CHUNK_SIZE_M))
+	var num_chunks_z := int(ceil(l / STREAM_CHUNK_SIZE_M))
+
+	for record_variant in placement_records:
+		if not record_variant is Dictionary:
+			continue
+		var record: Dictionary = record_variant
+		var pos := _record_surface_position(record)
+		var u := fposmod(pos.x + PI, TAU) * r
+		var z_m := pos.y + l * 0.5
+		var cx := posmod(int(floor(u / STREAM_CHUNK_SIZE_M)), max(1, num_chunks_x))
+		var cz := clampi(int(floor(z_m / STREAM_CHUNK_SIZE_M)), 0, max(0, num_chunks_z - 1))
+		var key := Vector2i(cx, cz)
+		if not spatial_chunks.has(key):
+			spatial_chunks[key] = [] as Array[Dictionary]
+		(spatial_chunks[key] as Array).append(record)
+
 func clear_all_placed_objects() -> void:
 	placement_records.clear()
+	spatial_chunks.clear()
 	live_placements.clear()
 	has_placement_stream_center = false
 	var to_remove: Array[Node] = []
@@ -213,6 +247,7 @@ func _load_and_spawn_from_json(progress_cb: Callable = Callable()) -> bool:
 			push_error("Unknown placement asset: " + str(record.get("asset")))
 			return false
 		placement_records.append(record.duplicate(true))
+	_rebuild_spatial_chunks()
 	var spawn_points: Array = data.get("spawn_points", [])
 	if not spawn_points.is_empty() and spawn_points[0] is Dictionary:
 		placement_stream_center = Vector2(float(spawn_points[0].get("theta", 0.0)), float(spawn_points[0].get("z", 0.0)))
@@ -264,34 +299,57 @@ func _update_placement_streaming(force: bool = false) -> void:
 	placement_stream_center = center
 	has_placement_stream_center = true
 
-	var candidates: Array[Dictionary] = []
-	var removed_records: Array[Dictionary] = []
+	if spatial_chunks.is_empty() and not placement_records.is_empty():
+		_rebuild_spatial_chunks()
 
-	for record_variant in placement_records:
-		if not record_variant is Dictionary:
+	# 1. Despawn out-of-range live placement nodes (bounded set of live_placements <= 256)
+	var live_keys := live_placements.keys().duplicate()
+	for id_var in live_keys:
+		var id := str(id_var)
+		var live: Node = live_placements.get(id, null)
+		if not is_instance_valid(live) or live.is_queued_for_deletion():
+			live_placements.erase(id)
 			continue
-		var record: Dictionary = record_variant
-		var id := str(record.get("id", ""))
-		if id.is_empty():
-			continue
-		var distance := _surface_distance(_record_surface_position(record), center)
-		if live_placements.has(id):
-			var live: Node = live_placements[id]
-			if not is_instance_valid(live) or live.is_queued_for_deletion():
-				live_placements.erase(id)
-				if is_instance_valid(live) and live.is_queued_for_deletion():
-					removed_records.append(record)
-				continue
-			if distance > PLACEMENT_RETENTION_RADIUS_M:
-				_capture_live_placement(record, live)
+		if live is Node3D:
+			var live_pos := Vector2(atan2(live.global_position.y, live.global_position.x), live.global_position.z)
+			if _surface_distance(live_pos, center) > PLACEMENT_RETENTION_RADIUS_M:
+				var record: Dictionary = live.get_meta("placement_record") if live.has_meta("placement_record") else {}
+				if not record.is_empty():
+					_capture_live_placement(record, live)
 				live_placements.erase(id)
 				live.queue_free()
-			continue
-		if distance <= PLACEMENT_STREAM_RADIUS_M:
-			candidates.append({"record": record, "distance": distance})
 
-	for removed_record in removed_records:
-		placement_records.erase(removed_record)
+	# 2. Query spatial hash grid chunks within streaming distance
+	var r := maxf(cylinder_radius, 1.0)
+	var l := maxf(cylinder_length, 1.0)
+	var circ := TAU * r
+	var num_chunks_x := int(ceil(circ / STREAM_CHUNK_SIZE_M))
+	var num_chunks_z := int(ceil(l / STREAM_CHUNK_SIZE_M))
+	var center_key := _pos_to_spatial_chunk_key(center)
+	var chunk_rad := int(ceil(PLACEMENT_STREAM_RADIUS_M / STREAM_CHUNK_SIZE_M))
+
+	var candidates: Array[Dictionary] = []
+
+	for dz in range(-chunk_rad, chunk_rad + 1):
+		var cz := center_key.y + dz
+		if cz < 0 or cz >= num_chunks_z:
+			continue
+		for dx in range(-chunk_rad, chunk_rad + 1):
+			var cx := posmod(center_key.x + dx, num_chunks_x)
+			var key := Vector2i(cx, cz)
+			if not spatial_chunks.has(key):
+				continue
+			var chunk_records: Array = spatial_chunks[key]
+			for record in chunk_records:
+				var id := str(record.get("id", ""))
+				if id.is_empty() or live_placements.has(id):
+					continue
+				var distance := _surface_distance(_record_surface_position(record), center)
+				if distance <= PLACEMENT_STREAM_RADIUS_M:
+					candidates.append({"record": record, "distance": distance})
+
+	if candidates.is_empty():
+		return
 
 	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a.distance) < float(b.distance))
 	var spawned := 0
@@ -304,6 +362,7 @@ func _update_placement_streaming(force: bool = false) -> void:
 			continue
 		var instance = preload("res://scripts/map_object_factory.gd").create(active_map_config, record, world)
 		instance.set_meta("map_stream_initial_transform", instance.transform)
+		instance.set_meta("placement_record", record)
 		add_child(instance)
 		live_placements[id] = instance
 		spawned += 1
