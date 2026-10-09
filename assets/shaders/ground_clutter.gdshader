@@ -141,10 +141,16 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = roughness;
 	METALLIC = metallic;
+
+	// Ensure double-sided foliage (cull_disabled) reflects point light sources in the correct direction
+	if (!FRONT_FACING) {
+		NORMAL = -NORMAL;
+	}
 	
 	// Translucent backlight approximation for thin foliage when wind_strength > 0
 	if (wind_strength > 0.001) {
 		BACKLIGHT = col * 0.05;
 	}
 }
+
 

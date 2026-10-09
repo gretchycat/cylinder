@@ -26,7 +26,7 @@ const PLACEMENT_STREAM_RADIUS_M := 850.0
 const PLACEMENT_RETENTION_RADIUS_M := 1250.0
 const MAX_LIVE_PLACEMENTS := 256
 const PLACEMENTS_PER_TICK := 24
-const PLACEMENT_STREAM_INTERVAL := 0.2
+const PLACEMENT_STREAM_INTERVAL := 0.1
 
 const MOBILE_LOCAL_LIGHT_BUDGET: int = 6
 const FORWARD_LIGHT_LOOKAHEAD_MULTIPLIER: float = 8.0
@@ -55,7 +55,7 @@ func _process(delta: float) -> void:
 		placement_stream_timer = 0.0
 		_update_placement_streaming()
 	surface_light_selection_timer += delta
-	if surface_light_selection_timer < 0.05:
+	if surface_light_selection_timer < 0.25:
 		return
 	surface_light_selection_timer = 0.0
 	_update_nearest_surface_lights()
@@ -249,17 +249,24 @@ func _player_surface_position() -> Vector2:
 		return placement_stream_center
 	return Vector2(atan2(player.global_position.y, player.global_position.x), player.global_position.z)
 
+var placement_scan_index: int = 0
+var placement_candidates_buffer: Array[Dictionary] = []
+
 func _update_placement_streaming(force: bool = false) -> void:
 	if placement_records.is_empty() or active_map_config.is_empty():
 		return
 	var world := get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
 	var center := _player_surface_position() if get_tree().get_first_node_in_group("player") else placement_stream_center
-	if not force and has_placement_stream_center and _surface_distance(center, placement_stream_center) < 100.0:
-		center = placement_stream_center
+
+	if not force and has_placement_stream_center and not live_placements.is_empty() and _surface_distance(center, placement_stream_center) < 15.0:
+		return
+
 	placement_stream_center = center
 	has_placement_stream_center = true
+
 	var candidates: Array[Dictionary] = []
 	var removed_records: Array[Dictionary] = []
+
 	for record_variant in placement_records:
 		if not record_variant is Dictionary:
 			continue
@@ -282,8 +289,10 @@ func _update_placement_streaming(force: bool = false) -> void:
 			continue
 		if distance <= PLACEMENT_STREAM_RADIUS_M:
 			candidates.append({"record": record, "distance": distance})
+
 	for removed_record in removed_records:
 		placement_records.erase(removed_record)
+
 	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a.distance) < float(b.distance))
 	var spawned := 0
 	for candidate in candidates:

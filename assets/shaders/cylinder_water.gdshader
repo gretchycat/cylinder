@@ -1,5 +1,6 @@
 shader_type spatial;
-render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_lambert, specular_schlick_ggx, fog_disabled;
+render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_lambert_wrap, specular_schlick_ggx, fog_disabled;
+
 
 uniform vec3 extinction_rgb;
 uniform vec4 reflection_color : source_color;

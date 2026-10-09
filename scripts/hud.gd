@@ -222,6 +222,8 @@ func _ready() -> void:
 	_setup_control_panel()
 
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
+	if Engine.max_fps == 0:
+		Engine.max_fps = 30
 
 	fps_label = get_node_or_null("UIRoot/FPSLabel") as Label
 	if not fps_label:
@@ -331,7 +333,7 @@ func _process(delta: float) -> void:
 		_update_solar_ui()
 
 	telemetry_ui_timer += delta
-	if telemetry_ui_timer >= 0.05:
+	if telemetry_ui_timer >= 0.1:
 		telemetry_ui_timer = 0.0
 		if telemetry_panel and telemetry_panel.visible:
 			if not cached_telemetry_data.is_empty():
@@ -2846,10 +2848,10 @@ func _update_clutter_auto_tuning(delta: float) -> void:
 			clutter_auto_probe_kind = ""
 			clutter_auto_probe_samples = 0
 
-	if clutter_auto_fps_average < float(target_fps) * 0.92:
+	if clutter_auto_fps_average < float(target_fps) * 0.75:
 		clutter_auto_low_samples += 1
 		clutter_auto_good_samples = 0
-		if clutter_auto_low_samples >= 2 and clutter_auto_probe_kind.is_empty():
+		if clutter_auto_low_samples >= 5 and clutter_auto_probe_kind.is_empty():
 			var draw_scale = clutter_mgr.adaptive_draw_distance_scale
 			var density_scale = clutter_mgr.adaptive_density_scale
 			var probe_kind = ""
@@ -3143,7 +3145,7 @@ func _update_looking_at_inspection() -> void:
 	# 1. Direct Physics Raycast for spawned objects
 	var space_state = (player.get_world_3d().direct_space_state if (player and player.get_world_3d()) else null)
 	if space_state:
-		var query = PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_dir * 30000.0)
+		var query = PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_dir * 500.0)
 		query.collide_with_areas = true
 		query.collide_with_bodies = true
 		if player:

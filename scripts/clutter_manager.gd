@@ -17,6 +17,9 @@ var adaptive_draw_distance_scale: float = 1
 var adaptive_density_scale: float = 1
 var cylinder_world: CylinderGenerator
 var active_chunks: Dictionary = {}
+var pending_chunk_tasks: Dictionary = {}
+var pending_chunk_results: Dictionary = {}
+var needed_chunks_cache: Dictionary = {}
 var last_update_pos := Vector3(INF, INF, INF)
 var map_config: Dictionary = {}
 var parts: Dictionary = {}
@@ -174,6 +177,7 @@ func update_lut(texture: Texture2D, bar_len: float) -> void:
 				part.material.set_shader_parameter("cylinder_length", bar_len)
 
 func _process(delta: float) -> void:
+	_poll_pending_chunk_tasks()
 	if not enabled or not cylinder_world or map_config.is_empty():
 		return
 	update_timer += delta
@@ -181,9 +185,51 @@ func _process(delta: float) -> void:
 		return
 	update_timer = 0
 	var position = _get_active_camera_position()
-	if position.distance_squared_to(last_update_pos) >= 16:
+	if position.distance_squared_to(last_update_pos) >= 16 or (active_chunks.size() + pending_chunk_tasks.size()) < needed_chunks_cache.size():
 		last_update_pos = position
 		_update_active_chunks(position)
+
+func _exit_tree() -> void:
+	flush_pending_chunk_tasks()
+
+func _async_chunk_worker(key: Vector2i, params: Dictionary) -> void:
+	var res = _compute_chunk_data(params.cx, params.cz, params.num_chunks_x, params.radius_m, params.length_m)
+	pending_chunk_results[key] = res
+
+func flush_pending_chunk_tasks() -> void:
+	var keys_to_flush = pending_chunk_tasks.keys().duplicate()
+	for key in keys_to_flush:
+		var task_id: int = pending_chunk_tasks.get(key, -1)
+		if task_id >= 0:
+			WorkerThreadPool.wait_for_task_completion(task_id)
+		var res: Dictionary = pending_chunk_results.get(key, {})
+		pending_chunk_tasks.erase(key)
+		pending_chunk_results.erase(key)
+		if not res.is_empty() and needed_chunks_cache.has(key) and not active_chunks.has(key):
+			var chunk_node = _assemble_chunk_from_data(res)
+			if chunk_node:
+				add_child(chunk_node)
+				active_chunks[key] = chunk_node
+
+func _poll_pending_chunk_tasks() -> void:
+	if pending_chunk_tasks.is_empty():
+		return
+	var completed_keys: Array[Vector2i] = []
+	for key in pending_chunk_tasks.keys():
+		var task_id: int = pending_chunk_tasks[key]
+		if WorkerThreadPool.is_task_completed(task_id):
+			WorkerThreadPool.wait_for_task_completion(task_id)
+			completed_keys.append(key)
+
+	for key in completed_keys:
+		var res: Dictionary = pending_chunk_results.get(key, {})
+		pending_chunk_tasks.erase(key)
+		pending_chunk_results.erase(key)
+		if not res.is_empty() and needed_chunks_cache.has(key) and not active_chunks.has(key):
+			var chunk_node = _assemble_chunk_from_data(res)
+			if chunk_node:
+				add_child(chunk_node)
+				active_chunks[key] = chunk_node
 
 func _get_active_camera_position() -> Vector3:
 	var vp = get_viewport()
@@ -229,6 +275,10 @@ func _update_active_chunks(cam_pos: Vector3) -> void:
 	var camera_chunk_offset_z = fposmod(cam_z_m, chunk_size)
 	var needed_chunks: Dictionary = {}
 
+	var dispatched_count: int = 0
+	var is_headless: bool = (DisplayServer.get_name() == "headless")
+	var max_dispatch: int = 999999 if is_headless else 2
+
 	for dz in range(-chunk_radius, chunk_radius + 1):
 		var cz = center_chunk_z + dz
 		if cz < 0 or cz >= num_chunks_z:
@@ -249,11 +299,21 @@ func _update_active_chunks(cam_pos: Vector3) -> void:
 			var key = Vector2i(cx, cz)
 			needed_chunks[key] = true
 
-			if not active_chunks.has(key):
-				var chunk_node = _build_chunk(cx, cz, num_chunks_x, cyl_r, cyl_len)
-				if chunk_node:
-					add_child(chunk_node)
-					active_chunks[key] = chunk_node
+			if not active_chunks.has(key) and not pending_chunk_tasks.has(key):
+				var task_params = {
+					"cx": cx,
+					"cz": cz,
+					"num_chunks_x": num_chunks_x,
+					"radius_m": cyl_r,
+					"length_m": cyl_len
+				}
+				var task_id = WorkerThreadPool.add_task(Callable(self, "_async_chunk_worker").bind(key, task_params))
+				pending_chunk_tasks[key] = task_id
+
+	needed_chunks_cache = needed_chunks
+
+	if is_headless:
+		flush_pending_chunk_tasks()
 
 	# Cull out-of-range chunks
 	var to_remove: Array[Vector2i] = []
@@ -267,10 +327,24 @@ func _update_active_chunks(cam_pos: Vector3) -> void:
 			node.queue_free()
 		active_chunks.erase(key)
 
-func _build_chunk(cx: int, cz: int, _num_chunks_x: int, radius_m: float, length_m: float) -> Node3D:
+func _build_chunk(cx: int, cz: int, num_chunks_x: int, radius_m: float, length_m: float) -> Node3D:
+	var data = _compute_chunk_data(cx, cz, num_chunks_x, radius_m, length_m)
+	return _assemble_chunk_from_data(data)
+
+func _assemble_chunk_from_data(data: Dictionary) -> Node3D:
 	var root = Node3D.new()
 	root.set_process(false)
 	root.set_physics_process(false)
+	var batch_table: Array = data.get("batch_table", [])
+	var total: int = data.get("total", 0)
+
+	for entry in batch_table:
+		_add_multimesh_to_chunk(root, entry.item_name, entry.mesh, entry.material, entry.transforms, entry.colors, entry.colors)
+
+	root.set_meta("clutter_placed_instances", total)
+	return root
+
+func _compute_chunk_data(cx: int, cz: int, _num_chunks_x: int, radius_m: float, length_m: float) -> Dictionary:
 	var rng = RandomNumberGenerator.new()
 	rng.seed = int(map_config.ground_clutter.seed) ^ (cx * 73856093) ^ (cz * 19349663)
 	var tm = cylinder_world.terrain_manager
@@ -377,11 +451,10 @@ func _build_chunk(cx: int, cz: int, _num_chunks_x: int, radius_m: float, length_
 					found_entry.colors.append(colors[idx])
 			total += transforms.size()
 
-	for entry in batch_table:
-		_add_multimesh_to_chunk(root, entry.item_name, entry.mesh, entry.material, entry.transforms, entry.colors, entry.colors)
-
-	root.set_meta("clutter_placed_instances", total)
-	return root
+	return {
+		"batch_table": batch_table,
+		"total": total
+	}
 
 func _add_multimesh_to_chunk(
 	parent: Node3D,
@@ -401,16 +474,14 @@ func _add_multimesh_to_chunk(
 	mmi.name = item_name + "MultiMesh"
 	mmi.material_override = mat
 
-	# Distance culling & subpixel culling thresholds on MultiMeshInstance3D
 	var max_dist := _effective_draw_distance()
-	var item_lower := item_name.to_lower()
-	if "grass" in item_lower or "flower" in item_lower or "mushroom" in item_lower or "pebble" in item_lower:
-		max_dist = minf(max_dist, 110.0)
-	elif "shrub" in item_lower or "rock" in item_lower or "crop" in item_lower:
-		max_dist = minf(max_dist, 220.0)
 
+	# Extra cull margin to prevent camera panning / rotational frustum clipping
+	mmi.extra_cull_margin = 150.0
+
+	# Set visibility_range_end to match _effective_draw_distance() for full draw radius coverage
 	mmi.visibility_range_end = max_dist
-	mmi.visibility_range_end_margin = 20.0
+	mmi.visibility_range_end_margin = 50.0
 	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 
 	var mm = MultiMesh.new()

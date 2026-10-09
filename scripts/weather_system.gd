@@ -293,7 +293,16 @@ func _init_weather_state_queue() -> void:
 	transition_timer = transition_duration
 	_apply_state_values(current_weather_state)
 
+var weather_update_timer: float = 0.0
+var weather_update_phase: int = 0
+
 func _process(delta: float) -> void:
+	weather_update_timer += delta
+	if weather_update_timer < 0.05:
+		return
+	var proc_delta: float = weather_update_timer
+	weather_update_timer = 0.0
+
 	var light_bar = get_tree().get_first_node_in_group("light_bar") as AxisLightBar if is_inside_tree() else null
 	var current_clock_hours = light_bar.time_of_day_hours if light_bar else 12.0
 
@@ -307,23 +316,26 @@ func _process(delta: float) -> void:
 	var sim_time_scale: float = get_effective_time_scale()
 
 	# Scaled simulation delta time (0.0 when paused)
-	var effective_dt = delta * sim_time_scale * trajectory_speed_scale
+	var effective_dt = proc_delta * sim_time_scale * trajectory_speed_scale
 
-	# Scaled time progression for weather queue transitions
-	var queue_dt = 0.0
-	if sim_time_scale > 0.0:
-		var q_mult = clampf(sqrt(sim_time_scale), 1.0, 4.0) if sim_time_scale > 1.0 else sim_time_scale
-		queue_dt = delta * q_mult * trajectory_speed_scale
-
-	_update_weather_queue_progression(queue_dt, current_clock_hours)
-	_update_dynamic_wind(effective_dt)
-	_update_cloud_deck_coriolis_motion(effective_dt)
-	_update_shader_parameters()
-	_update_concentric_render_priorities()
-	_update_precipitation_emitter(effective_dt)
-	_update_dust_emitter()
-	_update_particle_positions()
-	_emit_weather_telemetry(delta)
+	if weather_update_phase == 0:
+		weather_update_phase = 1
+		# Scaled time progression for weather queue transitions
+		var queue_dt = 0.0
+		if sim_time_scale > 0.0:
+			var q_mult = clampf(sqrt(sim_time_scale), 1.0, 4.0) if sim_time_scale > 1.0 else sim_time_scale
+			queue_dt = proc_delta * q_mult * trajectory_speed_scale
+		_update_weather_queue_progression(queue_dt, current_clock_hours)
+		_update_dynamic_wind(effective_dt)
+		_update_cloud_deck_coriolis_motion(effective_dt)
+		_update_shader_parameters()
+	else:
+		weather_update_phase = 0
+		_update_concentric_render_priorities()
+		_update_precipitation_emitter(effective_dt)
+		_update_dust_emitter()
+		_update_particle_positions()
+		_emit_weather_telemetry(proc_delta)
 
 func _update_weather_queue_progression(effective_dt: float, current_clock_hours: float) -> void:
 	if not auto_weather_cycle_enabled and manual_queue.is_empty():

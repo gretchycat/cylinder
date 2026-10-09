@@ -16,9 +16,23 @@ static func _add_triangle(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -
 	st.add_vertex(c)
 
 
+static func _add_triangle_with_normals(st: SurfaceTool, a: Vector3, na: Vector3, b: Vector3, nb: Vector3, c: Vector3, nc: Vector3) -> void:
+	st.set_normal(na)
+	st.add_vertex(a)
+	st.set_normal(nb)
+	st.add_vertex(b)
+	st.set_normal(nc)
+	st.add_vertex(c)
+
+
 static func _add_quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> void:
 	_add_triangle(st, a, b, c)
 	_add_triangle(st, a, c, d)
+
+
+static func _add_quad_with_normals(st: SurfaceTool, a: Vector3, na: Vector3, b: Vector3, nb: Vector3, c: Vector3, nc: Vector3, d: Vector3, nd: Vector3) -> void:
+	_add_triangle_with_normals(st, a, na, b, nb, c, nc)
+	_add_triangle_with_normals(st, a, na, c, nc, d, nd)
 
 
 static func _add_triangle_colored(st: SurfaceTool, a: Vector3, ca: Color, b: Vector3, cb: Color, c: Vector3, cc: Color) -> void:
@@ -34,9 +48,26 @@ static func _add_triangle_colored(st: SurfaceTool, a: Vector3, ca: Color, b: Vec
 	st.add_vertex(c)
 
 
+static func _add_triangle_colored_with_normals(st: SurfaceTool, a: Vector3, na: Vector3, ca: Color, b: Vector3, nb: Vector3, cb: Color, c: Vector3, nc: Vector3, cc: Color) -> void:
+	st.set_normal(na)
+	st.set_color(ca)
+	st.add_vertex(a)
+	st.set_normal(nb)
+	st.set_color(cb)
+	st.add_vertex(b)
+	st.set_normal(nc)
+	st.set_color(cc)
+	st.add_vertex(c)
+
+
 static func _add_quad_colored(st: SurfaceTool, a: Vector3, ca: Color, b: Vector3, cb: Color, c: Vector3, cc: Color, d: Vector3, cd: Color) -> void:
 	_add_triangle_colored(st, a, ca, b, cb, c, cc)
 	_add_triangle_colored(st, a, ca, c, cc, d, cd)
+
+
+static func _add_quad_colored_with_normals(st: SurfaceTool, a: Vector3, na: Vector3, ca: Color, b: Vector3, nb: Vector3, cb: Color, c: Vector3, nc: Vector3, cc: Color, d: Vector3, nd: Vector3, cd: Color) -> void:
+	_add_triangle_colored_with_normals(st, a, na, ca, b, nb, cb, c, nc, cc)
+	_add_triangle_colored_with_normals(st, a, na, ca, c, nc, cc, d, nd, cd)
 
 
 static func _ring_point(center: Vector3, radius: float, angle: float) -> Vector3:
@@ -49,6 +80,7 @@ static func grass(width_m: float = 0.55, height_m: float = 0.85, _lod_level: int
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
 	var blade_count := 9
+	var tuft_center_offset := Vector3(0.0, -height_m * 0.20, 0.0)
 	for i in range(blade_count):
 		var a := TAU * float(i) / float(blade_count)
 		var lean := Vector3(cos(a), 0.0, sin(a)) * width_m * 0.22
@@ -65,6 +97,16 @@ static func grass(width_m: float = 0.55, height_m: float = 0.85, _lod_level: int
 		var m1 := mid - side * mid_w
 		var m2 := mid + side * mid_w
 
+		# Calculate per-vertex outward radial/upward foliage normals for realistic point light reflections
+		var dir_out := Vector3(cos(a), 0.0, sin(a))
+		var dir_up := Vector3(0.0, 1.0, 0.0)
+
+		var nr1 := (dir_out * 0.70 + dir_up * 0.40).normalized()
+		var nr2 := nr1
+		var nm1 := ((m1 - tuft_center_offset).normalized() * 0.60 + dir_out * 0.40 + dir_up * 0.30).normalized()
+		var nm2 := ((m2 - tuft_center_offset).normalized() * 0.60 + dir_out * 0.40 + dir_up * 0.30).normalized()
+		var ntip := ((tip - tuft_center_offset).normalized() * 0.50 + dir_up * 0.50).normalized()
+
 		# Calculate subtle pseudo-random luminance variation per blade
 		var var_v := 0.94 + 0.12 * sin(float(i * 3 + 1))
 
@@ -72,8 +114,8 @@ static func grass(width_m: float = 0.55, height_m: float = 0.85, _lod_level: int
 		var col_mid  := Color(0.68 * var_v, 0.68 * var_v, 0.68 * var_v, 1.0)
 		var col_tip  := Color(1.00 * var_v, 1.00 * var_v, 1.00 * var_v, 1.0)
 
-		_add_quad_colored(st, r1, col_root, r2, col_root, m2, col_mid, m1, col_mid)
-		_add_triangle_colored(st, m1, col_mid, m2, col_mid, tip, col_tip)
+		_add_quad_colored_with_normals(st, r1, nr1, col_root, r2, nr2, col_root, m2, nm2, col_mid, m1, nm1, col_mid)
+		_add_triangle_colored_with_normals(st, m1, nm1, col_mid, m2, nm2, col_mid, tip, ntip, col_tip)
 
 	return st.commit()
 
@@ -110,8 +152,9 @@ static func flower(width_m: float = 0.45, height_m: float = 0.80, _lod_level: in
 		var p1 := center + dir * petal_radius
 		var p2 := p1 + side * width_m * 0.12
 		var p3 := p1 - side * width_m * 0.12
-		_add_triangle(st, p0, p3, p2)
-		_add_triangle(st, p2, p3, center + center_lift)
+		var np := (head_up * 0.80 + dir * 0.20).normalized()
+		_add_triangle_with_normals(st, p0, np, p3, np, p2, np)
+		_add_triangle_with_normals(st, p2, np, p3, np, center + center_lift, np)
 
 	# Raised golden center, independent of each instance's petal hue.
 	st.set_color(Color(0.95, 0.82, 0.15, 0.0))
@@ -222,6 +265,8 @@ static func shrub(width_m: float = 1.10, height_m: float = 0.95, _lod_level: int
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
+	var bush_center := Vector3(0.0, height_m * 0.45, 0.0)
+
 	for i in range(7):
 		var a := TAU * float(i) / 7.0
 		var radius := width_m * (0.20 + 0.12 * float(i % 3))
@@ -232,10 +277,10 @@ static func shrub(width_m: float = 1.10, height_m: float = 0.95, _lod_level: int
 		)
 		var var_v := 0.92 + 0.14 * sin(float(i * 3 + 1))
 		st.set_color(Color(0.70 * var_v, 0.70 * var_v, 0.70 * var_v, 1.0))
-		_add_uv_sphere(st, center, width_m * (0.20 + 0.025 * float(i % 3)), 6, 4)
+		_add_uv_sphere(st, center, width_m * (0.20 + 0.025 * float(i % 3)), 6, 4, bush_center)
 
 	st.set_color(Color(0.95, 0.95, 0.95, 1.0))
-	_add_uv_sphere(st, Vector3(0, height_m * 0.62, 0), width_m * 0.30, 7, 4)
+	_add_uv_sphere(st, Vector3(0, height_m * 0.62, 0), width_m * 0.30, 7, 4, bush_center)
 
 	return st.commit()
 
@@ -253,11 +298,13 @@ static func _add_cylinder(
 	for i in range(sides):
 		var a0 := TAU * float(i) / float(sides)
 		var a1 := TAU * float(i + 1) / float(sides)
-		var b0 := bottom + Vector3(cos(a0) * radius, 0, sin(a0) * radius)
-		var b1 := bottom + Vector3(cos(a1) * radius, 0, sin(a1) * radius)
-		var t0 := top + Vector3(cos(a0) * radius, 0, sin(a0) * radius)
-		var t1 := top + Vector3(cos(a1) * radius, 0, sin(a1) * radius)
-		_add_quad(st, b0, b1, t1, t0)
+		var dir0 := Vector3(cos(a0), 0, sin(a0))
+		var dir1 := Vector3(cos(a1), 0, sin(a1))
+		var b0 := bottom + dir0 * radius
+		var b1 := bottom + dir1 * radius
+		var t0 := top + dir0 * radius
+		var t1 := top + dir1 * radius
+		_add_quad_with_normals(st, b0, dir0, b1, dir1, t1, dir1, t0, dir0)
 
 
 static func _add_curved_cylinder(
@@ -281,12 +328,16 @@ static func _add_curved_cylinder(
 			var a1 := TAU * float(i + 1) / float(sides)
 			var v0 := cos(a0) * side + sin(a0) * up
 			var v1 := cos(a1) * side + sin(a1) * up
-			_add_quad(
+			_add_quad_with_normals(
 				st,
 				a + v0 * radius,
+				v0,
 				a + v1 * radius,
+				v1,
 				b + v1 * radius,
-				b + v0 * radius
+				v1,
+				b + v0 * radius,
+				v0
 			)
 
 
@@ -300,8 +351,12 @@ static func _add_leaf(
 	var d := direction.normalized()
 	var side := Vector3(-d.z, 0, d.x).normalized()
 	var tip := base + d * length + Vector3(0, length * 0.18, 0)
-	_add_triangle(st, base, base + side * width, tip)
-	_add_triangle(st, base, tip, base - side * width)
+	var n := d.cross(side).normalized()
+	if n.y < 0.0:
+		n = -n
+	var n_leaf := (n * 0.70 + Vector3(0.0, 0.70, 0.0)).normalized()
+	_add_triangle_with_normals(st, base, n_leaf, base + side * width, n_leaf, tip, n_leaf)
+	_add_triangle_with_normals(st, base, n_leaf, tip, n_leaf, base - side * width, n_leaf)
 
 
 static func _add_hemisphere(
@@ -325,7 +380,13 @@ static func _add_hemisphere(
 			var p01 := center + Vector3(cos(a1) * cos(phi0), sin(phi0), sin(a1) * cos(phi0)) * radius
 			var p10 := center + Vector3(cos(a0) * cos(phi1), sin(phi1), sin(a0) * cos(phi1)) * radius
 			var p11 := center + Vector3(cos(a1) * cos(phi1), sin(phi1), sin(a1) * cos(phi1)) * radius
-			_add_quad(st, p00, p01, p11, p10)
+
+			var n00 := (p00 - center).normalized()
+			var n01 := (p01 - center).normalized()
+			var n10 := (p10 - center).normalized()
+			var n11 := (p11 - center).normalized()
+
+			_add_quad_with_normals(st, p00, n00, p01, n01, p11, n11, p10, n10)
 
 
 static func _add_uv_sphere(
@@ -333,7 +394,8 @@ static func _add_uv_sphere(
 	center: Vector3,
 	radius: float,
 	sides: int,
-	rings: int
+	rings: int,
+	bush_center: Vector3 = Vector3(INF, INF, INF)
 ) -> void:
 	for r in range(rings):
 		var v0 := float(r) / float(rings)
@@ -349,4 +411,17 @@ static func _add_uv_sphere(
 			var p01 := center + Vector3(sin(phi0) * cos(a1), cos(phi0), sin(phi0) * sin(a1)) * radius
 			var p10 := center + Vector3(sin(phi1) * cos(a0), cos(phi1), sin(phi1) * sin(a0)) * radius
 			var p11 := center + Vector3(sin(phi1) * cos(a1), cos(phi1), sin(phi1) * sin(a1)) * radius
-			_add_quad(st, p00, p01, p11, p10)
+
+			var n00 := (p00 - center).normalized()
+			var n01 := (p01 - center).normalized()
+			var n10 := (p10 - center).normalized()
+			var n11 := (p11 - center).normalized()
+
+			if bush_center != Vector3(INF, INF, INF):
+				n00 = ((p00 - bush_center).normalized() * 0.65 + n00 * 0.35).normalized()
+				n01 = ((p01 - bush_center).normalized() * 0.65 + n01 * 0.35).normalized()
+				n10 = ((p10 - bush_center).normalized() * 0.65 + n10 * 0.35).normalized()
+				n11 = ((p11 - bush_center).normalized() * 0.65 + n11 * 0.35).normalized()
+
+			_add_quad_with_normals(st, p00, n00, p01, n01, p11, n11, p10, n10)
+

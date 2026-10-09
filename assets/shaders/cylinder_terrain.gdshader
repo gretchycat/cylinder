@@ -1,5 +1,6 @@
 shader_type spatial;
-render_mode cull_disabled, diffuse_lambert, specular_schlick_ggx, fog_disabled;
+render_mode cull_disabled, diffuse_lambert_wrap, specular_schlick_ggx, fog_disabled;
+
 
 uniform sampler2D terrain_map : filter_nearest, repeat_enable;
 uniform vec2 terrain_map_size;
@@ -205,4 +206,10 @@ void fragment() {
 
 	ALBEDO = albedo;
 	ROUGHNESS = roughness_value;
+	NORMAL = normalize(NORMAL);
+	if (!FRONT_FACING) {
+		NORMAL = -NORMAL;
+	}
 }
+
+

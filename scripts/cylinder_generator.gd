@@ -662,14 +662,28 @@ func _build_terrain_mesh() -> void:
 			var r_surface = radius - elev
 			var pos = Vector3(r_surface * cos_t, r_surface * sin_t, z)
 
-			# Approximate normal: points inward toward axis (-cos, -sin)
-			var du = TAU / terrain_manager.elevation_grid_u
-			var sample_dz = cylinder_length / (terrain_manager.elevation_grid_v - 1)
-			var h_s = (terrain_manager.get_elevation(theta + du, z, cylinder_length) - terrain_manager.get_elevation(theta - du, z, cylinder_length)) / (2 * du * r_surface)
-			var z0 = maxf(z - sample_dz, -half_len)
-			var z1 = minf(z + sample_dz, half_len)
-			var h_z = (terrain_manager.get_elevation(theta, z1, cylinder_length) - terrain_manager.get_elevation(theta, z0, cylinder_length)) / (z1 - z0)
+			# 5-point stencil smooth elevation derivative for C1-continuous, curvy terrain normals
+			var du = (TAU / terrain_manager.elevation_grid_u) * 0.5
+			var sample_dz = (cylinder_length / (terrain_manager.elevation_grid_v - 1)) * 0.5
+
+			var e_p2u = terrain_manager.get_elevation(theta + du * 2.0, z, cylinder_length)
+			var e_p1u = terrain_manager.get_elevation(theta + du, z, cylinder_length)
+			var e_m1u = terrain_manager.get_elevation(theta - du, z, cylinder_length)
+			var e_m2u = terrain_manager.get_elevation(theta - du * 2.0, z, cylinder_length)
+			var h_s = (-e_p2u + 8.0 * e_p1u - 8.0 * e_m1u + e_m2u) / (12.0 * du * r_surface)
+
+			var z_p2 = minf(z + sample_dz * 2.0, half_len)
+			var z_p1 = minf(z + sample_dz, half_len)
+			var z_m1 = maxf(z - sample_dz, -half_len)
+			var z_m2 = maxf(z - sample_dz * 2.0, -half_len)
+			var e_p2z = terrain_manager.get_elevation(theta, z_p2, cylinder_length)
+			var e_p1z = terrain_manager.get_elevation(theta, z_p1, cylinder_length)
+			var e_m1z = terrain_manager.get_elevation(theta, z_m1, cylinder_length)
+			var e_m2z = terrain_manager.get_elevation(theta, z_m2, cylinder_length)
+			var h_z = (-e_p2z + 8.0 * e_p1z - 8.0 * e_m1z + e_m2z) / (12.0 * maxf(z_p1 - z_m1, 0.01))
+
 			var normal = Vector3(-cos_t + h_s * sin_t, -sin_t - h_s * cos_t, -h_z).normalized()
+
 
 			st.set_normal(normal)
 			st.set_uv(Vector2(u_coord, v_coord))

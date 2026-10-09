@@ -240,20 +240,23 @@ func rebuild_light_bar() -> void:
 		segment_colors.append(Color.WHITE)
 		segment_intensities.append(1.0)
 
-	# 2 broad axial omni lights (South and North halves) to illuminate the cylinder
-	# while leaving room in Godot's light cluster budget for local surface lights (campfires, lamps)
-	for k in range(2):
-		var z_axial = -half_len * 0.5 if k == 0 else half_len * 0.5
+	# 4 broad axial omni lights evenly spaced along spin axis to illuminate the cylinder
+	# with zero light range truncation cutoffs anywhere on the 18 km terrain shell
+	var num_axial_lights = 4
+	for k in range(num_axial_lights):
+		var t_pos = (float(k) + 0.5) / float(num_axial_lights)
+		var z_axial = -half_len + t_pos * bar_length
 		var light = OmniLight3D.new()
-		light.name = "AxialLight_%s" % ("South" if k == 0 else "North")
+		light.name = "AxialLight_%d" % k
 		light.position = Vector3(0, 0, z_axial)
-		light.omni_range = cylinder_radius * 2.5
+		light.omni_range = cylinder_radius * 6.0
 		light.omni_attenuation = 1.0
 		light.shadow_enabled = false
 		add_child(light)
 		light_nodes.append(light)
 
 	_apply_current_preset()
+
 
 func _process(delta: float) -> void:
 	if use_real_time:
@@ -423,33 +426,29 @@ func _refresh_all_segments() -> void:
 		avg_col = Color(avg_col.r / float(count), avg_col.g / float(count), avg_col.b / float(count), 1.0)
 		avg_intensity /= float(count)
 
-	# Update 2 broad axial lights (South and North)
-	if light_nodes.size() >= 2 and count > 0:
-		var half_count = count / 2
-		var south_col = Color.BLACK
-		var south_inten = 0.0
-		var north_col = Color.BLACK
-		var north_inten = 0.0
-		for i in range(half_count):
-			south_col += segment_colors[i]
-			south_inten += segment_intensities[i] * segment_colors[i].a
-		for i in range(half_count, count):
-			north_col += segment_colors[i]
-			north_inten += segment_intensities[i] * segment_colors[i].a
-		if half_count > 0:
-			south_col = south_col / float(half_count)
-			south_inten = south_inten / float(half_count)
-		var north_count = count - half_count
-		if north_count > 0:
-			north_col = north_col / float(north_count)
-			north_inten = north_inten / float(north_count)
-		light_nodes[0].light_color = south_col
-		light_nodes[0].light_energy = south_inten * intensity_norm * 1.5
-		light_nodes[1].light_color = north_col
-		light_nodes[1].light_energy = north_inten * intensity_norm * 1.5
+	# Update axial lights along spin axis
+	var num_lights = light_nodes.size()
+	if num_lights > 0 and count > 0:
+		var segs_per_light = float(count) / float(num_lights)
+		for k in range(num_lights):
+			var idx_start = int(floor(float(k) * segs_per_light))
+			var idx_end = int(floor(float(k + 1) * segs_per_light))
+			if k == num_lights - 1:
+				idx_end = count
+			var sub_col = Color.BLACK
+			var sub_inten = 0.0
+			var sub_cnt = max(idx_end - idx_start, 1)
+			for i in range(idx_start, idx_end):
+				sub_col += segment_colors[i]
+				sub_inten += segment_intensities[i] * segment_colors[i].a
+			sub_col /= float(sub_cnt)
+			sub_inten /= float(sub_cnt)
+			light_nodes[k].light_color = sub_col
+			light_nodes[k].light_energy = sub_inten * intensity_norm * (3.0 / float(num_lights))
 
 	current_avg_color = avg_col
 	current_avg_intensity = avg_intensity
+
 
 	var solar_factor = clampf(avg_intensity / 3.5, 0.0, 1.0)
 
@@ -609,7 +608,8 @@ func _sync_fog_and_atmosphere() -> void:
 
 func _update_light_ranges() -> void:
 	for light in light_nodes:
-		light.omni_range = cylinder_radius * 2.0
+		light.omni_range = cylinder_radius * 6.0
+
 
 func _update_shadows() -> void:
 	for light in light_nodes:
