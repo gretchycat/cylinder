@@ -1,6 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://c0tr33_0ak01"]
+[gd_scene load_steps=3 format=3 uid="uid://c0tr33_0ak01"]
 
 [ext_resource type="PackedScene" path="res://assets/maps/default/models/objects/trees/oak.glb" id="1_tree_model"]
+[ext_resource type="Script" path="res://scripts/tree_solid_collision.gd" id="2_solid_collision"]
 
 [node name="TreeOak" instance=ExtResource("1_tree_model")]
 scale = Vector3(2.1, 2.1, 2.1)
+
+[node name="SolidTreeCollision" type="StaticBody3D" parent="."]
+script = ExtResource("2_solid_collision")
