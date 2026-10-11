@@ -285,6 +285,10 @@ static func validate(doc: Dictionary) -> String:
 			return "allow_on_side must be boolean: " + id
 		if entry.has("on_side_chance") and (not finite_number(entry.on_side_chance) or entry.on_side_chance < 0 or entry.on_side_chance > 1):
 			return "on_side_chance must be in range 0..1: " + id
+		if entry.has("solid") and not entry.solid is bool:
+			return "solid must be boolean: " + id
+		if entry.has("collision_config") and not entry.collision_config is String:
+			return "collision_config must be a path string: " + id
 	for key in ["lake_count", "river_count"]:
 		if gen[key] < 0 or gen[key] > 32 or gen[key] != int(gen[key]):
 			return key + " must be an integer in 0..32"
@@ -666,4 +670,3 @@ static func get_grid_dimensions(doc: Dictionary) -> Dictionary:
 		"terrain_height": eh,
 		"sample_pitch_m": pitch
 	}
-

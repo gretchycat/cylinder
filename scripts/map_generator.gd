@@ -5,7 +5,7 @@ const Config = preload("res://scripts/map_config.gd")
 const Terrain = preload("res://scripts/terrain_manager.gd")
 
 static func noise(seed_value: int, wavelength: float, settings: Dictionary) -> FastNoiseLite:
-	var n = FastNoiseLite.new()
+	var n: FastNoiseLite = FastNoiseLite.new()
 	n.seed = seed_value
 	n.frequency = 1.0 / wavelength
 	n.fractal_octaves = int(settings.noise_octaves)
@@ -17,24 +17,24 @@ static func field(n: FastNoiseLite, u: float, v: float, geometry: Dictionary) ->
 	return n.get_noise_3d(cos(angle) * geometry.cylinder_radius_m, sin(angle) * geometry.cylinder_radius_m, (v - 0.5) * geometry.cylinder_length_m)
 
 static func progress(cb: Callable, fraction: float, message: String) -> void:
-	if cb.is_valid():
-		if OS.get_thread_caller_id() == OS.get_main_thread_id():
-			cb.call(fraction, message)
-		else:
-			cb.call_deferred(fraction, message)
+	# Progress callbacks may update SceneTree/UI state. Worker threads must not
+	# invoke or defer arbitrary callables because async GDScript callbacks can
+	# still propagate notifications on the caller thread.
+	if cb.is_valid() and OS.get_thread_caller_id() == OS.get_main_thread_id():
+		cb.call(fraction, message)
 
 static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 	await progress(cb, 0.00, "Initialization: Validating map configuration and grid parameters")
-	var error = Config.validate(doc)
+	var error: String = Config.validate(doc)
 	if not error.is_empty():
 		return {"error": error}
 	var g: Dictionary = doc.geometry
 	var p: Dictionary = doc.generation
-	var dims = Config.get_grid_dimensions(doc)
-	var w = dims.elevation_width
-	var h = dims.elevation_height
-	var tw = dims.terrain_width
-	var th = dims.terrain_height
+	var dims: Dictionary = Config.get_grid_dimensions(doc)
+	var w: int = int(dims.elevation_width)
+	var h: int = int(dims.elevation_height)
+	var tw: int = int(dims.terrain_width)
+	var th: int = int(dims.terrain_height)
 	if w * h > 33554432:
 		return {"error": "Elevation generation is limited to 33,554,432 samples on this device. Reduce its width or height; the loaded map remains unchanged."}
 	var active_biomes = 0
@@ -42,7 +42,7 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 		if biome.weight > 0:
 			active_biomes += 1
 	if tw * th * active_biomes > 536870912:
-		return {"error": "Biome generation exceeds its mobile memory budget. Reduce terrain resolution or disable unused biomes; the loaded map remains unchanged."}
+		return {"error": "Biome generation exceeds its 536,870,912-unit mobile memory budget. Reduce terrain resolution or disable unused biomes; the loaded map remains unchanged."}
 	
 	await progress(cb, 0.02, "Initialization: Setting up FastNoiseLite fields and lake coordinates")
 	var n = noise(int(p.seed), p.noise_wavelength_m, p)
@@ -676,6 +676,12 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 						"align_to_normal": catalog_align
 					})
 					placed_for_rule += 1
+
+	var configured_object_limit: int = int(p.object_limit)
+	if objects.size() > configured_object_limit:
+		var object_limit_warning: String = "Generated object count %d exceeds configured object_limit %d; placements were not truncated" % [objects.size(), configured_object_limit]
+		warnings.append(object_limit_warning)
+		push_warning(object_limit_warning)
 
 	var spawn: Dictionary = {}
 	var best_spawn = -INF

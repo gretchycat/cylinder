@@ -77,11 +77,14 @@ Elevation uses `CYLH` binary: four ASCII magic bytes, little-endian uint32 width
 and height, then width*height little-endian float32 normalized samples in row
 order. Metres = sample * elevation variance. This avoids PNG quantization.
 Terrain is an L8 PNG of biome raster IDs, never an RGB classification image.
-The descriptor accepts up to 4,194,304 samples per layer so saved maps can be
-loaded independently from generation capacity. On mobile, generation currently
-limits elevation to 2,097,152 samples and the packed biome score buffer to
-8,388,608 values. Over-budget generation reports an error and preserves the
-loaded map. Generation yields during balancing so the interface can update.
+The runtime descriptor validator and layer reader accept dimensions from 2 to
+32,768 and up to 536,870,912 samples per decoded layer. These are load/format
+ceilings, not a promise that every map is practical on mobile. Generation has
+separate preflight budgets: elevation is limited to 33,554,432 samples, and
+the packed biome work is limited to 536,870,912 terrain-sample/active-biome
+units. Over-budget generation reports an error before allocating the large
+working buffers and preserves the loaded map. Generation yields during
+balancing so the interface can update.
 Decoded dimensions are authoritative; descriptor resolutions govern the next
 generation only. Sampling and rendering use the decoded dimensions.
 
@@ -141,12 +144,20 @@ current authored placements. Object Save records transforms, tint, light setting
 instance/asset IDs and the editor's default player location in the map itself.
 There is no separate legacy snapshot format.
 
+New object-catalog entries store placement metadata explicitly (`ground_offset_m`,
+`align_to_normal`, `random_yaw`, `allow_on_side`, and `on_side_chance`). The
+loader retains name/ID/behavior-based defaults only for legacy descriptors that
+predate these fields; changing a custom asset's ID or display name must not alter
+an entry that already contains explicit metadata.
+
 Ground textures may be at most 8192 pixels on either side and 16,777,216 pixels
 total; editor imports are limited to 64 MiB encoded. This total-pixel ceiling
 keeps decoded texture memory bounded on mobile. GLB imports are limited to 64 MiB.
-Raster dimensions are 2..4096 with at most 4,194,304 samples per layer. Biome count
-is 1..256, and biome-count × terrain-samples may not exceed 16,777,216. Texture
-array layers are resized to the map's 16..512 `biome_texture_resolution`; imported
+Runtime raster dimensions are 2..32,768 with at most 536,870,912 samples per
+decoded layer. Biome count is 1..256, and the descriptor validator rejects
+biome-count × terrain-samples above 2,147,483,648. Generation applies the
+separate elevation and active-biome work budgets described above. Texture array
+layers are resized to the map's 16..512 `biome_texture_resolution`; imported
 source images remain unchanged. The current mesh builder supports 16..256 radial
 segments, 4..360 axial segments and 8..64 cap rings. These bounds are explicit
 performance constraints, not alternative physical dimensions.

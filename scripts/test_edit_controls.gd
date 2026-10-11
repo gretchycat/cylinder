@@ -88,6 +88,13 @@ func _run() -> void:
 	check(controls.knob_style.bg_color.b > controls.knob_style.bg_color.r, "Walking joystick center is blue")
 	check(controls.get_node("ActionButtons").get_child_count() == 1, "Jump is the only normal right-side button")
 	check(controls.debug_panel.get_global_rect().end.y < controls.jump_btn.get_global_rect().position.y, "Debug box sits above Jump")
+	check(controls.collision_hulls_btn != null and controls.collision_hulls_btn.text == "HULLS", "Debug box includes collision hull toggle")
+	if controls.collision_hulls_btn:
+		controls.collision_hulls_btn.button_pressed = true
+		controls._on_collision_hulls_toggled(true)
+		check(controls.collision_hulls_btn.button_pressed, "Collision hull toggle activates")
+		controls.collision_hulls_btn.button_pressed = false
+		controls._on_collision_hulls_toggled(false)
 	check(controls.fly_up_btn.disabled, "Fly up disabled outside flight")
 	controls._on_fly_pressed()
 	check(not controls.fly_up_btn.disabled, "Fly up enabled in flight")
@@ -98,6 +105,22 @@ func _run() -> void:
 	check(editor_ui.editor.enabled and editor_ui.actions.visible, "Edit toggle reveals actions")
 	check(editor_ui.editor.catalog.size() >= 14, "Palette includes models and tree variants")
 	check(editor_ui.current_preview.mesh_count > 0, "Selected object has a miniature model")
+	check(editor_ui.current_preview.mouse_filter == Control.MOUSE_FILTER_STOP, "Active object preview accepts selector taps")
+	editor_ui.set_palette_open(false)
+	var object_preview_click := InputEventMouseButton.new()
+	object_preview_click.button_index = MOUSE_BUTTON_LEFT
+	object_preview_click.pressed = true
+	editor_ui._on_active_preview_gui_input(object_preview_click)
+	check(editor_ui.palette_open, "Tapping active object model opens selector")
+	editor_ui.set_palette_open(false)
+	editor_ui._set_sub_mode(WorldEditor.SubMode.PAINTER)
+	var terrain_preview_click := InputEventMouseButton.new()
+	terrain_preview_click.button_index = MOUSE_BUTTON_LEFT
+	terrain_preview_click.pressed = true
+	editor_ui._on_active_preview_gui_input(terrain_preview_click)
+	check(editor_ui.palette_open, "Tapping active terrain image opens selector")
+	editor_ui.set_palette_open(false)
+	editor_ui._set_sub_mode(WorldEditor.SubMode.OBJECT)
 	var group_count := get_nodes_in_group("surface_light_objects").size()
 	editor_ui.set_palette_open(true)
 	await process_frame
@@ -107,6 +130,8 @@ func _run() -> void:
 	check(editor_ui.selection_buttons.size() == editor_ui.editor.catalog.size(), "Palette contains every catalog entry")
 	for preview in editor_ui.previews:
 		check(preview.mesh_count > 0, "Each palette card contains model meshes")
+	if editor_ui.previews.size() > 1:
+		check(editor_ui.previews[1].mouse_filter == Control.MOUSE_FILTER_IGNORE, "Palette model previews pass taps to their selection buttons")
 	check(get_nodes_in_group("surface_light_objects").size() == group_count, "Previews do not create gameplay objects")
 	controls._handle_touch_start(11, joy)
 	check(controls.joystick_touch_id == -1, "Palette blocks joystick touches")

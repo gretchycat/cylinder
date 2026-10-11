@@ -24,7 +24,6 @@ var lower_button: Button
 var smooth_button: Button
 var brush_minus_btn: Button
 var brush_plus_btn: Button
-var select_button: Button
 var save_button: Button
 var regen_button: Button
 var replace_active_button: Button
@@ -44,6 +43,9 @@ var import_palette_btn: Button
 var edit_clutter_btn: Button
 var import_file_dialog: FileDialog
 var current_import_mode: String = "object"
+var collision_import_dialog: ConfirmationDialog
+var pending_object_import_path: String = ""
+var collision_import_checks: Dictionary = {}
 var clutter_dialog: PanelContainer
 var clutter_density_slider: HSlider
 var clutter_density_label: Label
@@ -72,6 +74,7 @@ func _ready() -> void:
 	_build_actions()
 	_build_palette()
 	_build_clutter_dialog()
+	_build_collision_import_dialog()
 	_build_regen_dialog()
 	_build_confirm_dialog()
 	_build_progress_dialog()
@@ -164,7 +167,11 @@ func _build_active_object() -> void:
 	frame.add_theme_stylebox_override("panel", _panel_style())
 	row.add_child(frame)
 	current_preview = Preview.new()
+	current_preview.gui_input.connect(_on_active_preview_gui_input)
 	frame.add_child(current_preview)
+	# ObjectPreview defaults to input-pass-through in _ready() so palette
+	# previews remain visual-only. The active preview is the selector trigger.
+	current_preview.mouse_filter = Control.MOUSE_FILTER_STOP
 	var column := VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(column)
@@ -173,10 +180,6 @@ func _build_active_object() -> void:
 	column.add_child(current_name)
 	var buttons := HBoxContainer.new()
 	column.add_child(buttons)
-	select_button = _button("SELECT", func(): set_palette_open(true))
-	select_button.custom_minimum_size.x = 80
-	buttons.add_child(select_button)
-
 	replace_active_button = _button("REPLACE", func():
 		if editor and editor.selected_texture_index >= 0:
 			_open_replace_image_dialog(editor.selected_texture_index)
@@ -207,6 +210,11 @@ func _build_active_object() -> void:
 		map_editor.map_name.grab_focus())
 	regen_button.custom_minimum_size.x = 80
 	buttons.add_child(regen_button)
+
+func _on_active_preview_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		set_palette_open(true)
+		get_viewport().set_input_as_handled()
 
 func _build_actions() -> void:
 	actions = HBoxContainer.new()
@@ -396,7 +404,9 @@ func _open_replace_image_dialog(index: int) -> void:
 func _on_import_file_selected(path: String) -> void:
 	var rotate_setting: bool = rotate_checkbox.button_pressed if rotate_checkbox else true
 	if current_import_mode == "object":
-		editor.import_object_model(path)
+		pending_object_import_path = path
+		collision_import_dialog.popup_centered()
+		return
 	elif current_import_mode == "replace_texture":
 		if target_replace_texture_index >= 0:
 			editor.replace_ground_texture(target_replace_texture_index, path, rotate_setting)
@@ -407,6 +417,52 @@ func _on_import_file_selected(path: String) -> void:
 
 	_populate_palette()
 	_update_active_box_content()
+
+func _build_collision_import_dialog() -> void:
+	collision_import_dialog = ConfirmationDialog.new()
+	collision_import_dialog.title = "OBJECT COLLISION HULLS"
+	collision_import_dialog.ok_button_text = "IMPORT MODEL"
+	collision_import_dialog.cancel_button_text = "NO COLLISION"
+	collision_import_dialog.min_size = Vector2(360, 240)
+	add_child(collision_import_dialog)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	collision_import_dialog.add_child(column)
+	var help := Label.new()
+	help.text = "Select named solid parts. Foliage is never included."
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(help)
+	for category_data: Dictionary in [
+		{"id": "roots", "label": "Roots"},
+		{"id": "trunk", "label": "Trunk"},
+		{"id": "main_branches", "label": "Main branches"}
+	]:
+		var check := CheckBox.new()
+		check.text = category_data.label
+		check.button_pressed = false
+		column.add_child(check)
+		collision_import_checks[category_data.id] = check
+	collision_import_dialog.confirmed.connect(_confirm_object_import)
+	collision_import_dialog.canceled.connect(_cancel_object_import)
+
+func _confirm_object_import() -> void:
+	if pending_object_import_path.is_empty():
+		return
+	var categories: Dictionary = {}
+	for category: String in collision_import_checks:
+		var check: CheckBox = collision_import_checks[category]
+		categories[category] = check.button_pressed
+	editor.import_object_model(pending_object_import_path, categories)
+	pending_object_import_path = ""
+	_populate_palette()
+	_update_active_box_content()
+
+func _cancel_object_import() -> void:
+	if not pending_object_import_path.is_empty():
+		editor.import_object_model(pending_object_import_path, {})
+		pending_object_import_path = ""
+		_populate_palette()
+		_update_active_box_content()
 
 func _build_clutter_dialog() -> void:
 	clutter_dialog = PanelContainer.new()
@@ -785,6 +841,9 @@ func _populate_palette() -> void:
 			card.add_child(button)
 			selection_buttons.append(button)
 			var preview := Preview.new()
+			# The preview is visual content inside the selection button. Let the
+			# button receive taps on the model instead of the child consuming them.
+			preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			button.add_child(preview)
 			preview.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			preview.offset_left = 6
@@ -907,12 +966,10 @@ func _update_active_box_content() -> void:
 		if entry.is_empty():
 			current_name.text = "No objects available"
 			place_button.disabled = true
-			select_button.disabled = true
 		else:
 			current_name.text = str(entry.get("name", "Object"))
 			current_preview.show_model(entry.path)
 			place_button.disabled = false
-			select_button.disabled = false
 		for index in range(selection_buttons.size()):
 			selection_buttons[index].set_pressed_no_signal(index == editor.selected_index)
 	elif editor.sub_mode == Editor.SubMode.PAINTER:
@@ -922,13 +979,14 @@ func _update_active_box_content() -> void:
 			texture_swatch.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			texture_swatch.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 			current_preview.get_parent().add_child(texture_swatch)
+			texture_swatch.mouse_filter = Control.MOUSE_FILTER_STOP
+			texture_swatch.gui_input.connect(_on_active_preview_gui_input)
 			texture_swatch.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		texture_swatch.visible = true
 		var entry := editor.current_texture()
 		if entry.is_empty():
 			current_name.text = "No terrain images available"
 			if paint_button: paint_button.disabled = true
-			select_button.disabled = true
 			if replace_active_button: replace_active_button.disabled = true
 			if rotate_checkbox: rotate_checkbox.disabled = true
 			texture_swatch.texture = null
@@ -939,7 +997,6 @@ func _update_active_box_content() -> void:
 			texture_swatch.texture = tex
 			texture_swatch.self_modulate = MapConfig.color(entry.get("tint", [1,1,1,1]))
 			if paint_button: paint_button.disabled = false
-			select_button.disabled = false
 			if replace_active_button: replace_active_button.disabled = false
 			if rotate_checkbox:
 				rotate_checkbox.disabled = false
@@ -1200,5 +1257,3 @@ func _draw() -> void:
 				for width in [4.0, 2.0]:
 					var color := Color(0, 0, 0, 0.85) if width == 4.0 else Color(1.0, 0.85, 0.25)
 					draw_polyline(tri_pts, color, width)
-
-

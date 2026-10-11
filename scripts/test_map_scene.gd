@@ -83,6 +83,15 @@ func _run():
 	check(restored_light != null and is_equal_approx(restored_light.light_range, 38.0), "Saved canonical light range survives object reconstruction")
 	if restored_light:
 		restored_light.free()
+	var explicit_transform_record := {
+		"id": "explicit-transform-authority-check",
+		"asset": "campfire",
+		"transform": [1, 0, 0, 0, 1, 0, 0, 0, 1, 1234, 2345, 678],
+		"ground_offset_m": -25.0
+	}
+	var explicit_transform_object := ObjectFactory.create(map_doc, explicit_transform_record, world)
+	check(explicit_transform_object.transform.origin.is_equal_approx(Vector3(1234, 2345, 678)), "Explicit saved object transform remains authoritative with a live world")
+	explicit_transform_object.free()
 	var env = scene.get_node("WorldEnvironment").environment
 	check(env.background_color.is_equal_approx(MapConfig.color(world.active_map_config.environment.sky_color)), "Map sky color applied")
 	check(world.water_material.get_shader_parameter("deep_color").is_equal_approx(MapConfig.color(world.active_map_config.environment.water.deep_color)), "Map water color applied")

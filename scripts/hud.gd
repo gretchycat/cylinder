@@ -704,6 +704,7 @@ func _setup_touch_controls_layout() -> void:
 	touch_controls.scale = Vector2.ONE * scale_value
 	touch_controls.size = viewport_size / scale_value
 	touch_controls.ui_scale = scale_value
+	touch_controls._update_debug_panel_layout()
 
 static func slider_pos_to_intensity(s: float) -> float:
 	var s_clamped = clampf(s, 0.0, 1.0)

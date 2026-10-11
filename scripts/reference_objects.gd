@@ -286,6 +286,7 @@ func _player_surface_position() -> Vector2:
 
 var placement_scan_index: int = 0
 var placement_candidates_buffer: Array[Dictionary] = []
+var placement_fill_pending: bool = false
 
 func _update_placement_streaming(force: bool = false) -> void:
 	if placement_records.is_empty() or active_map_config.is_empty():
@@ -293,8 +294,10 @@ func _update_placement_streaming(force: bool = false) -> void:
 	var world := get_tree().get_first_node_in_group("cylinder_world") if is_inside_tree() else null
 	var center := _player_surface_position() if get_tree().get_first_node_in_group("player") else placement_stream_center
 
-	if not force and has_placement_stream_center and not live_placements.is_empty() and _surface_distance(center, placement_stream_center) < 15.0:
+	if not force and not placement_fill_pending and has_placement_stream_center and not live_placements.is_empty() and _surface_distance(center, placement_stream_center) < 15.0:
 		return
+	if force:
+		placement_fill_pending = false
 
 	placement_stream_center = center
 	has_placement_stream_center = true
@@ -349,6 +352,7 @@ func _update_placement_streaming(force: bool = false) -> void:
 					candidates.append({"record": record, "distance": distance})
 
 	if candidates.is_empty():
+		placement_fill_pending = false
 		return
 
 	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a.distance) < float(b.distance))
@@ -366,6 +370,7 @@ func _update_placement_streaming(force: bool = false) -> void:
 		add_child(instance)
 		live_placements[id] = instance
 		spawned += 1
+	placement_fill_pending = live_placements.size() < MAX_LIVE_PLACEMENTS and spawned < candidates.size() and spawned >= PLACEMENTS_PER_TICK
 
 func _capture_live_placement(record: Dictionary, object: Node) -> void:
 	if not object is SurfaceLightObject:
@@ -455,5 +460,20 @@ func spawn_light_emitter(
 		facing = -player.global_basis.z
 
 	var obj = SurfaceLightObject.create_on_cylinder(type, theta, z, cylinder_radius, elev, custom_col, custom_range, 0.0, Vector3.ZERO, custom_pos, -1, _get_model_path(type), facing)
+	_apply_spawn_collision_definition(obj, type)
 	add_child(obj)
 	return obj
+
+func _apply_spawn_collision_definition(obj: SurfaceLightObject, type: SurfaceLightObject.ObjectType) -> void:
+	if not obj or not active_map_config.get("objects", {}).get("model_catalog", {}) is Dictionary:
+		return
+	var catalog: Dictionary = active_map_config.objects.model_catalog
+	for definition_variant: Variant in catalog.values():
+		if not definition_variant is Dictionary:
+			continue
+		var definition: Dictionary = definition_variant as Dictionary
+		if int(definition.get("behavior_type", -1)) != int(type):
+			continue
+		obj.solid_collision = bool(definition.get("solid", false))
+		obj.collision_config_path = MapConfigClass.resolve_map_asset_path(active_map_config, str(definition.get("collision_config", "")))
+		return

@@ -43,6 +43,8 @@ const TWO_SIDED_FOLIAGE_SHADER = preload("res://assets/shaders/two_sided_foliage
 var asset_id: String = ""
 var instance_id: String = ""
 var tint: Color = Color.WHITE
+@export var solid_collision: bool = false
+@export_file("*.json") var collision_config_path: String = ""
 
 @export_file var model_scene_path: String = ""
 
@@ -114,6 +116,9 @@ func rebuild_object() -> void:
 		return
 
 	add_child(instance)
+	if solid_collision and not collision_config_path.is_empty():
+		MapAssetLoaderClass.ensure_solid_collision(instance, model_scene_path + "|" + collision_config_path, collision_config_path)
+	MapAssetLoaderClass.attach_existing_collision_debug_meshes(instance)
 	_apply_map_shader_parameters(instance)
 	_setup_instance_bindings(instance)
 	if not omni_light and light_energy > 0:

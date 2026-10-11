@@ -30,6 +30,8 @@ static func create(doc: Dictionary, record: Dictionary, world: Node = null) -> N
 	)
 	inst.asset_id = record.asset
 	inst.instance_id = record.get("id", "")
+	inst.solid_collision = bool(definition.get("solid", false))
+	inst.collision_config_path = Config.resolve_map_asset_path(doc, str(definition.get("collision_config", "")))
 	inst.name = record.get("name", definition.name)
 	inst.tint = Config.color(record.get("tint", definition.tint))
 	inst.light_color = Config.color(record.get("light_color", definition.light_color))
@@ -41,10 +43,5 @@ static func create(doc: Dictionary, record: Dictionary, world: Node = null) -> N
 		if t.size() >= 12:
 			var saved_basis = Basis(Vector3(t[0],t[1],t[2]),Vector3(t[3],t[4],t[5]),Vector3(t[6],t[7],t[8]))
 			var saved_pos = Vector3(t[9],t[10],t[11])
-			if point.has("position") and point.position != Vector3.ZERO:
-				saved_pos = point.position
-				if ground_offset != 0.0:
-					var up = point.normal if align_norm else Vector3(-point.position.x, -point.position.y, 0.0).normalized()
-					saved_pos += up * ground_offset
 			inst.transform = Transform3D(saved_basis, saved_pos)
 	return inst

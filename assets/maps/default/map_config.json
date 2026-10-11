@@ -1850,8 +1850,8 @@
 				],
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
-				"name": "Colony House",
-				"scene_path": "res://assets/maps/default/models/objects/house.tscn",
+				"name": "Colony Yurt",
+				"scene_path": "res://assets/maps/default/models/objects/yurt.tscn",
 				"tint": [
 					1.0,
 					1.0,
@@ -1860,7 +1860,7 @@
 				],
 				"variant": -1.0
 			},
-			"foliage_tree": {
+				"foliage_tree": {
 				"behavior_type": 6.0,
 				"flicker": false,
 				"light_color": [
@@ -1872,7 +1872,8 @@
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
 				"name": "Foliage Tree",
-				"scene_path": "res://assets/maps/default/models/objects/tree.tscn",
+					"scene_path": "res://assets/maps/default/models/objects/tree.tscn",
+					"solid": true,
 				"tint": [
 					1.0,
 					1.0,
@@ -1894,6 +1895,8 @@
 				"light_range_m": 45.0,
 				"name": "Lamp Post",
 				"scene_path": "res://assets/maps/default/models/objects/lamp_post.tscn",
+				"solid": true,
+				"collision_config": "models/objects/lamp_post.collision.json",
 				"tint": [
 					1.0,
 					1.0,
@@ -1902,7 +1905,7 @@
 				],
 				"variant": -1.0
 			},
-			"tree_0": {
+				"tree_0": {
 				"behavior_type": 6.0,
 				"flicker": false,
 				"light_color": [
@@ -1914,7 +1917,8 @@
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
 				"name": "Oak",
-				"scene_path": "res://assets/maps/default/models/objects/tree_oak.tscn",
+					"scene_path": "res://assets/maps/default/models/objects/tree_oak.tscn",
+					"solid": true,
 				"tint": [
 					1.0,
 					1.0,
@@ -1923,7 +1927,7 @@
 				],
 				"variant": 0.0
 			},
-			"tree_1": {
+				"tree_1": {
 				"behavior_type": 6.0,
 				"flicker": false,
 				"light_color": [
@@ -1935,7 +1939,8 @@
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
 				"name": "Pine",
-				"scene_path": "res://assets/maps/default/models/objects/tree_pine.tscn",
+					"scene_path": "res://assets/maps/default/models/objects/tree_pine.tscn",
+					"solid": true,
 				"tint": [
 					1.0,
 					1.0,
@@ -1944,7 +1949,7 @@
 				],
 				"variant": 1.0
 			},
-			"tree_10": {
+				"tree_10": {
 				"behavior_type": 6.0,
 				"flicker": false,
 				"light_color": [
@@ -1956,7 +1961,8 @@
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
 				"name": "Ancient Giant Oak",
-				"scene_path": "res://assets/maps/default/models/objects/tree_ancient_oak.tscn",
+					"scene_path": "res://assets/maps/default/models/objects/tree_ancient_oak.tscn",
+					"solid": true,
 				"tint": [
 					1.0,
 					1.0,
@@ -1965,7 +1971,7 @@
 				],
 				"variant": 10.0
 			},
-			"tree_11": {
+				"tree_11": {
 				"behavior_type": 6.0,
 				"flicker": false,
 				"light_color": [
@@ -1977,7 +1983,8 @@
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
 				"name": "Ancient Giant Pine",
-				"scene_path": "res://assets/maps/default/models/objects/tree_ancient_pine.tscn",
+					"scene_path": "res://assets/maps/default/models/objects/tree_ancient_pine.tscn",
+					"solid": true,
 				"tint": [
 					1.0,
 					1.0,
@@ -1986,7 +1993,7 @@
 				],
 				"variant": 11.0
 			},
-			"tree_12": {
+				"tree_12": {
 				"behavior_type": 6.0,
 				"flicker": false,
 				"light_color": [
@@ -1998,7 +2005,8 @@
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
 				"name": "Ancient Giant Willow",
-				"scene_path": "res://assets/maps/default/models/objects/tree_ancient_willow.tscn",
+					"scene_path": "res://assets/maps/default/models/objects/tree_ancient_willow.tscn",
+					"solid": true,
 				"tint": [
 					1.0,
 					1.0,
@@ -2007,7 +2015,7 @@
 				],
 				"variant": 12.0
 			},
-			"tree_13": {
+				"tree_13": {
 				"behavior_type": 6.0,
 				"flicker": false,
 				"light_color": [
@@ -2019,7 +2027,8 @@
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
 				"name": "Ancient Giant Birch",
-				"scene_path": "res://assets/maps/default/models/objects/tree_ancient_birch.tscn",
+					"scene_path": "res://assets/maps/default/models/objects/tree_ancient_birch.tscn",
+					"solid": true,
 				"tint": [
 					1.0,
 					1.0,
@@ -2028,7 +2037,7 @@
 				],
 				"variant": 13.0
 			},
-			"tree_2": {
+				"tree_2": {
 				"behavior_type": 6.0,
 				"flicker": false,
 				"light_color": [
@@ -2040,7 +2049,8 @@
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
 				"name": "Birch",
-				"scene_path": "res://assets/maps/default/models/objects/tree_birch.tscn",
+					"scene_path": "res://assets/maps/default/models/objects/tree_birch.tscn",
+					"solid": true,
 				"tint": [
 					1.0,
 					1.0,
@@ -2049,7 +2059,7 @@
 				],
 				"variant": 2.0
 			},
-			"tree_3": {
+				"tree_3": {
 				"behavior_type": 6.0,
 				"flicker": false,
 				"light_color": [
@@ -2061,7 +2071,8 @@
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
 				"name": "Willow",
-				"scene_path": "res://assets/maps/default/models/objects/tree_willow.tscn",
+					"scene_path": "res://assets/maps/default/models/objects/tree_willow.tscn",
+					"solid": true,
 				"tint": [
 					1.0,
 					1.0,
@@ -2070,7 +2081,7 @@
 				],
 				"variant": 3.0
 			},
-			"tree_4": {
+				"tree_4": {
 				"behavior_type": 6.0,
 				"flicker": false,
 				"light_color": [
@@ -2082,7 +2093,8 @@
 				"light_energy": 0.0,
 				"light_range_m": 1.0,
 				"name": "Cherry Blossom",
-				"scene_path": "res://assets/maps/default/models/objects/tree_cherry_blossom.tscn",
+					"scene_path": "res://assets/maps/default/models/objects/tree_cherry_blossom.tscn",
+					"solid": true,
 				"tint": [
 					1.0,
 					1.0,
@@ -2091,7 +2103,7 @@
 				],
 				"variant": 4.0
 			},
-			"tree_5": {
+				"tree_5": {
 				"align_to_normal": false,
 				"allow_on_side": true,
 				"behavior_type": 6.0,
@@ -2108,7 +2120,8 @@
 				"name": "Dead Tree",
 				"on_side_chance": 0.25,
 				"random_yaw": true,
-				"scene_path": "res://assets/maps/default/models/objects/tree_dead.tscn",
+					"scene_path": "res://assets/maps/default/models/objects/tree_dead.tscn",
+					"solid": true,
 				"tint": [
 					1.0,
 					1.0,

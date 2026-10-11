@@ -4,6 +4,9 @@ extends RefCounted
 ## Instantiate any imported Godot 3D scene, or wrap a directly imported Mesh
 ## (the default import mode for OBJ) in a MeshInstance3D.
 static var model_cache: Dictionary = {}
+static var solid_collision_cache: Dictionary = {}
+static var collision_hulls_visible: bool = false
+static var collision_debug_material: StandardMaterial3D = null
 const MAX_TEXTURE_DIMENSION := 8192
 const MAX_TEXTURE_PIXELS := 16777216
 
@@ -53,6 +56,150 @@ static func instantiate_model(path: String) -> Node3D:
 		mesh_instance.mesh = resource
 		return mesh_instance
 	return null
+
+## Builds and caches simplified convex collision shapes from an imported model.
+## The cached shapes are resource-safe to share between instances; transforms
+## remain per-instance because imported scene nodes may have different roots.
+static func ensure_solid_collision(root: Node3D, cache_key: String, collision_config_path: String = "") -> void:
+	if not root or cache_key.is_empty():
+		return
+	if root.find_child("SolidCollision", true, false) or root.find_child("SolidTreeCollision", true, false):
+		return
+	var categories: Dictionary = _load_collision_categories(collision_config_path)
+	if not collision_config_path.is_empty() and categories.is_empty():
+		return
+	var entries: Array = solid_collision_cache.get(cache_key, [])
+	if entries.is_empty():
+		# The generated body is attached below root, so its entries must be
+		# relative to root. Including root.transform here would apply the model
+		# root's position/scale a second time.
+		for child: Node in root.get_children():
+			_collect_convex_collision_entries(child, Transform3D.IDENTITY, entries, categories)
+		if entries.is_empty():
+			return
+		solid_collision_cache[cache_key] = entries
+	var body: StaticBody3D = StaticBody3D.new()
+	body.name = "SolidCollision"
+	root.add_child(body)
+	for entry: Dictionary in entries:
+		var collider: CollisionShape3D = CollisionShape3D.new()
+		collider.shape = entry.shape
+		collider.transform = entry.transform
+		body.add_child(collider)
+		_attach_collision_debug_mesh(collider)
+
+static func set_collision_hulls_visible(tree: SceneTree, visible: bool) -> void:
+	collision_hulls_visible = visible
+	if not tree:
+		return
+	for node: Node in tree.get_nodes_in_group("collision_debug_hull"):
+		if node is GeometryInstance3D:
+			(node as GeometryInstance3D).visible = visible
+
+static func attach_existing_collision_debug_meshes(root: Node) -> void:
+	if not root:
+		return
+	for node: Node in root.find_children("*", "CollisionShape3D", true, false):
+		var collider := node as CollisionShape3D
+		if collider and collider.shape and not collider.get_node_or_null("CollisionHullDebug"):
+			_attach_collision_debug_mesh(collider)
+
+static func _attach_collision_debug_mesh(collider: CollisionShape3D) -> void:
+	if not collider or not collider.shape:
+		return
+	var debug_mesh: ArrayMesh = collider.shape.get_debug_mesh()
+	if not debug_mesh:
+		return
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.name = "CollisionHullDebug"
+	mesh_instance.mesh = debug_mesh
+	mesh_instance.material_override = _get_collision_debug_material()
+	mesh_instance.visible = collision_hulls_visible
+	mesh_instance.add_to_group("collision_debug_hull")
+	collider.add_child(mesh_instance)
+
+static func _get_collision_debug_material() -> StandardMaterial3D:
+	if collision_debug_material:
+		return collision_debug_material
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(1.0, 0.0, 1.0, 0.5)
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	collision_debug_material = material
+	return collision_debug_material
+
+static func _load_collision_categories(path: String) -> Dictionary:
+	if path.is_empty() or not FileAccess.file_exists(path):
+		return {}
+	var document: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not document is Dictionary or not document.get("categories", {}) is Dictionary:
+		return {}
+	return document.categories as Dictionary
+
+static func _collect_convex_collision_entries(node: Node, parent_transform: Transform3D, output: Array, categories: Dictionary = {}) -> void:
+	if node.is_in_group("collision_debug_hull") or node is CollisionShape3D:
+		return
+	var local_transform: Transform3D = parent_transform
+	if node is Node3D:
+		local_transform *= (node as Node3D).transform
+	if node is MeshInstance3D:
+		var mesh: Mesh = (node as MeshInstance3D).mesh
+		if mesh:
+			for surface_index: int in mesh.get_surface_count():
+				if not categories.is_empty() and not _surface_matches_collision_categories(node, mesh, surface_index, categories):
+					continue
+				var arrays: Array = mesh.surface_get_arrays(surface_index)
+				if arrays.size() <= Mesh.ARRAY_VERTEX:
+					continue
+				var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array
+				if vertices.size() < 4:
+					continue
+				var shape := ConvexPolygonShape3D.new()
+				shape.points = vertices
+				output.append({"shape": shape, "transform": local_transform})
+	for child: Node in node.get_children():
+		_collect_convex_collision_entries(child, local_transform, output, categories)
+
+static func _surface_matches_collision_categories(node: Node, mesh: Mesh, surface_index: int, categories: Dictionary) -> bool:
+	var material: Material = mesh.surface_get_material(surface_index)
+	var names: PackedStringArray = [node.name.to_lower()]
+	if material:
+		names.append(material.resource_name.to_lower())
+	var category_tokens: Dictionary = {
+		"roots": ["root", "roots"],
+		"trunk": ["trunk", "bark", "stem", "wood"],
+		"main_branches": ["main_branch", "main branch", "branch", "limb"]
+	}
+	for category: String in category_tokens:
+		var configured: Variant = categories.get(category, false)
+		if configured is Array:
+			if (configured as Array).is_empty():
+				continue
+		else:
+			if not bool(configured):
+				continue
+		var tokens: Array[String] = []
+		if configured is Array:
+			for configured_token: Variant in configured as Array:
+				tokens.append(str(configured_token).to_lower())
+		else:
+			for default_token: String in category_tokens[category]:
+				tokens.append(default_token)
+		if tokens.is_empty():
+			continue
+		for name: String in names:
+			if category == "trunk" and (name.contains("leaf") or name.contains("foliage")):
+				continue
+			if category == "trunk" and name.begins_with("island_tree"):
+				return true
+			for token: String in tokens:
+				if name.contains(token):
+					return true
+	return false
+
+static func solid_collision_cache_size() -> int:
+	return solid_collision_cache.size()
 
 ## Load a texture through Godot's importer first, then decode a project/user
 ## image directly when the resource is not imported (for example user://).

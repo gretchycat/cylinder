@@ -219,22 +219,36 @@ func get_surface_radius_at(theta: float, z: float) -> float:
 
 ## Computes the exact 3D position and inward surface normal directly on the generated terrain mesh triangles.
 ## This eliminates chord sagitta error (up to 0.95m floating) and aligns perfectly with local slopes.
-func get_surface_mesh_point_and_normal(theta: float, z: float) -> Dictionary:
-	if not terrain_manager:
+func get_surface_mesh_point_and_normal(
+	theta: float,
+	z: float,
+	terrain_override: TerrainManagerClass = null,
+	radius_override: float = -1.0,
+	length_override: float = -1.0,
+	radial_segments_override: int = -1,
+	length_segments_override: int = -1
+) -> Dictionary:
+	var surface_terrain: TerrainManagerClass = terrain_override if terrain_override else terrain_manager
+	if not surface_terrain:
 		_initialize_terrain_manager()
+		surface_terrain = terrain_manager
+	var surface_radius: float = radius if radius_override <= 0.0 else radius_override
+	var surface_length: float = cylinder_length if length_override <= 0.0 else length_override
+	var surface_radial_segments: int = radial_segments if radial_segments_override <= 0 else radial_segments_override
+	var surface_length_segments: int = length_segments if length_segments_override <= 0 else length_segments_override
 
-	var half_len = cylinder_length * 0.5
+	var half_len: float = surface_length * 0.5
 	var u_norm = fposmod(theta, TAU) / TAU
-	var v_norm = clampf((z + half_len) / maxf(cylinder_length, 1.0), 0.0, 1.0)
+	var v_norm = clampf((z + half_len) / maxf(surface_length, 1.0), 0.0, 1.0)
 
-	var d_theta = TAU / float(radial_segments)
-	var d_z = cylinder_length / float(length_segments)
+	var d_theta = TAU / float(surface_radial_segments)
+	var d_z = surface_length / float(surface_length_segments)
 
-	var fi = u_norm * float(radial_segments)
-	var fj = v_norm * float(length_segments)
+	var fi = u_norm * float(surface_radial_segments)
+	var fj = v_norm * float(surface_length_segments)
 
-	var i = clampi(int(floor(fi)), 0, radial_segments - 1)
-	var j = clampi(int(floor(fj)), 0, length_segments - 1)
+	var i = clampi(int(floor(fi)), 0, surface_radial_segments - 1)
+	var j = clampi(int(floor(fj)), 0, surface_length_segments - 1)
 
 	var s = fi - float(i)
 	var t = fj - float(j)
@@ -244,15 +258,15 @@ func get_surface_mesh_point_and_normal(theta: float, z: float) -> Dictionary:
 	var z_0 = -half_len + float(j) * d_z
 	var z_1 = -half_len + float(j + 1) * d_z
 
-	var e00 = terrain_manager.get_elevation(theta_0, z_0, cylinder_length)
-	var e10 = terrain_manager.get_elevation(theta_1, z_0, cylinder_length)
-	var e01 = terrain_manager.get_elevation(theta_0, z_1, cylinder_length)
-	var e11 = terrain_manager.get_elevation(theta_1, z_1, cylinder_length)
+	var e00 = surface_terrain.get_elevation(theta_0, z_0, surface_length)
+	var e10 = surface_terrain.get_elevation(theta_1, z_0, surface_length)
+	var e01 = surface_terrain.get_elevation(theta_0, z_1, surface_length)
+	var e11 = surface_terrain.get_elevation(theta_1, z_1, surface_length)
 
-	var v00 = Vector3((radius - e00) * cos(theta_0), (radius - e00) * sin(theta_0), z_0)
-	var v10 = Vector3((radius - e10) * cos(theta_1), (radius - e10) * sin(theta_1), z_0)
-	var v01 = Vector3((radius - e01) * cos(theta_0), (radius - e01) * sin(theta_0), z_1)
-	var v11 = Vector3((radius - e11) * cos(theta_1), (radius - e11) * sin(theta_1), z_1)
+	var v00 = Vector3((surface_radius - e00) * cos(theta_0), (surface_radius - e00) * sin(theta_0), z_0)
+	var v10 = Vector3((surface_radius - e10) * cos(theta_1), (surface_radius - e10) * sin(theta_1), z_0)
+	var v01 = Vector3((surface_radius - e01) * cos(theta_0), (surface_radius - e01) * sin(theta_0), z_1)
+	var v11 = Vector3((surface_radius - e11) * cos(theta_1), (surface_radius - e11) * sin(theta_1), z_1)
 
 	var pos: Vector3
 	var normal: Vector3
@@ -267,10 +281,10 @@ func get_surface_mesh_point_and_normal(theta: float, z: float) -> Dictionary:
 	elif diff_anti < diff_main:
 		use_main = false
 	else:
-		var t00 = terrain_manager.get_terrain_type(theta_0, z_0, cylinder_length)
-		var t10 = terrain_manager.get_terrain_type(theta_1, z_0, cylinder_length)
-		var t01 = terrain_manager.get_terrain_type(theta_0, z_1, cylinder_length)
-		var t11 = terrain_manager.get_terrain_type(theta_1, z_1, cylinder_length)
+		var t00 = surface_terrain.get_terrain_type(theta_0, z_0, surface_length)
+		var t10 = surface_terrain.get_terrain_type(theta_1, z_0, surface_length)
+		var t01 = surface_terrain.get_terrain_type(theta_0, z_1, surface_length)
+		var t11 = surface_terrain.get_terrain_type(theta_1, z_1, surface_length)
 		if t00 == t11 and t10 != t01:
 			use_main = true
 		elif t10 == t01 and t00 != t11:
@@ -307,7 +321,7 @@ func get_surface_mesh_point_and_normal(theta: float, z: float) -> Dictionary:
 			normal = (v10 - v11).cross(v01 - v11).normalized()
 
 	var elev = lerpf(lerpf(e00, e10, s), lerpf(e01, e11, s), t)
-	var t_type = terrain_manager.get_terrain_type(theta, z, cylinder_length)
+	var t_type = surface_terrain.get_terrain_type(theta, z, surface_length)
 
 	return {
 		"position": pos,

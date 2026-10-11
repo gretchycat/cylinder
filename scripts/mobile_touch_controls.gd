@@ -6,6 +6,7 @@ extends Control
 @export var touch_look_sensitivity: float = 0.0035
 
 const EditorUI = preload("res://scripts/object_editor_ui.gd")
+const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 const TAP_MAX_MS := 300
 const TAP_SLOP := 14.0
 var ui_scale: float = 1.0
@@ -37,6 +38,7 @@ var last_look_pos: Vector2 = Vector2.ZERO
 @onready var flashlight_btn: Button = get_node_or_null("DebugPanel/VBox/Grid/FlashlightButton")
 @onready var fly_up_btn: Button = get_node_or_null("DebugPanel/VBox/Grid/FlyUpButton")
 @onready var fly_down_btn: Button = get_node_or_null("DebugPanel/VBox/Grid/FlyDownButton")
+@onready var collision_hulls_btn: Button = get_node_or_null("DebugPanel/VBox/CollisionHullsButton")
 
 func _ready() -> void:
 	if not player:
@@ -51,6 +53,9 @@ func _ready() -> void:
 	if flashlight_btn and player:
 		_update_flashlight_button()
 		flashlight_btn.pressed.connect(_on_flashlight_pressed)
+	if collision_hulls_btn:
+		collision_hulls_btn.toggled.connect(_on_collision_hulls_toggled)
+		_update_collision_hulls_button()
 
 	if fly_up_btn:
 		fly_up_btn.button_down.connect(func(): if player: player.fly_vertical_axis = 1.0)
@@ -66,9 +71,11 @@ func _ready() -> void:
 	edit_btn.toggled.connect(func(active: bool):
 		edit_btn.text = "EDIT"
 		_update_toggle_button_style(edit_btn, active, Color(0.12, 0.68, 0.48, 0.9), Color(0.4, 1.0, 0.75, 1.0))
-		editor_ui.set_edit_mode(active))
+		editor_ui.set_edit_mode(active)
+		_update_debug_panel_layout())
 	_update_toggle_button_style(edit_btn, edit_btn.button_pressed, Color(0.12, 0.68, 0.48, 0.9), Color(0.4, 1.0, 0.75, 1.0))
 	visibility_changed.connect(_on_visibility_changed)
+	resized.connect(_update_debug_panel_layout)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.035, 0.055, 0.09, 0.9)
 	panel_style.border_color = Color(0.35, 0.55, 0.7, 0.8)
@@ -83,6 +90,7 @@ func _ready() -> void:
 	joystick_knob.add_theme_stylebox_override("panel", knob_style)
 	_update_run_indicator()
 	_update_fly_buttons_visibility()
+	_update_debug_panel_layout()
 	_reset_joystick()
 
 func _process(_delta: float) -> void:
@@ -391,6 +399,15 @@ func _on_flashlight_pressed() -> void:
 		player.toggle_debug_flashlight()
 		_update_flashlight_button()
 
+func _on_collision_hulls_toggled(enabled: bool) -> void:
+	MapAssetLoaderClass.set_collision_hulls_visible(get_tree(), enabled)
+	_update_collision_hulls_button()
+
+func _update_collision_hulls_button() -> void:
+	if collision_hulls_btn:
+		collision_hulls_btn.text = "HULLS"
+		_update_toggle_button_style(collision_hulls_btn, collision_hulls_btn.button_pressed, Color(0.72, 0.05, 0.62, 0.9), Color(1.0, 0.4, 1.0, 1.0))
+
 func _update_flashlight_button() -> void:
 	if flashlight_btn and player:
 		flashlight_btn.text = "LIGHT"
@@ -407,6 +424,27 @@ func _update_fly_buttons_visibility() -> void:
 		fly_up_btn.disabled = not flying
 	if fly_down_btn:
 		fly_down_btn.disabled = not flying
+
+func _update_debug_panel_layout() -> void:
+	if not debug_panel:
+		return
+	# Use explicit coordinates in TouchControls. The HUD reparents and scales
+	# this node during mobile setup, so relying on bottom-anchor propagation can
+	# leave the panel using its pre-reparent layout on some portrait devices.
+	debug_panel.anchor_left = 0.0
+	debug_panel.anchor_top = 0.0
+	debug_panel.anchor_right = 0.0
+	debug_panel.anchor_bottom = 0.0
+	debug_panel.offset_left = size.x - 238.0
+	debug_panel.offset_right = size.x - 20.0
+	debug_panel.offset_top = size.y - 350.0
+	debug_panel.offset_bottom = size.y - 104.0
+	if size.x < 640.0 and editor_ui and editor_ui.actions and editor_ui.actions.visible:
+		# The editor action bar moves up on narrow screens; keep the two panels
+		# separated while preserving the normal gameplay placement above JUMP.
+		var actions_top: float = editor_ui.actions.position.y
+		debug_panel.offset_bottom = actions_top - 4.0
+		debug_panel.offset_top = debug_panel.offset_bottom - 246.0
 
 func _update_toggle_button_style(btn: Button, active: bool, active_bg: Color, active_border: Color) -> void:
 	if not btn:

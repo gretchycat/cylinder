@@ -5,12 +5,14 @@ extends Node3D
 const Config = preload("res://scripts/map_config.gd")
 const Assets = preload("res://scripts/map_asset_loader.gd")
 const CLUTTER_SHADER = preload("res://assets/shaders/ground_clutter.gdshader")
+const MAX_CHUNK_RETRY_DELAY_SEC: float = 30.0
 @export var enabled: bool = true
 @export var performance_telemetry_enabled: bool = false
 @export var view_radius: float = 0
 @export var fade_distance: float = 0
 @export var chunk_size: float = 1
 @export var density_multiplier: float = 1
+@export var streaming_debug_enabled: bool = false
 var adaptive_draw_distance_scale: float = 1
 var adaptive_density_scale: float = 1
 var cylinder_world: CylinderGenerator
@@ -27,6 +29,48 @@ var all_biomes_by_raster_id: Dictionary = {}
 var parts: Dictionary = {}
 var parts_lod1: Dictionary = {}
 var update_timer: float = 0
+var stream_generation: int = 0
+var pending_chunk_generations: Dictionary = {}
+var chunk_states: Dictionary = {}
+var streaming_counters: Dictionary = {}
+var streaming_events: Array[Dictionary] = []
+var assembly_durations_us: Array[int] = []
+
+func _record_stream_event(kind: String, key: Vector2i, reason: String = "") -> void:
+	if not streaming_debug_enabled:
+		return
+	streaming_counters[kind] = int(streaming_counters.get(kind, 0)) + 1
+	streaming_events.append({"kind": kind, "key": key, "generation": stream_generation, "camera": _get_active_camera_position(), "reason": reason})
+	if streaming_events.size() > 128:
+		streaming_events.pop_front()
+
+func get_streaming_debug_snapshot() -> Dictionary:
+	_results_mutex.lock()
+	var snapshot := {
+		"needed": needed_chunks_cache.size(),
+		"active": active_chunks.size(),
+		"pending": pending_chunk_tasks.size(),
+		"completed": pending_chunk_results.size(),
+		"empty": 0,
+		"failed": 0,
+		"assembly_p95_us": 0,
+		"assembly_p99_us": 0,
+		"generation": stream_generation,
+		"counters": streaming_counters.duplicate(true)
+	}
+	_results_mutex.unlock()
+	for state_variant in chunk_states.values():
+		var state: Dictionary = state_variant
+		if state.get("state", "") == "empty":
+			snapshot["empty"] += 1
+		elif state.get("state", "") == "failed":
+			snapshot["failed"] += 1
+	if not assembly_durations_us.is_empty():
+		var durations: Array[int] = assembly_durations_us.duplicate()
+		durations.sort()
+		snapshot["assembly_p95_us"] = durations[min(durations.size() - 1, int(ceil(durations.size() * 0.95)) - 1)]
+		snapshot["assembly_p99_us"] = durations[min(durations.size() - 1, int(ceil(durations.size() * 0.99)) - 1)]
+	return snapshot
 
 func _ready() -> void:
 	add_to_group("clutter_manager")
@@ -125,7 +169,10 @@ func _collect_parts(node: Node, parent: Transform3D, definition: Dictionary, out
 		_collect_parts(child, transform, definition, output)
 
 func _clear_all_chunks() -> void:
-	flush_pending_chunk_tasks()
+	stream_generation += 1
+	flush_pending_chunk_tasks(false)
+	pending_chunk_generations.clear()
+	chunk_states.clear()
 	for node in active_chunks.values():
 		if is_instance_valid(node):
 			node.queue_free()
@@ -154,6 +201,7 @@ func update_lut(texture: Texture2D, bar_len: float) -> void:
 				part.material.set_shader_parameter("cylinder_length", bar_len)
 
 func _process(delta: float) -> void:
+	_record_stream_event("tick", Vector2i.ZERO)
 	_poll_pending_chunk_tasks()
 	if not enabled or not cylinder_world or map_config.is_empty():
 		return
@@ -180,37 +228,62 @@ func _has_missing_needed_chunks() -> bool:
 	_results_mutex.lock()
 	var missing: bool = false
 	for key: Vector2i in needed_chunks_cache:
-		if not active_chunks.has(key) and not pending_chunk_tasks.has(key) and not pending_chunk_results.has(key):
+		var state: Dictionary = chunk_states.get(key, {})
+		var retry_at: int = int(state.get("retry_at_usec", 0))
+		if not active_chunks.has(key) and not pending_chunk_tasks.has(key) and not pending_chunk_results.has(key) and state.get("state", "") != "empty" and retry_at <= Time.get_ticks_usec():
 			missing = true
 			break
 	_results_mutex.unlock()
 	return missing
 
 func _exit_tree() -> void:
-	flush_pending_chunk_tasks()
+	stream_generation += 1
+	flush_pending_chunk_tasks(false)
 
-func _async_chunk_worker(key: Vector2i, params: Dictionary) -> void:
-	var res = _compute_chunk_data(params.cx, params.cz, params.num_chunks_x, params.radius_m, params.length_m)
+func _async_chunk_worker(key: Vector2i, params: Dictionary, generation: int) -> void:
+	var terrain_snapshot: TerrainManager = params.get("terrain_manager") as TerrainManager
+	var res: Dictionary = _compute_chunk_data(int(params.cx), int(params.cz), int(params.num_chunks_x), float(params.radius_m), float(params.length_m), terrain_snapshot, int(params.get("radial_segments", cylinder_world.radial_segments)), int(params.get("length_segments", cylinder_world.length_segments)))
 	_results_mutex.lock()
-	pending_chunk_results[key] = res
+	pending_chunk_results[key] = {"generation": generation, "data": res}
 	_results_mutex.unlock()
 
-func flush_pending_chunk_tasks() -> void:
+func _set_chunk_failure_state(key: Vector2i, reason: String) -> void:
+	var previous: Dictionary = chunk_states.get(key, {})
+	var attempts: int = int(previous.get("attempts", 0)) + 1
+	var delay_sec: float = minf(pow(2.0, float(attempts - 1)), MAX_CHUNK_RETRY_DELAY_SEC)
+	chunk_states[key] = {
+		"state": "failed",
+		"reason": reason,
+		"attempts": attempts,
+		"retry_at_usec": Time.get_ticks_usec() + int(delay_sec * 1000000.0),
+		"generation": stream_generation
+	}
+
+func flush_pending_chunk_tasks(assemble_results: bool = false) -> void:
 	var keys_to_flush = pending_chunk_tasks.keys().duplicate()
 	for key in keys_to_flush:
 		var task_id: int = pending_chunk_tasks.get(key, -1)
 		if task_id >= 0:
 			WorkerThreadPool.wait_for_task_completion(task_id)
 		pending_chunk_tasks.erase(key)
+		pending_chunk_generations.erase(key)
 
 	_results_mutex.lock()
 	var copy_results = pending_chunk_results.duplicate()
 	pending_chunk_results.clear()
 	_results_mutex.unlock()
 
+	if not assemble_results:
+		return
 	for key in copy_results.keys():
-		var res: Dictionary = copy_results[key]
-		if not res.is_empty() and needed_chunks_cache.has(key) and not active_chunks.has(key):
+		var envelope: Dictionary = copy_results[key]
+		if int(envelope.get("generation", -1)) != stream_generation:
+			continue
+		var res: Dictionary = envelope.get("data", {})
+		if not res.is_empty() and int(res.get("total", 0)) <= 0:
+			chunk_states[key] = {"state": "empty", "reason": "no eligible clutter instances", "generation": stream_generation}
+			_record_stream_event("empty_result", key, "no eligible instances")
+		elif not res.is_empty() and needed_chunks_cache.has(key) and not active_chunks.has(key):
 			var chunk_node = _assemble_chunk_from_data(res)
 			if chunk_node:
 				add_child(chunk_node)
@@ -263,6 +336,7 @@ func _poll_pending_chunk_tasks() -> void:
 
 	for key in completed_keys:
 		pending_chunk_tasks.erase(key)
+		pending_chunk_generations.erase(key)
 
 	_results_mutex.lock()
 	if pending_chunk_results.is_empty():
@@ -273,13 +347,17 @@ func _poll_pending_chunk_tasks() -> void:
 	var ready_keys: Array[Vector2i] = []
 	var keys_to_prune: Array[Vector2i] = []
 	for key in pending_chunk_results.keys():
-		if needed_chunks_cache.has(key) and not active_chunks.has(key):
+		var envelope: Dictionary = pending_chunk_results[key]
+		if int(envelope.get("generation", -1)) != stream_generation:
+			keys_to_prune.append(key)
+		elif needed_chunks_cache.has(key) and not active_chunks.has(key):
 			ready_keys.append(key)
 		elif not needed_chunks_cache.has(key):
 			keys_to_prune.append(key)
 
 	for key in keys_to_prune:
 		pending_chunk_results.erase(key)
+		_record_stream_event("canceled", key, "obsolete or stale result")
 	_results_mutex.unlock()
 
 	if ready_keys.is_empty():
@@ -302,15 +380,35 @@ func _poll_pending_chunk_tasks() -> void:
 
 	for key in ready_keys:
 		_results_mutex.lock()
-		var res: Dictionary = pending_chunk_results.get(key, {})
+		var envelope: Dictionary = pending_chunk_results.get(key, {})
 		pending_chunk_results.erase(key)
 		_results_mutex.unlock()
+		if int(envelope.get("generation", -1)) != stream_generation:
+			_record_stream_event("canceled", key, "stale generation")
+			continue
+		var res: Dictionary = envelope.get("data", {})
 
-		if not res.is_empty() and needed_chunks_cache.has(key) and not active_chunks.has(key):
+		if res.is_empty():
+			_set_chunk_failure_state(key, "worker returned empty envelope")
+			_record_stream_event("empty_result", key, "worker returned empty envelope")
+		elif int(res.get("total", 0)) <= 0:
+			chunk_states[key] = {"state": "empty", "reason": "no eligible clutter instances", "generation": stream_generation}
+			_record_stream_event("empty_result", key, "no eligible instances")
+		elif needed_chunks_cache.has(key) and not active_chunks.has(key):
+			var assembly_t0: int = Time.get_ticks_usec()
 			var chunk_node = _assemble_chunk_from_data(res)
+			if streaming_debug_enabled:
+				assembly_durations_us.append(Time.get_ticks_usec() - assembly_t0)
+				if assembly_durations_us.size() > 128:
+					assembly_durations_us.pop_front()
 			if chunk_node:
 				add_child(chunk_node)
 				active_chunks[key] = chunk_node
+				chunk_states.erase(key)
+				_record_stream_event("completed", key)
+			else:
+				_set_chunk_failure_state(key, "assembly returned null")
+				_record_stream_event("failed_assembly", key, "assembly returned null")
 
 		if not is_headless and (Time.get_ticks_usec() - frame_t0) >= time_budget_us:
 			break
@@ -393,19 +491,30 @@ func _update_active_chunks(cam_info_arg: Variant = null) -> void:
 			break
 
 		var key: Vector2i = item.key
+		var existing_state: Dictionary = chunk_states.get(key, {})
+		if int(existing_state.get("retry_at_usec", 0)) > Time.get_ticks_usec():
+			continue
+		chunk_states.erase(key)
 		var task_params = {
 			"cx": item.cx,
 			"cz": item.cz,
 			"num_chunks_x": num_chunks_x,
 			"radius_m": cyl_r,
-			"length_m": cyl_len
+			"length_m": cyl_len,
+			"terrain_manager": cylinder_world.terrain_manager,
+			"radial_segments": cylinder_world.radial_segments,
+			"length_segments": cylinder_world.length_segments
 		}
-		var task_id = WorkerThreadPool.add_task(Callable(self, "_async_chunk_worker").bind(key, task_params))
+		var task_id = WorkerThreadPool.add_task(Callable(self, "_async_chunk_worker").bind(key, task_params, stream_generation))
 		pending_chunk_tasks[key] = task_id
+		pending_chunk_generations[key] = stream_generation
+		_record_stream_event("dispatched", key)
+		if not existing_state.is_empty():
+			_record_stream_event("rescheduled", key, "retry after failure")
 		dispatched += 1
 
 	if is_headless:
-		flush_pending_chunk_tasks()
+		flush_pending_chunk_tasks(true)
 
 	var to_remove: Array[Vector2i] = []
 	for key in active_chunks.keys():
@@ -417,6 +526,8 @@ func _update_active_chunks(cam_info_arg: Variant = null) -> void:
 		if is_instance_valid(node):
 			node.queue_free()
 		active_chunks.erase(key)
+		chunk_states.erase(key)
+		_record_stream_event("pruned", key, "outside needed set")
 
 func _build_chunk(cx: int, cz: int, num_chunks_x: int, radius_m: float, length_m: float) -> Node3D:
 	var data = _compute_chunk_data(cx, cz, num_chunks_x, radius_m, length_m)
@@ -438,11 +549,11 @@ func _assemble_chunk_from_data(data: Dictionary) -> Node3D:
 	root.set_meta("clutter_placed_instances", total)
 	return root
 
-func _compute_chunk_data(cx: int, cz: int, _num_chunks_x: int, radius_m: float, length_m: float) -> Dictionary:
-	var rng = RandomNumberGenerator.new()
+func _compute_chunk_data(cx: int, cz: int, _num_chunks_x: int, radius_m: float, length_m: float, terrain_override: TerrainManager = null, radial_segments_override: int = -1, length_segments_override: int = -1) -> Dictionary:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = int(map_config.ground_clutter.seed) ^ (cx * 73856093) ^ (cz * 19349663)
-	var tm = cylinder_world.terrain_manager
-	var total = 0
+	var tm: TerrainManager = terrain_override if terrain_override else cylinder_world.terrain_manager
+	var total: int = 0
 
 	var active_parts_dict: Dictionary = parts
 	var batch_table: Array[Dictionary] = []
@@ -494,7 +605,7 @@ func _compute_chunk_data(cx: int, cz: int, _num_chunks_x: int, radius_m: float, 
 				if sampled_r_id != r_id:
 					continue
 
-				var point = cylinder_world.get_surface_mesh_point_and_normal(theta, z)
+				var point = cylinder_world.get_surface_mesh_point_and_normal(theta, z, tm, radius_m, length_m, radial_segments_override, length_segments_override)
 				if point.is_empty():
 					continue
 

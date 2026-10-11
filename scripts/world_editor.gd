@@ -476,7 +476,7 @@ func tint_target(appearance: Color, emission: Color) -> void:
 	object.rebuild_object()
 	status = "Tinted %s · Unsaved" % object.name
 
-func import_object_model(source_path: String) -> bool:
+func import_object_model(source_path: String, collision_categories: Dictionary = {}) -> bool:
 	if not FileAccess.file_exists(source_path):
 		status = "Model file not found: %s" % source_path
 		return false
@@ -491,6 +491,10 @@ func import_object_model(source_path: String) -> bool:
 	var rel_path: String = "models/imported/" + file_name
 
 	var asset_id: String = file_name.get_basename().validate_node_name() + "_" + str(Time.get_ticks_msec())
+	var enabled_collision_categories: Dictionary = {}
+	for category: String in ["roots", "trunk", "main_branches"]:
+		if bool(collision_categories.get(category, false)):
+			enabled_collision_categories[category] = true
 	var new_entry: Dictionary = {
 		"name": file_name.get_basename().capitalize(),
 		"scene_path": rel_path,
@@ -500,8 +504,19 @@ func import_object_model(source_path: String) -> bool:
 		"light_color": [1.0, 0.8, 0.4, 1.0],
 		"light_energy": 0.0,
 		"light_range_m": 0.0,
-		"flicker": false
+		"flicker": false,
+		"solid": not enabled_collision_categories.is_empty()
 	}
+	if not enabled_collision_categories.is_empty():
+		var collision_rel_path: String = "models/imported/" + asset_id + ".collision.json"
+		var collision_path: String = map_dir.path_join(collision_rel_path)
+		var collision_file := FileAccess.open(collision_path, FileAccess.WRITE)
+		if not collision_file:
+			status = "Unable to write collision profile for " + file_name
+			return false
+		collision_file.store_string(JSON.stringify({"version": 1, "categories": enabled_collision_categories}, "\t"))
+		collision_file.close()
+		new_entry["collision_config"] = collision_rel_path
 	config.objects.model_catalog[asset_id] = new_entry
 	Config.save_document(config, map_dir)
 	reload_catalog()
@@ -627,6 +642,5 @@ func set_biome_rotate(texture_index: int, rotate_enabled: bool) -> bool:
 
 	status = "%s texture rotation: %s" % [config.biomes[biome_key].get("name", biome_key), "ENABLED" if rotate_enabled else "DISABLED"]
 	return true
-
 
 

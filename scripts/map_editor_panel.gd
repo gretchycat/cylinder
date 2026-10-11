@@ -258,7 +258,12 @@ func rebuild() -> void:
 	var catalog_panel = section("Object palette & imports")
 	button(catalog_panel, "Import object (.glb)", func(): choose_import("model", func(path):
 		var id = "asset_" + path.get_file().get_basename()
-		document.objects.model_catalog[id] = {"name": path.get_file().get_basename(), "scene_path": path, "behavior_type": 5, "variant": -1, "tint": [1,1,1,1], "light_color": [1,1,1,1], "light_energy": 0, "light_range_m": 10, "flicker": false}
+		document.objects.model_catalog[id] = {
+			"name": path.get_file().get_basename(), "scene_path": path, "behavior_type": 5, "variant": -1,
+			"tint": [1,1,1,1], "light_color": [1,1,1,1], "light_energy": 0, "light_range_m": 10, "flicker": false,
+			"ground_offset_m": 0.0, "align_to_normal": false, "random_yaw": true,
+			"allow_on_side": false, "on_side_chance": 0.0, "solid": false
+		}
 		rebuild()))
 	for id in document.objects.model_catalog:
 		var entry: Dictionary = document.objects.model_catalog[id]

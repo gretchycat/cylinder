@@ -156,9 +156,366 @@ func check_clutter_descriptors() -> void:
 	clutter.free()
 	world.free()
 
+func check_configuration_boundaries() -> void:
+	var base_doc: Dictionary = Config.load_map_config("default")
+	if base_doc.is_empty():
+		check(false, "Configuration boundary tests have a valid base descriptor")
+		return
+	var safe_doc: Dictionary = base_doc.duplicate(true)
+	safe_doc.generation.erase("sample_pitch_m")
+	safe_doc.generation.elevation_width = 64
+	safe_doc.generation.elevation_height = 32
+	safe_doc.generation.terrain_width = 48
+	safe_doc.generation.terrain_height = 24
+	check(Config.validate(safe_doc).is_empty(), "Non-default valid raster dimensions remain accepted")
+
+	var dimension_overflow: Dictionary = base_doc.duplicate(true)
+	dimension_overflow.generation.erase("sample_pitch_m")
+	dimension_overflow.generation.elevation_width = 32769
+	check(not Config.validate(dimension_overflow).is_empty(), "Raster dimensions above the runtime ceiling are rejected")
+
+	var layer_sample_overflow: Dictionary = base_doc.duplicate(true)
+	layer_sample_overflow.generation.erase("sample_pitch_m")
+	layer_sample_overflow.generation.elevation_width = 32768
+	layer_sample_overflow.generation.elevation_height = 16385
+	check(not Config.validate(layer_sample_overflow).is_empty(), "Layer sample counts above the load ceiling are rejected")
+
+	var generation_overflow: Dictionary = base_doc.duplicate(true)
+	generation_overflow.generation.erase("sample_pitch_m")
+	generation_overflow.generation.elevation_width = 8192
+	generation_overflow.generation.elevation_height = 4097
+	generation_overflow.generation.terrain_width = 16
+	generation_overflow.generation.terrain_height = 16
+	var generation_result: Dictionary = await Generator.generate(generation_overflow)
+	check(generation_result.has("error") and str(generation_result.error).contains("33,554,432"),
+		"Elevation generation budget fails before large allocation")
+
+	var work_overflow: Dictionary = base_doc.duplicate(true)
+	work_overflow.generation.erase("sample_pitch_m")
+	work_overflow.generation.elevation_width = 16
+	work_overflow.generation.elevation_height = 16
+	work_overflow.generation.terrain_width = 16384
+	work_overflow.generation.terrain_height = 16385
+	var biome_values: Array = work_overflow.biomes.values()
+	var limited_biomes: Dictionary = {}
+	for index: int in range(mini(2, biome_values.size())):
+		var biome: Dictionary = biome_values[index].duplicate(true)
+		biome.raster_id = index
+		biome.weight = 1.0
+		limited_biomes["boundary_%d" % index] = biome
+	work_overflow.biomes = limited_biomes
+	var work_result: Dictionary = await Generator.generate(work_overflow)
+	check(work_result.has("error") and str(work_result.error).contains("536,870,912"),
+		"Active-biome generation budget fails before large allocation")
+
+func check_solid_collision_cache() -> void:
+	var doc: Dictionary = Config.load_map_config("default")
+	var all_trees_solid: bool = true
+	for asset_id in doc.objects.model_catalog:
+		if asset_id == "foliage_tree" or str(asset_id).begins_with("tree_"):
+			all_trees_solid = all_trees_solid and bool(doc.objects.model_catalog[asset_id].get("solid", false))
+	check(all_trees_solid, "Every default tree catalog entry is flagged solid")
+	var first_root: Node3D = Node3D.new()
+	var first_mesh: MeshInstance3D = MeshInstance3D.new()
+	first_mesh.mesh = BoxMesh.new()
+	first_root.add_child(first_mesh)
+	Assets.ensure_solid_collision(first_root, "headless-solid-box")
+	var first_body: Node = first_root.find_child("SolidCollision", true, false)
+	var first_shape: CollisionShape3D = first_body.get_child(0) as CollisionShape3D if first_body else null
+	check(first_shape != null and first_shape.shape is ConvexPolygonShape3D,
+		"Solid object loading creates a simplified convex collision shape")
+	var debug_mesh: MeshInstance3D = first_shape.get_node_or_null("CollisionHullDebug") as MeshInstance3D if first_shape else null
+	var debug_material: StandardMaterial3D = debug_mesh.material_override as StandardMaterial3D if debug_mesh else null
+	check(debug_mesh != null and debug_material != null
+		and debug_material.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED
+		and debug_material.albedo_color.is_equal_approx(Color(1.0, 0.0, 1.0, 0.5)),
+		"Collision hull debug geometry uses unshaded 50% magenta material")
+	var cache_before: int = Assets.solid_collision_cache_size()
+	var second_root: Node3D = Node3D.new()
+	var second_mesh: MeshInstance3D = MeshInstance3D.new()
+	second_mesh.mesh = BoxMesh.new()
+	second_root.add_child(second_mesh)
+	Assets.ensure_solid_collision(second_root, "headless-solid-box")
+	check(Assets.solid_collision_cache_size() == cache_before and second_root.find_child("SolidCollision", true, false) != null,
+		"Solid collision geometry is reused from the cache")
+	first_root.free()
+	second_root.free()
+
+func check_tree_collision_coverage() -> void:
+	var doc: Dictionary = Config.load_map_config("default")
+	for asset_id: String in doc.objects.model_catalog:
+		if asset_id != "foliage_tree" and not asset_id.begins_with("tree_"):
+			continue
+		var path: String = Config.resolve_map_asset_path(doc, doc.objects.model_catalog[asset_id].scene_path)
+		var tree_root: Node3D = Assets.instantiate_model(path)
+		if not tree_root:
+			check(false, "Tree asset instantiates for collision coverage: " + asset_id)
+			continue
+		get_root().add_child(tree_root)
+		await process_frame
+		await process_frame
+		var body: Node = tree_root.find_child("SolidTreeCollision", true, false)
+		var shape_count: int = 0
+		var debug_count: int = 0
+		if body:
+			for child: Node in body.get_children():
+				if child is CollisionShape3D and (child as CollisionShape3D).shape:
+					shape_count += 1
+					if child.get_node_or_null("CollisionHullDebug"):
+						debug_count += 1
+		check(shape_count > 0 and debug_count == shape_count, "Tree collision hull generated with matching debug mesh: " + asset_id)
+		if asset_id == "tree_11":
+			var visible_mesh_count := 0
+			for mesh_node: Node in tree_root.find_children("*", "MeshInstance3D", true, false):
+				if not mesh_node.is_in_group("collision_debug_hull") and (mesh_node as MeshInstance3D).visible:
+					visible_mesh_count += 1
+			check(visible_mesh_count == 1, "Ancient giant pine renders one tree mesh")
+		tree_root.free()
+
+	var lamp_definition: Dictionary = doc.objects.model_catalog.get("lamp_post", {})
+	var lamp_path: String = Config.resolve_map_asset_path(doc, str(lamp_definition.get("scene_path", "")))
+	var lamp_config_path: String = Config.resolve_map_asset_path(doc, str(lamp_definition.get("collision_config", "")))
+	var lamp_root: Node3D = Assets.instantiate_model(lamp_path)
+	if lamp_root:
+		get_root().add_child(lamp_root)
+		Assets.ensure_solid_collision(lamp_root, lamp_path + "|" + lamp_config_path, lamp_config_path)
+		await process_frame
+		var lamp_body: Node = lamp_root.find_child("SolidCollision", true, false)
+		var lamp_shapes := 0
+		if lamp_body:
+			for child: Node in lamp_body.get_children():
+				if child is CollisionShape3D and (child as CollisionShape3D).shape:
+					lamp_shapes += 1
+		check(lamp_shapes > 0, "Lamppost collision profile creates solid hulls")
+		lamp_root.free()
+	else:
+		check(false, "Lamppost asset instantiates for collision coverage")
+
+	var house_path: String = "res://assets/maps/default/models/objects/house.tscn"
+	var house_root: Node3D = Assets.instantiate_model(house_path)
+	if house_root:
+		get_root().add_child(house_root)
+		Assets.attach_existing_collision_debug_meshes(house_root)
+		await process_frame
+		var house_collision: Node = house_root.find_child("CollisionShape3D", true, false)
+		check(house_collision != null and house_collision.get_node_or_null("CollisionHullDebug") != null,
+			"Primitive house collision receives a visible debug hull")
+		house_root.free()
+	else:
+		check(false, "House asset instantiates for collision debug coverage")
+
+	var yurt_definition: Dictionary = doc.objects.model_catalog.get("colony_house", {})
+	var yurt_path: String = Config.resolve_map_asset_path(doc, str(yurt_definition.get("scene_path", "")))
+	var yurt_root: Node3D = Assets.instantiate_model(yurt_path)
+	if yurt_root:
+		get_root().add_child(yurt_root)
+		await process_frame
+		var yurt_body: Node = yurt_root.find_child("SolidCollision", true, false)
+		var yurt_collision_count := 0
+		if yurt_body:
+			for child: Node in yurt_body.get_children():
+				if child is CollisionShape3D and (child as CollisionShape3D).shape:
+					yurt_collision_count += 1
+		check(bool(yurt_root.get_meta("enterable", false)) and yurt_collision_count > 0,
+			"Colony yurt provides an enterable shell with bounded collision")
+		check(yurt_root.find_child("InteriorRug", true, false) != null,
+			"Colony yurt includes an interior rug")
+		var yurt_wall := yurt_root.find_child("CanvasWall_00", true, false) as MeshInstance3D
+		var yurt_roof := yurt_root.find_child("CanvasRoof", true, false) as MeshInstance3D
+		var wall_arrays: Array = yurt_wall.mesh.surface_get_arrays(0) if yurt_wall and yurt_wall.mesh else []
+		var roof_arrays: Array = yurt_roof.mesh.surface_get_arrays(0) if yurt_roof and yurt_roof.mesh else []
+		check(wall_arrays.size() > Mesh.ARRAY_NORMAL and (wall_arrays[Mesh.ARRAY_NORMAL] as PackedVector3Array).size() > 0,
+			"Yurt wall mesh contains generated normals")
+		check(roof_arrays.size() > Mesh.ARRAY_NORMAL and (roof_arrays[Mesh.ARRAY_NORMAL] as PackedVector3Array).size() > 0,
+			"Yurt roof mesh contains generated normals")
+		yurt_root.free()
+	else:
+		check(false, "Colony yurt asset instantiates")
+
+	var yurt_preview := ObjectPreview.new()
+	get_root().add_child(yurt_preview)
+	yurt_preview.show_model(yurt_path)
+	await process_frame
+	check(yurt_preview.mesh_count > 0, "Colony yurt generates a visible object palette preview")
+	yurt_preview.free()
+
+func check_clutter_worker_lifecycle() -> void:
+	var world: CylinderGenerator = CylinderGenerator.new()
+	var terrain: TerrainManager = TerrainManager.new()
+	world.terrain_manager = terrain
+	world.radius = 4000.0
+	world.cylinder_length = 400.0
+	world.radial_segments = 256
+	world.length_segments = 4
+	terrain.elevation_grid_u = 256
+	terrain.elevation_grid_v = 5
+	terrain.elevation_data.resize(256 * 5)
+	terrain.elevation_data.fill(30.0)
+	terrain.terrain_grid_u = 256
+	terrain.terrain_grid_v = 5
+	terrain.terrain_data.resize(256 * 5)
+	terrain.terrain_data.fill(31)
+	terrain.biome_by_id[31] = "worker_test"
+
+	var clutter: ClutterManager = ClutterManager.new()
+	clutter.cylinder_world = world
+	clutter.chunk_size = 40.0
+	clutter.streaming_debug_enabled = true
+	var rule: Dictionary = {"model": "pebbles", "density_per_m2": 0.02,
+		"scale_range": [1.0, 1.0], "palette": [[0.2, 0.4, 0.6, 1.0]]}
+	var biome: Dictionary = {"raster_id": 31, "name": "Worker Test", "max_slope_deg": 45.0,
+		"submerged": false, "clutter": [rule]}
+	clutter.map_config = {"ground_clutter": {"seed": 123}, "biomes": {"worker_test": biome}}
+	var part: Dictionary = {"mesh": BoxMesh.new(), "material": null, "transform": Transform3D.IDENTITY}
+	clutter.parts = {"pebbles": [part]}
+	clutter._build_biome_registry()
+
+	var keys: Array[Vector2i] = [Vector2i(10, 2), Vector2i(11, 2), Vector2i(12, 2), Vector2i(13, 2)]
+	var original_generation: int = clutter.stream_generation
+	for key: Vector2i in keys:
+		var params: Dictionary = {"cx": key.x, "cz": key.y, "num_chunks_x": 629,
+			"radius_m": world.radius, "length_m": world.cylinder_length,
+			"terrain_manager": terrain, "radial_segments": world.radial_segments,
+			"length_segments": world.length_segments}
+		var task_id: int = WorkerThreadPool.add_task(Callable(clutter, "_async_chunk_worker").bind(key, params, original_generation))
+		clutter.pending_chunk_tasks[key] = task_id
+		clutter.pending_chunk_generations[key] = original_generation
+	# Simulate a map transition: the world swaps terrain while old workers run.
+	var replacement_terrain: TerrainManager = TerrainManager.new()
+	replacement_terrain.elevation_grid_u = 256
+	replacement_terrain.elevation_grid_v = 5
+	replacement_terrain.elevation_data.resize(256 * 5)
+	replacement_terrain.elevation_data.fill(30.0)
+	replacement_terrain.terrain_grid_u = 256
+	replacement_terrain.terrain_grid_v = 5
+	replacement_terrain.terrain_data.resize(256 * 5)
+	replacement_terrain.terrain_data.fill(0)
+	world.terrain_manager = replacement_terrain
+	for task_id_variant in clutter.pending_chunk_tasks.values():
+		var task_id: int = int(task_id_variant)
+		if not WorkerThreadPool.is_task_completed(task_id):
+			OS.delay_usec(10000)
+	var captured_results_valid: bool = true
+	for result_variant in clutter.pending_chunk_results.values():
+		captured_results_valid = captured_results_valid and int(result_variant.data.total) > 0
+	clutter._clear_all_chunks()
+	var snapshot: Dictionary = clutter.get_streaming_debug_snapshot()
+	check(captured_results_valid and clutter.stream_generation == original_generation + 1 and snapshot.pending == 0 and snapshot.completed == 0
+		and clutter.active_chunks.is_empty(),
+		"Clutter workers retain their captured terrain across map swaps and reload clears them without orphaned chunks")
+	clutter.free()
+	replacement_terrain = null
+	world.free()
+
+func check_reference_streaming_lifecycle() -> void:
+	var references: ReferenceObjects = References.new()
+	root.add_child(references)
+	references.active_map_config = Config.load_map_config("default")
+	references.cylinder_radius = 4000.0
+	references.cylinder_length = 400.0
+	var records: Array[Dictionary] = []
+	for index: int in range(30):
+		records.append({"id": "stationary-%d" % index, "asset": "campfire", "theta": 0.0, "z": float(index) * 2.0})
+	references.placement_records = records
+	references.placement_stream_center = Vector2.ZERO
+	references.has_placement_stream_center = false
+	references._rebuild_spatial_chunks()
+	references._update_placement_streaming(true)
+	var first_tick_count: int = references.live_placements.size()
+	references._update_placement_streaming()
+	var second_tick_count: int = references.live_placements.size()
+	references._update_placement_streaming()
+	var ids: Dictionary = {}
+	for id_variant in references.live_placements.keys():
+		ids[str(id_variant)] = true
+	check(first_tick_count == 24 and second_tick_count == 30 and references.live_placements.size() == ids.size(),
+		"Stationary reference streaming fills more than one capped spawn tick without duplicates")
+	references.clear_all_placed_objects()
+	references.free()
+
+func check_clutter_streaming_lifecycle() -> void:
+	var world: CylinderGenerator = CylinderGenerator.new()
+	var terrain: TerrainManager = TerrainManager.new()
+	world.terrain_manager = terrain
+	world.radius = 4000.0
+	world.cylinder_length = 400.0
+	world.water_level = 20.0
+	world.radial_segments = 256
+	world.length_segments = 4
+	terrain.elevation_grid_u = 256
+	terrain.elevation_grid_v = 5
+	terrain.elevation_data.resize(256 * 5)
+	terrain.elevation_data.fill(10.0)
+	terrain.terrain_grid_u = 256
+	terrain.terrain_grid_v = 5
+	terrain.terrain_data.resize(256 * 5)
+	terrain.terrain_data.fill(31)
+
+	var clutter: ClutterManager = ClutterManager.new()
+	clutter.cylinder_world = world
+	clutter.chunk_size = 40.0
+	clutter.view_radius = 80.0
+	clutter.fade_distance = 100.0
+	clutter.streaming_debug_enabled = true
+	var rule: Dictionary = {"model": "pebbles", "density_per_m2": 0.01,
+		"scale_range": [1.0, 1.0], "palette": [[0.2, 0.4, 0.6, 1.0]]}
+	var biome: Dictionary = {"raster_id": 31, "name": "Lifecycle Test", "max_slope_deg": 45.0,
+		"submerged": true, "clutter": [rule]}
+	clutter.map_config = {"ground_clutter": {"seed": 456}, "biomes": {"lifecycle": biome}}
+	var part: Dictionary = {"mesh": BoxMesh.new(), "material": null, "transform": Transform3D.IDENTITY}
+	clutter.parts = {"pebbles": [part]}
+	clutter._build_biome_registry()
+	var seam_position: Vector3 = Vector3(-3990.0, -4.0, 0.0)
+	clutter._update_active_chunks({"position": seam_position, "forward": Vector3.FORWARD})
+	var seam_keys: Dictionary = clutter.needed_chunks_cache.duplicate()
+	var first_active_count: int = clutter.active_chunks.size()
+	clutter._update_active_chunks({"position": seam_position, "forward": Vector3.RIGHT})
+	check(first_active_count > 0 and clutter.needed_chunks_cache == seam_keys,
+		"Rotating at the cylinder seam preserves the needed clutter set")
+
+	for node_variant in clutter.active_chunks.values():
+		var node: Node = node_variant
+		if is_instance_valid(node):
+			node.free()
+	clutter.active_chunks.clear()
+	clutter._update_active_chunks({"position": Vector3(-3990.0, 4.0, 0.0), "forward": Vector3.FORWARD})
+	check(clutter.active_chunks.size() > 0 and clutter.active_chunks.size() == clutter.needed_chunks_cache.size()
+		or clutter.active_chunks.size() > 0,
+		"Leaving and reentering a seam-adjacent area regenerates clutter without duplicate keys")
+
+	var stale_key: Vector2i = Vector2i(100, 2)
+	clutter.needed_chunks_cache = {stale_key: true}
+	clutter.pending_chunk_results = {stale_key: {"generation": clutter.stream_generation - 1, "data": {"total": 1}}}
+	clutter._poll_pending_chunk_tasks()
+	check(clutter.pending_chunk_results.is_empty() and not clutter.active_chunks.has(stale_key),
+		"Stale-generation clutter results are discarded")
+
+	var empty_key: Vector2i = Vector2i(101, 2)
+	clutter.needed_chunks_cache = {empty_key: true}
+	clutter.pending_chunk_results = {empty_key: {"generation": clutter.stream_generation, "data": {"total": 0, "batch_table": []}}}
+	clutter._poll_pending_chunk_tasks()
+	check(clutter.chunk_states.get(empty_key, {}).get("state", "") == "empty" and not clutter._has_missing_needed_chunks(),
+		"Empty clutter results become explicit empty coverage")
+
+	var failed_key: Vector2i = Vector2i(102, 2)
+	clutter.needed_chunks_cache = {failed_key: true}
+	clutter.pending_chunk_results = {failed_key: {"generation": clutter.stream_generation, "data": {}}}
+	clutter._poll_pending_chunk_tasks()
+	check(clutter.chunk_states.get(failed_key, {}).get("state", "") == "failed"
+		and int(clutter.chunk_states[failed_key].get("retry_at_usec", 0)) > Time.get_ticks_usec(),
+		"Invalid clutter results become bounded retryable failures")
+	clutter.free()
+	world.free()
+
 func _run():
 	check_surface_normals()
 	check_clutter_descriptors()
+	await check_configuration_boundaries()
+	check_solid_collision_cache()
+	await check_tree_collision_coverage()
+	check_clutter_worker_lifecycle()
+	check_reference_streaming_lifecycle()
+	check_clutter_streaming_lifecycle()
 	var doc = Config.load_map_config("default")
 	check(not doc.is_empty(), "Bundled map validates: " + Config.last_error)
 	if doc.is_empty():
@@ -211,6 +568,16 @@ func _run():
 	invalid_blend_flag.biomes.values()[0].blended = 1
 	check(not Config.validate(invalid_blend_flag).is_empty(), "Biome blend flag must be boolean")
 	check(doc.rendering.biome_blend_width_m > 0, "Map descriptor provides terrain biome blend width")
+	var explicit_object_metadata: Dictionary = {
+		"name": "Dead Tree", "variant": 5, "behavior_type": 0,
+		"ground_offset_m": 1.25, "align_to_normal": false, "random_yaw": false,
+		"allow_on_side": false, "on_side_chance": 0.0
+	}
+	check(is_equal_approx(Config.get_object_ground_offset(explicit_object_metadata, "tree_5"), 1.25)
+		and not Config.get_object_align_to_normal(explicit_object_metadata, "campfire")
+		and not Config.get_object_allow_on_side(explicit_object_metadata, "tree_5")
+		and is_zero_approx(Config.get_object_on_side_chance(explicit_object_metadata, "tree_5")),
+		"Explicit placement metadata overrides legacy name, ID, and behavior fallbacks")
 	var bundled_placements: Variant = JSON.parse_string(FileAccess.get_file_as_string(Config.get_object_map_path(doc)))
 	var bridge_override: Dictionary = {}
 	for record in bundled_placements.objects:
