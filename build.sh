@@ -33,6 +33,7 @@ usage() {
     echo "  linux [arch]    Export Linux binary (default: host architecture)"
     echo "                  Architectures: x86_64, x86_32, arm64, arm32, rv64, ppc64, loongarch64"
     echo "  install [abi]   Install APK; build it for this ABI if needed"
+    echo "  preflight       Check test, Android, and native Linux build requirements"
     echo "  maps SRC DEST [SEED]  Generate a new map from its descriptor"
     echo "  templates       Check status of Godot export templates"
     echo "  help            Show this help message"
@@ -42,6 +43,8 @@ usage() {
 check_godot() {
     if [ ! -x "$GODOT_BIN" ]; then
         echo "[ERROR] Godot executable not found at '$GODOT_BIN'."
+        echo "        Install Godot $(grep -E '^config/version=' project.godot | cut -d'"' -f2) for this host architecture,"
+        echo "        or set GODOT_BIN=/path/to/godot and rerun: ./build.sh preflight"
         exit 1
     fi
 }
@@ -91,6 +94,258 @@ normalize_linux_arch() {
             return 1
             ;;
     esac
+}
+
+godot_version() {
+    "$GODOT_BIN" --version | cut -d'.' -f1-3
+}
+
+export_template_dir() {
+    printf '%s/.local/share/godot/export_templates/%s.stable\n' "$HOME" "$(godot_version)"
+}
+
+prompt_to_install() {
+    local prompt="$1"
+    if [ ! -t 0 ]; then
+        echo "[INFO] Noninteractive run; skipping the installation prompt."
+        return 1
+    fi
+    local answer
+    read -r -p "$prompt [y/N] " answer || answer=""
+    case "$answer" in
+        y|Y|yes|YES|Yes) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+print_template_install_instructions() {
+    local target="$1"
+    local arch="$2"
+    local build_command="$3"
+    local template_dir
+    template_dir="$(export_template_dir)"
+    echo "        Install the matching Godot $(godot_version) export template in:"
+    echo "        $template_dir"
+    echo "        In the Godot Editor, choose Editor -> Manage Export Templates -> Download and Install."
+    echo "        Then run: $build_command"
+    if [ "$target" = "Linux" ]; then
+        echo "        Required file: $template_dir/linux_release.$arch"
+    else
+        echo "        Required file: $template_dir/android_debug.apk"
+    fi
+}
+
+install_export_templates() {
+    local template_dir="$1"
+    shift
+    local entries=("$@")
+    local version archive_url temp_dir entry dest
+    version="$(godot_version)"
+    archive_url="https://downloads.godotengine.org/?flavor=stable&platform=templates&slug=export_templates.tpz&version=$version"
+    if ! command -v curl >/dev/null 2>&1 || ! command -v unzip >/dev/null 2>&1; then
+        echo "[ERROR] Automatic template installation needs curl and unzip."
+        if command -v pkg >/dev/null 2>&1; then
+            echo "        Command: pkg install curl unzip"
+            if prompt_to_install "Run pkg to install curl and unzip?"; then
+                pkg install curl unzip || return 1
+            else
+                return 1
+            fi
+        elif command -v apt-get >/dev/null 2>&1; then
+            if command -v sudo >/dev/null 2>&1; then
+                echo "        Command: sudo apt-get install -y curl unzip"
+                if prompt_to_install "Run apt-get to install curl and unzip?"; then
+                    sudo apt-get install -y curl unzip || return 1
+                else
+                    return 1
+                fi
+            else
+                echo "        Command: apt-get install -y curl unzip"
+                if prompt_to_install "Run apt-get to install curl and unzip?"; then
+                    apt-get install -y curl unzip || return 1
+                else
+                    return 1
+                fi
+            fi
+        elif command -v dnf >/dev/null 2>&1; then
+            echo "        Command: sudo dnf install -y curl unzip"
+            if prompt_to_install "Run dnf to install curl and unzip?"; then
+                sudo dnf install -y curl unzip || return 1
+            else
+                return 1
+            fi
+        else
+            echo "        Install curl and unzip with the package manager for this host, then rerun the build command."
+            return 1
+        fi
+        if ! command -v curl >/dev/null 2>&1 || ! command -v unzip >/dev/null 2>&1; then
+            echo "[ERROR] curl and unzip are still unavailable after installation."
+            return 1
+        fi
+    fi
+
+    echo "[INSTALL] Downloading official Godot $version export templates."
+    echo "          The complete archive may exceed 1 GB; only the requested files will be installed."
+    temp_dir="$(mktemp -d)"
+    if ! curl --fail --location --show-error --progress-bar "$archive_url" -o "$temp_dir/export_templates.tpz"; then
+        rm -rf "$temp_dir"
+        echo "[ERROR] Could not download the Godot export template archive."
+        echo "        Check network access, or install templates through the Godot Editor."
+        return 1
+    fi
+    mkdir -p "$template_dir"
+    for entry in "${entries[@]}"; do
+        dest="$template_dir/$entry"
+        if ! unzip -p "$temp_dir/export_templates.tpz" "templates/$entry" > "$dest"; then
+            rm -f "$dest"
+            rm -rf "$temp_dir"
+            echo "[ERROR] The downloaded archive did not contain templates/$entry."
+            return 1
+        fi
+        case "$entry" in
+            linux_*) chmod u+x "$dest" ;;
+        esac
+        echo "[INSTALL] Installed $dest"
+    done
+    rm -rf "$temp_dir"
+}
+
+ensure_export_templates() {
+    local target="$1"
+    local arch="$2"
+    local template_dir entry missing=0
+    shift 2
+    local entries=("$@")
+    template_dir="$(export_template_dir)"
+    for entry in "${entries[@]}"; do
+        if [ ! -f "$template_dir/$entry" ]; then
+            echo "[MISSING] $target export template: $template_dir/$entry"
+            missing=1
+        fi
+    done
+    if [ "$missing" -eq 0 ]; then
+        echo "[READY] $target export templates for $arch"
+        return 0
+    fi
+
+    print_template_install_instructions "$target" "$arch" "./build.sh $(printf '%s' "$target" | tr '[:upper:]' '[:lower:]') $arch"
+    if prompt_to_install "Download and install the missing $target template(s) now?"; then
+        install_export_templates "$template_dir" "${entries[@]}"
+        return $?
+    fi
+    echo "[INFO] Skipping automatic $target template installation."
+    return 1
+}
+
+ensure_android_sdk() {
+    local sdk_root="$ANDROID_SDK_ROOT"
+    local sdkmanager=""
+    local missing=0
+    if [ ! -d "$sdk_root/platform-tools" ]; then
+        echo "[MISSING] Android SDK platform-tools: $sdk_root/platform-tools"
+        missing=1
+    fi
+    if [ ! -d "$sdk_root/build-tools" ]; then
+        echo "[MISSING] Android SDK build-tools: $sdk_root/build-tools"
+        missing=1
+    else
+        local apksigner_found=0 candidate
+        for candidate in "$sdk_root"/build-tools/*/apksigner; do
+            if [ -x "$candidate" ]; then
+                apksigner_found=1
+                break
+            fi
+        done
+        if [ "$apksigner_found" -eq 0 ]; then
+            echo "[MISSING] Executable apksigner under $sdk_root/build-tools/"
+            missing=1
+        fi
+    fi
+    if [ "$missing" -eq 0 ]; then
+        echo "[READY] Android SDK tools at $sdk_root"
+        return 0
+    fi
+
+    sdkmanager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+    if [ ! -x "$sdkmanager" ] && command -v sdkmanager >/dev/null 2>&1; then
+        sdkmanager="$(command -v sdkmanager)"
+    fi
+    if [ -x "$sdkmanager" ]; then
+        echo "        Install platform-tools and build-tools with:"
+        echo "        ANDROID_SDK_ROOT=\"$sdk_root\" \"$sdkmanager\" --install platform-tools 'build-tools;36.0.0'"
+        if prompt_to_install "Run sdkmanager to install the missing Android SDK components?"; then
+            export ANDROID_SDK_ROOT="$sdk_root"
+            "$sdkmanager" --install platform-tools 'build-tools;36.0.0' || return 1
+            ensure_android_sdk
+            return $?
+        fi
+    else
+        echo "        Install Android SDK Command-line Tools for host $(uname -m), then set:"
+        echo "        export ANDROID_SDK_ROOT=\"$HOME/Android/Sdk\""
+        echo "        export ANDROID_HOME=\"\$ANDROID_SDK_ROOT\""
+        echo "        Then run: \"\$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager\" --install platform-tools 'build-tools;36.0.0'"
+        echo "        On Termux, also install host-native adb with: pkg install android-tools"
+    fi
+    return 1
+}
+
+check_adb_tool() {
+    ADB_BIN="$(command -v adb 2>/dev/null || true)"
+    if [ -z "$ADB_BIN" ]; then
+        ADB_BIN="$ANDROID_SDK_ROOT/platform-tools/adb"
+    fi
+    if [ ! -x "$ADB_BIN" ] || ! "$ADB_BIN" version >/dev/null 2>&1; then
+        echo "[MISSING] Host-runnable adb for $(uname -m): $ADB_BIN"
+        if command -v pkg >/dev/null 2>&1; then
+            echo "        Termux: pkg install android-tools"
+        elif [ -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            echo "        \"$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager\" --install platform-tools"
+        else
+            echo "        Install Android platform-tools built for this host architecture and add adb to PATH."
+        fi
+        return 1
+    fi
+    echo "[READY] Host-runnable adb: $ADB_BIN"
+    return 0
+}
+
+preflight_tests() {
+    check_godot
+    local host_arch linux_arch android_arch missing_tests=0 package_missing=0 script
+    host_arch="$(uname -m)"
+    linux_arch="$(detect_linux_arch)" || return 1
+    android_arch="$(normalize_android_arch "${ANDROID_ARCH:-arm64-v8a}")" || return 1
+    echo "[CHECK] Host: $(uname -s) $host_arch | Godot: $(godot_version)"
+    echo "[CHECK] Native Linux package command: ./build.sh linux $linux_arch"
+    echo "[CHECK] Android package command: ./build.sh android $android_arch"
+    for script in scripts/test_map_pipeline.gd scripts/preview_woodland_bush.gd scripts/test_map_scene.gd scripts/test_map_imports.gd scripts/test_map_library.gd scripts/test_edit_controls.gd scripts/test_simulation.gd; do
+        if [ ! -f "$PROJECT_DIR/$script" ]; then
+            echo "[MISSING] Test script: $PROJECT_DIR/$script"
+            missing_tests=1
+        fi
+    done
+    if [ "$missing_tests" -ne 0 ]; then
+        echo "[ERROR] Test preflight failed because one or more test scripts are missing."
+        return 1
+    fi
+    if ! ensure_android_sdk; then
+        package_missing=1
+    fi
+    if ! check_adb_tool; then
+        echo "[INFO] APK export does not require adb; ./build.sh install will need the host-native tool above."
+    fi
+    if ! ensure_export_templates "Android" "$android_arch" android_debug.apk; then
+        package_missing=1
+    fi
+    if ! ensure_export_templates "Linux" "$linux_arch" "linux_release.$linux_arch"; then
+        package_missing=1
+    fi
+    if [ "$package_missing" -ne 0 ]; then
+        echo "[WARN] Package prerequisites are incomplete; headless tests can run, but the affected package command will stop before exporting."
+    else
+        echo "[READY] Headless tests and Android/native Linux package prerequisites."
+    fi
+    return 0
 }
 
 generate_export_presets() {
@@ -221,7 +476,7 @@ run_test_step() {
 }
 
 cmd_test() {
-    check_godot
+    preflight_tests
     run_test_step "scripts/test_map_pipeline.gd"
     run_test_step "scripts/preview_woodland_bush.gd"
     run_test_step "scripts/test_map_scene.gd"
@@ -237,23 +492,15 @@ cmd_android() {
     check_godot
     local android_arch
     android_arch="$(normalize_android_arch "${1:-${ANDROID_ARCH:-arm64-v8a}}")"
+    if ! ensure_android_sdk; then
+        echo "[ERROR] Android SDK prerequisites are incomplete. See the setup instructions above."
+        exit 1
+    fi
+    if ! ensure_export_templates "Android" "$android_arch" android_debug.apk; then
+        echo "[ERROR] Android export templates are incomplete. See the setup instructions above."
+        exit 1
+    fi
     generate_export_presets "$android_arch" "x86_64"
-
-    if [ ! -d "$ANDROID_SDK_ROOT/platform-tools" ] || [ ! -d "$ANDROID_SDK_ROOT/build-tools" ]; then
-        echo "[ERROR] Android SDK is incomplete at '$ANDROID_SDK_ROOT'."
-        echo "        Set ANDROID_SDK_ROOT to a valid SDK containing platform-tools and build-tools."
-        exit 1
-    fi
-
-    local godot_version template_dir
-    godot_version="$("$GODOT_BIN" --version | cut -d'.' -f1-3)"
-    template_dir="$HOME/.local/share/godot/export_templates/${godot_version}.stable"
-    if [ ! -f "$template_dir/android_debug.apk" ]; then
-        echo "[ERROR] Android export templates for Godot $godot_version are missing."
-        echo "        Install them with: \"$GODOT_BIN\" --headless --install-android-build-template"
-        echo "        or through Editor -> Manage Export Templates."
-        exit 1
-    fi
 
     echo "[BUILD] Exporting Android APK..."
     "$GODOT_BIN" --headless --export-debug "Android" "$BUILD_DIR/cylinder.apk"
@@ -265,6 +512,10 @@ cmd_linux() {
     local android_arch linux_arch
     android_arch="$(normalize_android_arch "${ANDROID_ARCH:-arm64-v8a}")"
     linux_arch="$(normalize_linux_arch "${1:-${LINUX_ARCH:-$(detect_linux_arch)}}")"
+    if ! ensure_export_templates "Linux" "$linux_arch" "linux_release.$linux_arch"; then
+        echo "[ERROR] Linux export templates are incomplete. See the setup instructions above."
+        exit 1
+    fi
     generate_export_presets "$android_arch" "$linux_arch"
     echo "[BUILD] Exporting Linux binary..."
     "$GODOT_BIN" --headless --export-release "Linux" "$BUILD_DIR/cylinder.$linux_arch"
@@ -272,9 +523,8 @@ cmd_linux() {
 }
 
 cmd_install() {
-    ADB_BIN="$(which adb || echo "$ANDROID_HOME/platform-tools/adb")"
-    if [ ! -x "$ADB_BIN" ]; then
-        echo "[ERROR] adb tool not found. Check Android SDK installation."
+    if ! check_adb_tool; then
+        echo "[ERROR] Device installation cannot continue until host-native adb is installed."
         exit 1
     fi
     APK_FILE="$BUILD_DIR/cylinder.apk"
@@ -289,20 +539,13 @@ cmd_install() {
 
 cmd_templates() {
     check_godot
-    GODOT_VERSION="$("$GODOT_BIN" --version | cut -d'.' -f1-3)"
-    TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
-    echo "[TEMPLATES] Target template directory: $TEMPLATE_DIR"
-    if [ -d "$TEMPLATE_DIR" ] && [ "$(ls -A "$TEMPLATE_DIR" 2>/dev/null)" ]; then
-        echo "[STATUS] Export templates are installed."
-        ls -lh "$TEMPLATE_DIR"
-    else
-        echo "[STATUS] Export templates not found in $TEMPLATE_DIR."
-        echo ""
-        echo "To install templates for Godot $GODOT_VERSION:"
-        echo "  1. Open Godot: $GODOT_BIN"
-        echo "  2. Go to: Editor -> Manage Export Templates -> Download and Install"
-        echo "     (or download Godot_v${GODOT_VERSION}-stable_export_templates.tpz and install from file)"
-    fi
+    local linux_arch android_arch
+    linux_arch="$(detect_linux_arch)" || exit 1
+    android_arch="$(normalize_android_arch "${ANDROID_ARCH:-arm64-v8a}")" || exit 1
+    echo "[PREFLIGHT] Host: $(uname -s) $(uname -m) | Godot: $(godot_version)"
+    ensure_android_sdk || true
+    ensure_export_templates "Android" "$android_arch" android_debug.apk || true
+    ensure_export_templates "Linux" "$linux_arch" "linux_release.$linux_arch" || true
 }
 
 cmd_maps() {
@@ -317,6 +560,9 @@ case "${1:-run}" in
         ;;
     test)
         cmd_test
+        ;;
+    preflight)
+        preflight_tests
         ;;
     maps)
         cmd_maps "$@"
