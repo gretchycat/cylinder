@@ -41,7 +41,7 @@
 	"objects": [
 		{
 			"asset": "tree_1",
-			"density_per_sq_km": 48.0,
+			"density_per_sq_km": 96.0,
 			"scale_range": [
 				1.0,
 				4.0

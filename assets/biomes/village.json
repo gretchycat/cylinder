@@ -43,7 +43,7 @@
 	"objects": [
 		{
 			"asset": "beacon_lantern",
-			"density_per_sq_km": 15.0,
+			"density_per_sq_km": 30.0,
 			"scale_range": [
 				1.0,
 				1.2
@@ -51,7 +51,7 @@
 		},
 		{
 			"asset": "campfire",
-			"density_per_sq_km": 8.0,
+			"density_per_sq_km": 16.0,
 			"scale_range": [
 				0.9,
 				1.1

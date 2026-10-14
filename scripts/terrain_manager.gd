@@ -14,6 +14,8 @@ var elevation_variance: float
 var water_level: float
 var elevation_data := PackedFloat32Array()
 var terrain_data := PackedByteArray()
+var elevation_dirty := false
+var terrain_dirty := false
 var biomes: Dictionary = {}
 var biome_by_id: Dictionary = {}
 var last_error: String = ""
@@ -37,9 +39,11 @@ func load_layers(elev_path: String, terrain_path: String) -> bool:
 	var old_terrain_data = terrain_data
 	var old_terrain_u = terrain_grid_u
 	var old_terrain_v = terrain_grid_v
+	var old_terrain_dirty = terrain_dirty
 	var old_elevation_data = elevation_data
 	var old_elevation_u = elevation_grid_u
 	var old_elevation_v = elevation_grid_v
+	var old_elevation_dirty = elevation_dirty
 	if not load_terrain(terrain_path):
 		if last_error.is_empty():
 			last_error = "Invalid biome layer: " + terrain_path
@@ -48,9 +52,11 @@ func load_layers(elev_path: String, terrain_path: String) -> bool:
 		terrain_data = old_terrain_data
 		terrain_grid_u = old_terrain_u
 		terrain_grid_v = old_terrain_v
+		terrain_dirty = old_terrain_dirty
 		elevation_data = old_elevation_data
 		elevation_grid_u = old_elevation_u
 		elevation_grid_v = old_elevation_v
+		elevation_dirty = old_elevation_dirty
 		grid_u = old_elevation_u
 		grid_v = old_elevation_v
 		if last_error.is_empty():
@@ -120,6 +126,7 @@ func load_elevation(path: String) -> bool:
 	grid_u = elevation_grid_u
 	grid_v = elevation_grid_v
 	elevation_data = parsed.samples
+	elevation_dirty = false
 	for i in elevation_data.size():
 		elevation_data[i] *= elevation_variance
 	last_error = ""
@@ -143,6 +150,7 @@ func load_terrain(path: String) -> bool:
 	terrain_grid_u = img.get_width()
 	terrain_grid_v = img.get_height()
 	terrain_data = data
+	terrain_dirty = false
 	last_error = ""
 	return true
 

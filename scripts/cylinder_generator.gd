@@ -6,14 +6,14 @@ const TerrainManagerClass = preload("res://scripts/terrain_manager.gd")
 const MapConfigClass = preload("res://scripts/map_config.gd")
 const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 
-@export_category("Cylinder Dimensions (8 km dia x 18 km length)")
+@export_category("Cylinder Dimensions (8 km dia x 24 km length)")
 @export var radius: float = 4000.0: # 8 km diameter = 4 km radius
 	set(val):
 		radius = val
 		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
 			generate_cylinder()
 
-@export var cylinder_length: float = 18000.0: # 18 km length
+@export var cylinder_length: float = 24000.0: # 24 km length
 	set(val):
 		cylinder_length = val
 		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
@@ -26,7 +26,7 @@ const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
 			generate_cylinder()
 
-@export var length_segments: int = 180: # 180 segments along 18 km = 100m per segment
+@export var length_segments: int = 180: # 180 segments along 24 km = about 133m per segment
 	set(val):
 		length_segments = clampi(val, 4, 360)
 		if is_inside_tree() and Engine.is_editor_hint() and not _is_initializing_terrain:
@@ -105,7 +105,7 @@ var terrain_map_path: String = "":
 		air_distance_min = max(val, 0.0)
 		_update_atmosphere_parameters()
 
-@export var air_distance_max: float = 18000.0:
+@export var air_distance_max: float = 24000.0:
 	set(val):
 		air_distance_max = max(val, air_distance_min + 10.0)
 		_update_atmosphere_parameters()
@@ -139,7 +139,7 @@ func _initialize_terrain_manager() -> void:
 	load_map_package(MapConfigClass.active_map() if not Engine.is_editor_hint() else map_package)
 
 ## Stage layers before changing active state. A malformed layer preserves the world.
-func load_map_package(package_path_or_name: String) -> bool:
+func load_map_package(package_path_or_name: String, reload_layers: bool = true, rebuild_geometry: bool = true, refresh_materials: bool = true) -> bool:
 	var cfg = MapConfigClass.load_map_config(package_path_or_name)
 	if cfg.is_empty():
 		map_load_error = MapConfigClass.last_error
@@ -151,14 +151,17 @@ func load_map_package(package_path_or_name: String) -> bool:
 			map_load_error = asset_error
 			push_error(map_load_error)
 			return false
-	var staged = MapConfigClass.take_active_map_terrain(cfg.map_directory) as TerrainManagerClass
+	var staged: TerrainManagerClass = terrain_manager if not reload_layers else null
+	if not staged:
+		staged = MapConfigClass.take_active_map_terrain(cfg.map_directory) as TerrainManagerClass
 	if not staged:
 		staged = TerrainManagerClass.new()
-		staged.configure(cfg)
 		if not staged.load_layers(MapConfigClass.get_elevation_map_path(cfg), MapConfigClass.get_terrain_map_path(cfg)):
 			map_load_error = staged.last_error
 			push_error(map_load_error)
 			return false
+	staged.configure(cfg)
+	var previous_config: Dictionary = active_map_config
 	map_load_error = ""
 	_is_initializing_terrain = true
 	map_package = package_path_or_name
@@ -183,12 +186,19 @@ func load_map_package(package_path_or_name: String) -> bool:
 	if is_inside_tree() and not _is_generating:
 		apply_environment()
 		for group in active_map_config.simulation:
+			if not reload_layers and previous_config.get("simulation", {}).get(group, {}) == active_map_config.simulation[group]:
+				continue
 			var node = get_tree().get_first_node_in_group(group)
 			if node:
 				preload("res://scripts/map_runtime.gd").configure_node(node, group, active_map_config)
 				if node.has_method("map_changed"):
 					node.map_changed()
-		generate_cylinder()
+		if rebuild_geometry:
+			generate_cylinder()
+		elif refresh_materials:
+			_update_terrain_material_textures()
+			_update_water_material_textures()
+			_update_atmosphere_parameters()
 	return true
 
 func apply_environment() -> void:

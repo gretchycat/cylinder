@@ -42,7 +42,7 @@
 	"objects": [
 		{
 			"asset": "beacon_lantern",
-			"density_per_sq_km": 20.0,
+			"density_per_sq_km": 40.0,
 			"scale_range": [
 				0.9,
 				1.1

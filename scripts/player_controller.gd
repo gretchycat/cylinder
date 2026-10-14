@@ -5,9 +5,9 @@ const CylinderParticleEmitter = preload("res://scripts/cylinder_particle_emitter
 
 signal telemetry_updated(data: Dictionary)
 
-@export_category("Cylinder Dimensions (8 km dia x 18 km length)")
+@export_category("Cylinder Dimensions (8 km dia x 24 km length)")
 @export var cylinder_radius: float = 4000.0
-@export var cylinder_length: float = 18000.0
+@export var cylinder_length: float = 24000.0
 
 @export_category("Movement & Gravity")
 @export var walk_speed: float = 3.2
@@ -74,13 +74,13 @@ func _ready() -> void:
 	# and dragging the virtual joystick moves only
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
-	# Ensure camera far distance covers the 18 km cylinder and end caps (30 km total)
+	# Ensure camera far distance covers the 24 km cylinder and end caps (32 km total)
 	if camera:
 		camera.near = 0.2
 		camera.far = 40000.0
 		_setup_debug_flashlight()
 
-	# Collision recovery across terrain seams and 26 km end cap dishes
+	# Collision recovery across terrain seams and 32 km end cap dishes
 	safe_margin = 0.08
 	max_slides = 6
 	floor_snap_length = 0.15
@@ -443,8 +443,8 @@ func _perform_step_glide(delta: float) -> void:
 		return
 	flat_dir = flat_dir.normalized()
 
-	# Clear terrain polygon seams and elevation micro-steps up to 45 cm
-	var step_height = 0.45
+	# Smooth small terrain seams without visibly popping the player upward.
+	var step_height = 0.20
 	var step_up = current_up * step_height
 	var forward_dist = (sprint_speed if is_sprinting else walk_speed) * delta * 1.5
 	var step_forward = flat_dir * forward_dist

@@ -31,6 +31,7 @@ var last_look_pos: Vector2 = Vector2.ZERO
 
 @onready var joystick_base: Control = $JoystickBase
 @onready var joystick_knob: Control = $JoystickBase/Knob
+@onready var action_buttons: Control = $ActionButtons
 @onready var jump_btn: Button = $ActionButtons/JumpButton
 @onready var fly_btn: Button = $DebugPanel/VBox/Grid/FlyButton
 @onready var edit_btn: Button = $DebugPanel/VBox/EditButton
@@ -512,6 +513,13 @@ func _on_palette_visibility_changed(open: bool) -> void:
 	_cancel_gestures()
 	if player:
 		player.ui_input_blocked = open
+	var map_properties_open := editor_ui != null and editor_ui.regen_open
+	if joystick_base:
+		joystick_base.visible = not map_properties_open
+	if action_buttons:
+		action_buttons.visible = not map_properties_open
+	if debug_panel:
+		debug_panel.visible = not map_properties_open
 	if open:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 

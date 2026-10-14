@@ -6,7 +6,7 @@ signal particle_landed(particle_id: int, impact_pos: Vector3, flight_time: float
 
 @export_category("Cylinder Habitat Physics")
 @export var cylinder_radius: float = 4000.0
-@export var cylinder_length: float = 18000.0
+@export var cylinder_length: float = 24000.0
 @export var base_gravity: float = 9.5
 @export var spin_direction: int = 1 # +1 for CCW, -1 for CW
 @export var air_drag_coefficient: float = 0.0 # 0.0 = vacuum rotating frame, >0 = aerodynamic drag

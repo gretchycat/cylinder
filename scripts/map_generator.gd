@@ -22,6 +22,9 @@ static func progress(cb: Callable, fraction: float, message: String) -> void:
 	# still propagate notifications on the caller thread.
 	if cb.is_valid() and OS.get_thread_caller_id() == OS.get_main_thread_id():
 		cb.call(fraction, message)
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree:
+			await tree.process_frame
 
 static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 	await progress(cb, 0.00, "Initialization: Validating map configuration and grid parameters")
@@ -617,7 +620,8 @@ static func generate(doc: Dictionary, cb: Callable = Callable()) -> Dictionary:
 			for rule in biome.objects:
 				if not rule is Dictionary or not rule.has("asset") or not rule.has("density_per_sq_km"):
 					continue
-				var target_count = mini(int(round(biome_area_km2 * float(rule.density_per_sq_km))), 800)
+				var placement_cap: int = int(rule.get("placement_cap", 800))
+				var target_count = mini(int(round(biome_area_km2 * float(rule.density_per_sq_km))), placement_cap)
 				if target_count <= 0:
 					continue
 				var scale_min = 1.0
@@ -835,6 +839,84 @@ static func slope_at(img: Image, u: float, v: float, g: Dictionary) -> float:
 	var sx = (Terrain.sample_image(img, u + du, v) - Terrain.sample_image(img, u - du, v)) * g.elevation_variance_m / (2 * du * TAU * g.cylinder_radius_m)
 	var sz = (Terrain.sample_image(img, u, minf(1, v + dv)) - Terrain.sample_image(img, u, maxf(0, v - dv))) * g.elevation_variance_m / (maxf(minf(1, v + dv) - maxf(0, v - dv), dv) * g.cylinder_length_m)
 	return rad_to_deg(atan(Vector2(sx, sz).length()))
+
+static func generate_objects_from_layers(doc: Dictionary, elevation: Image, terrain: Image, cb: Callable = Callable()) -> Dictionary:
+	var error: String = Config.validate(doc)
+	if not error.is_empty():
+		return {"error": error}
+	if not elevation or not terrain or elevation.get_width() < 2 or elevation.get_height() < 2 or terrain.get_width() < 2 or terrain.get_height() < 2:
+		return {"error": "Cached elevation or biome layer is unavailable for object placement"}
+	var g: Dictionary = doc.geometry
+	var tw := terrain.get_width()
+	var th := terrain.get_height()
+	var terrain_ids := terrain.get_data()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(doc.generation.seed)
+	var total_area_km2 := TAU * float(g.cylinder_radius_m) * float(g.cylinder_length_m) / 1000000.0
+	var variance := float(g.elevation_variance_m)
+	var water_level := float(g.water_sea_level_m)
+	var objects: Array = []
+	var biome_index := 0
+	for biome in doc.biomes.values():
+		biome_index += 1
+		await progress(cb, float(biome_index - 1) / float(maxi(doc.biomes.size(), 1)), "Object Placement: Reading cached biome '%s'" % biome.get("name", ""))
+		var rules: Variant = biome.get("objects", [])
+		if float(biome.get("weight", 0.0)) <= 0.0 or not rules is Array or rules.is_empty():
+			continue
+		var cells: Array[Vector2i] = []
+		var raster_id := int(biome.raster_id)
+		for y in th:
+			for x in tw:
+				if terrain_ids[y * tw + x] == raster_id:
+					cells.append(Vector2i(x, y))
+		if cells.is_empty():
+			continue
+		var biome_area_km2 := total_area_km2 * float(cells.size()) / float(tw * th)
+		for rule in rules:
+			if not rule is Dictionary or not rule.has("asset") or not rule.has("density_per_sq_km"):
+				continue
+			var placement_cap: int = int(rule.get("placement_cap", 800))
+			var target_count := mini(int(round(biome_area_km2 * float(rule.density_per_sq_km))), placement_cap)
+			if target_count <= 0:
+				continue
+			var scale_min := 1.0
+			var scale_max := 1.0
+			var scale_range: Variant = rule.get("scale_range", [])
+			if scale_range is Array and scale_range.size() >= 2:
+				scale_min = float(scale_range[0])
+				scale_max = float(scale_range[1])
+			var asset := str(rule.asset)
+			var catalog_entry: Dictionary = doc.objects.model_catalog.get(asset, {})
+			var attempts := 0
+			var placed := 0
+			while placed < target_count and attempts < target_count * 5:
+				attempts += 1
+				var cell: Vector2i = cells[rng.randi_range(0, cells.size() - 1)]
+				var u := (float(cell.x) + rng.randf()) / float(tw)
+				var v := (float(cell.y) + rng.randf()) / float(th)
+				var ground_elevation := Terrain.sample_image(elevation, u, v) * variance
+				if not biome.get("submerged", false) and ground_elevation < water_level:
+					continue
+				if slope_at(elevation, u, v, g) > float(biome.get("max_slope_deg", 90.0)):
+					continue
+				var can_fall := Config.get_object_allow_on_side(catalog_entry, asset)
+				var fallen := can_fall and rng.randf() < Config.get_object_on_side_chance(catalog_entry, asset)
+				objects.append({
+					"id": "obj_%s_%d" % [asset, objects.size() + 1],
+					"asset": asset,
+					"theta": u * TAU,
+					"z": (v - 0.5) * float(g.cylinder_length_m),
+					"elevation": ground_elevation,
+					"yaw_rad": rng.randf() * TAU if Config.get_object_random_yaw(catalog_entry, asset) else 0.0,
+					"pitch_rad": rng.randf_range(deg_to_rad(75.0), deg_to_rad(105.0)) if fallen else 0.0,
+					"roll_rad": rng.randf() * TAU if fallen else 0.0,
+					"scale": rng.randf_range(scale_min, scale_max) if scale_max > scale_min else scale_min,
+					"ground_offset_m": -0.25 if fallen else Config.get_object_ground_offset(catalog_entry, asset),
+					"align_to_normal": Config.get_object_align_to_normal(catalog_entry, asset)
+				})
+				placed += 1
+	await progress(cb, 1.0, "Object Placement: Cached-layer scattering complete (%d objects)" % objects.size())
+	return {"objects": objects}
 
 static func save_generated_map_package(result: Dictionary, directory: String, cb: Callable = Callable()) -> bool:
 	if result.has("error"):

@@ -357,7 +357,7 @@ class MapPackageConverter:
         # Physical geometry parameters
         geometry = {
             "cylinder_radius_m": float(config.get("geometry", {}).get("cylinder_radius_m", 4000.0)),
-            "cylinder_length_m": float(config.get("geometry", {}).get("cylinder_length_m", 18000.0)),
+            "cylinder_length_m": float(config.get("geometry", {}).get("cylinder_length_m", 24000.0)),
             "endcap_radius_m": float(config.get("geometry", {}).get("endcap_radius_m", 4000.0)),
             "elevation_variance_m": float(config.get("geometry", {}).get("elevation_variance_m", 100.0)),
             "water_sea_level_m": float(config.get("geometry", {}).get("water_sea_level_m", 20.0))

@@ -44,7 +44,7 @@
 	"objects": [
 		{
 			"asset": "tree_0",
-			"density_per_sq_km": 180.0,
+			"density_per_sq_km": 360.0,
 			"scale_range": [
 				1.0,
 				4.0
@@ -52,7 +52,7 @@
 		},
 		{
 			"asset": "tree_2",
-			"density_per_sq_km": 96.0,
+			"density_per_sq_km": 192.0,
 			"scale_range": [
 				1.0,
 				4.0
@@ -60,7 +60,7 @@
 		},
 		{
 			"asset": "campfire",
-			"density_per_sq_km": 0.5,
+			"density_per_sq_km": 1.0,
 			"scale_range": [
 				1.0,
 				1.0
@@ -69,7 +69,7 @@
 	],
 	"clutter": [
 		{
-			"density_per_m2": 0.025,
+			"density_per_m2": 0.050,
 			"model": "grass_tuft",
 			"palette": [
 				[
@@ -97,7 +97,7 @@
 			]
 		},
 		{
-			"density_per_m2": 0.003,
+			"density_per_m2": 0.006,
 			"model": "wildflowers",
 			"palette": [
 				[

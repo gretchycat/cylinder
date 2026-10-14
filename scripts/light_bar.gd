@@ -13,8 +13,8 @@ enum LightingPreset {
 	SOLAR_CYCLE
 }
 
-@export_category("Dimensions (18 km Scale)")
-@export var bar_length: float = 18000.0:
+@export_category("Dimensions (24 km Scale)")
+@export var bar_length: float = 24000.0:
 	set(val):
 		bar_length = max(val, 10.0)
 		if is_inside_tree():
@@ -241,7 +241,7 @@ func rebuild_light_bar() -> void:
 		segment_intensities.append(1.0)
 
 	# 4 broad axial omni lights evenly spaced along spin axis to illuminate the cylinder
-	# with zero light range truncation cutoffs anywhere on the 18 km terrain shell
+	# with zero light range truncation cutoffs anywhere on the 24 km terrain shell
 	var num_axial_lights = 4
 	for k in range(num_axial_lights):
 		var t_pos = (float(k) + 0.5) / float(num_axial_lights)
@@ -326,7 +326,7 @@ func _apply_current_preset() -> void:
 					segment_colors[i] = p["sun_color"]
 					segment_intensities[i] = p["intensity"]
 			else:
-				# Multi-stop Sunrise to Twilight gradient along the 18 km cylinder
+				# Multi-stop Sunrise to Twilight gradient along the 24 km cylinder
 				var col_dawn = _map_color("dawn")     # Dawn Golden Orange
 				var col_morning = _map_color("morning")  # Warm Morning Gold
 				var col_noon = _map_color("noon")     # Clean High Noon

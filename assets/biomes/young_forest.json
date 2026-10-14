@@ -44,26 +44,38 @@
 	"objects": [
 		{
 			"asset": "tree_0",
-			"density_per_sq_km": 480.0,
+			"density_per_sq_km": 5760.0,
+			"placement_cap": 20000,
 			"scale_range": [
-				1.0,
-				4.0
-			]
-		},
-		{
-			"asset": "tree_2",
-			"density_per_sq_km": 420.0,
-			"scale_range": [
-				1.0,
-				4.0
+				0.45,
+				0.8
 			]
 		},
 		{
 			"asset": "tree_1",
-			"density_per_sq_km": 240.0,
+			"density_per_sq_km": 4320.0,
+			"placement_cap": 20000,
 			"scale_range": [
-				1.0,
-				4.0
+				0.45,
+				0.8
+			]
+		},
+		{
+			"asset": "tree_3",
+			"density_per_sq_km": 1920.0,
+			"placement_cap": 20000,
+			"scale_range": [
+				0.45,
+				0.8
+			]
+		},
+		{
+			"asset": "tree_2",
+			"density_per_sq_km": 1440.0,
+			"placement_cap": 20000,
+			"scale_range": [
+				0.45,
+				0.8
 			]
 		}
 	],
@@ -94,6 +106,28 @@
 			"scale_range": [
 				0.8,
 				1.3
+			]
+		},
+		{
+			"density_per_m2": 0.0025,
+			"model": "shrubs",
+			"palette": [
+				[
+					0.25,
+					0.6,
+					0.15,
+					1.0
+				],
+				[
+					0.32,
+					0.68,
+					0.18,
+					1.0
+				]
+			],
+			"scale_range": [
+				0.5,
+				1.5
 			]
 		},
 		{

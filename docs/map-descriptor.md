@@ -60,8 +60,9 @@ not physical world dimensions. Mesh segments are independently map-configured.
   and a color palette. Any palette may contain one or more RGBA stops; uniform
   interpolation traverses consecutive stops, including alpha. Palettes tint the
   source material; they are not a list of discrete random swatches.
-- Biome `objects` rules select catalog IDs, density per square kilometre and
-  scale range. Placement is seeded, measured in physical area, and rejects
+- Biome `objects` rules select catalog IDs, density per square kilometre, scale
+  range, and optional `placement_cap` (0..100,000 generated instances for that
+  rule). Placement is seeded, measured in physical area, and rejects
   incompatible terrain. Generated instance IDs and spawn are saved.
 - `files`: elevation and terrain paths plus object placement JSON path.
 

@@ -2,6 +2,7 @@ extends Control
 
 const Editor = preload("res://scripts/world_editor.gd")
 const Preview = preload("res://scripts/object_preview.gd")
+const ColorPickerUI = preload("res://scripts/color_picker_ui.gd")
 
 signal palette_visibility_changed(open: bool)
 var editor: Editor
@@ -25,10 +26,15 @@ var smooth_button: Button
 var brush_minus_btn: Button
 var brush_plus_btn: Button
 var save_button: Button
-var regen_button: Button
+var map_button: Button
 var replace_active_button: Button
 var rotate_checkbox: CheckBox
 var target_replace_texture_index: int = -1
+var map_asset_selection_kind := ""
+var map_asset_selection_callback: Callable
+var map_asset_selection_previous_submode: int = Editor.SubMode.OBJECT
+var map_asset_selection_previous_object_index := 0
+var map_asset_selection_previous_texture_index := 0
 
 # Submode Bar
 var submode_bar: HBoxContainer
@@ -55,11 +61,22 @@ var map_editor: VBoxContainer
 var object_tint_picker: ColorPickerButton
 var light_tint_picker: ColorPickerButton
 var regen_dialog: PanelContainer
-var confirm_dialog: PanelContainer
+var regen_workbench: PanelContainer
 var progress_dialog: PanelContainer
+var progress_title_label: Label
+var progress_stage1_label: Label
+var progress_stage2_label: Label
 var gen_progress_bar: ProgressBar
 var reload_progress_bar: ProgressBar
 var progress_status_label: Label
+var progress_log: RichTextLabel
+var regen_elevations_check: CheckBox
+var regen_terrain_check: CheckBox
+var regen_smooth_check: CheckBox
+var regen_clear_objects_check: CheckBox
+var regen_add_objects_check: CheckBox
+var regen_normalize_check: CheckBox
+var regen_warning_label: Label
 var regen_open := false
 var biome_sliders: Dictionary = {}
 var hydrology_sliders: Dictionary = {}
@@ -76,7 +93,7 @@ func _ready() -> void:
 	_build_clutter_dialog()
 	_build_collision_import_dialog()
 	_build_regen_dialog()
-	_build_confirm_dialog()
+	_build_regen_workbench()
 	_build_progress_dialog()
 	resized.connect(_layout)
 	_layout()
@@ -117,18 +134,9 @@ func _build_submode_bar() -> void:
 	paint_mode_btn = _button("PAINTER", func(): _set_sub_mode(Editor.SubMode.PAINTER))
 	elev_mode_btn = _button("ELEVATION", func(): _set_sub_mode(Editor.SubMode.ELEVATION))
 
-	regen_button = _button("REGEN MAP", func(): set_regen_dialog_open(true))
-	var red_style := StyleBoxFlat.new()
-	red_style.bg_color = Color(0.85, 0.15, 0.15, 0.95)
-	red_style.border_color = Color(1.0, 0.35, 0.35, 0.9)
-	red_style.set_border_width_all(1)
-	red_style.set_corner_radius_all(6)
-	regen_button.add_theme_stylebox_override("normal", red_style)
-	regen_button.add_theme_stylebox_override("hover", red_style)
-	regen_button.add_theme_color_override("font_color", Color.WHITE)
-	regen_button.tooltip_text = "REGEN MAP: WARNING - Regenerating will CLEAR all terrain, elevation, and placed objects!"
+	map_button = _button("MAP", func(): set_regen_dialog_open(true))
 
-	for btn in [obj_mode_btn, paint_mode_btn, elev_mode_btn, regen_button]:
+	for btn in [obj_mode_btn, paint_mode_btn, elev_mode_btn, map_button]:
 		btn.custom_minimum_size = Vector2(90, 36)
 		submode_bar.add_child(btn)
 
@@ -142,6 +150,19 @@ func _set_sub_mode(mode: Editor.SubMode) -> void:
 	_update_active_box_content()
 	queue_redraw()
 
+func open_terrain_interface() -> void:
+	_open_editor_interface(Editor.SubMode.PAINTER)
+
+func open_objects_interface() -> void:
+	_open_editor_interface(Editor.SubMode.OBJECT)
+
+func _open_editor_interface(mode: Editor.SubMode) -> void:
+	if not editor or not editor.enabled:
+		return
+	set_regen_dialog_open(false)
+	_set_sub_mode(mode)
+	set_palette_open(true)
+
 func _update_submode_buttons() -> void:
 	if not obj_mode_btn or not editor:
 		return
@@ -153,6 +174,7 @@ func _update_submode_buttons() -> void:
 	obj_mode_btn.add_theme_stylebox_override("normal", active_style if editor.sub_mode == Editor.SubMode.OBJECT else inactive_style)
 	paint_mode_btn.add_theme_stylebox_override("normal", active_style if editor.sub_mode == Editor.SubMode.PAINTER else inactive_style)
 	elev_mode_btn.add_theme_stylebox_override("normal", active_style if editor.sub_mode == Editor.SubMode.ELEVATION else inactive_style)
+	map_button.add_theme_stylebox_override("normal", inactive_style)
 
 func _build_active_object() -> void:
 	active_box = PanelContainer.new()
@@ -205,11 +227,6 @@ func _build_active_object() -> void:
 	save_button.custom_minimum_size.x = 80
 	buttons.add_child(save_button)
 
-	regen_button = _button("MAP CFG", func():
-		set_regen_dialog_open(true)
-		map_editor.map_name.grab_focus())
-	regen_button.custom_minimum_size.x = 80
-	buttons.add_child(regen_button)
 
 func _on_active_preview_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -303,32 +320,42 @@ func _build_palette() -> void:
 	palette_title_label.text = "SELECT OBJECT"
 	palette_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(palette_title_label)
-
+	header.add_child(_button("CLOSE", _cancel_map_asset_selection))
+	var palette_actions := VBoxContainer.new()
+	palette_actions.add_theme_constant_override("separation", 6)
+	column.add_child(palette_actions)
 	import_palette_btn = _button("ADD OBJECT", func(): _open_import_dialog())
-	header.add_child(import_palette_btn)
-
+	import_palette_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	palette_actions.add_child(import_palette_btn)
 	edit_clutter_btn = _button("CLUTTER", func():
 		set_clutter_dialog_open(true))
 	edit_clutter_btn.visible = false
-	header.add_child(edit_clutter_btn)
-
-	header.add_child(_button("CLOSE", func(): set_palette_open(false)))
-	var tint_row = HBoxContainer.new()
-	column.add_child(tint_row)
+	edit_clutter_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	palette_actions.add_child(edit_clutter_btn)
+	var tint_column := VBoxContainer.new()
+	tint_column.add_theme_constant_override("separation", 6)
+	column.add_child(tint_column)
+	var tint_row := HBoxContainer.new()
+	tint_row.add_theme_constant_override("separation", 6)
+	tint_column.add_child(tint_row)
 	for tint_title in ["Object RGBA", "Light RGBA"]:
 		var picker = ColorPickerButton.new()
 		picker.text = tint_title
 		picker.edit_alpha = true
 		picker.color = Color.WHITE
-		picker.custom_minimum_size = Vector2(100, 44)
+		picker.custom_minimum_size = Vector2(0, 44)
+		picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		ColorPickerUI.configure(picker)
 		tint_row.add_child(picker)
 		if tint_title == "Object RGBA":
 			object_tint_picker = picker
 		else:
 			light_tint_picker = picker
-	tint_row.add_child(_button("TINT AIMED OBJECT", func():
+	var tint_target_button := _button("TINT AIMED OBJECT", func():
 		editor.tint_target(object_tint_picker.color, light_tint_picker.color)
-		status_label.text = editor.status))
+		status_label.text = editor.status)
+	tint_target_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tint_column.add_child(tint_target_button)
 	palette_scroll = ScrollContainer.new()
 	palette_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	palette_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -371,8 +398,8 @@ func _open_import_dialog() -> void:
 	if DirAccess.dir_exists_absolute(default_dir):
 		import_file_dialog.current_dir = default_dir
 
-	var dialog_w := int(minf(700, size.x - 20))
-	var dialog_h := int(minf(500, size.y - 20))
+	var dialog_w := int(maxf(minf(700, size.x - 16), 1))
+	var dialog_h := int(maxf(minf(500, size.y - 16), 1))
 	import_file_dialog.popup_centered(Vector2i(dialog_w, dialog_h))
 
 func _open_replace_image_dialog(index: int) -> void:
@@ -423,7 +450,7 @@ func _build_collision_import_dialog() -> void:
 	collision_import_dialog.title = "OBJECT COLLISION HULLS"
 	collision_import_dialog.ok_button_text = "IMPORT MODEL"
 	collision_import_dialog.cancel_button_text = "NO COLLISION"
-	collision_import_dialog.min_size = Vector2(360, 240)
+	collision_import_dialog.min_size = Vector2(280, 240)
 	add_child(collision_import_dialog)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
@@ -481,16 +508,16 @@ func _build_clutter_dialog() -> void:
 	column.add_child(title)
 
 	clutter_density_label = Label.new()
-	clutter_density_label.text = "Clutter Density: 0.50"
+	clutter_density_label.text = "Clutter Density: 0.50×"
 	column.add_child(clutter_density_label)
 
 	clutter_density_slider = HSlider.new()
 	clutter_density_slider.min_value = 0.0
-	clutter_density_slider.max_value = 2.0
+	clutter_density_slider.max_value = 16.0
 	clutter_density_slider.step = 0.05
 	clutter_density_slider.value = 0.5
 	clutter_density_slider.value_changed.connect(func(val: float):
-		clutter_density_label.text = "Clutter Density: %.2f" % val
+		clutter_density_label.text = "Clutter Density: %.2f×" % val
 		var entry := editor.current_texture()
 		if not entry.is_empty():
 			entry["clutter_density"] = val
@@ -521,6 +548,7 @@ func _build_regen_dialog() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(scroll)
 	map_editor = preload("res://scripts/map_editor_panel.gd").new()
+	map_editor.asset_selector_ui = self
 	scroll.add_child(map_editor)
 	map_editor.generate_requested.connect(_on_generate_biome_pressed)
 	map_editor.save_requested.connect(_save_map_definition)
@@ -531,55 +559,138 @@ func _build_regen_dialog() -> void:
 	map_editor.export_map_requested.connect(_export_map)
 	regen_dialog.visible = false
 
-func _build_confirm_dialog() -> void:
-	confirm_dialog = PanelContainer.new()
-	confirm_dialog.name = "ConfirmRegenDialog"
-	confirm_dialog.add_theme_stylebox_override("panel", _panel_style())
-	add_child(confirm_dialog)
-
+func _build_regen_workbench() -> void:
+	regen_workbench = PanelContainer.new()
+	regen_workbench.name = "RegenerationWorkbench"
+	regen_workbench.add_theme_stylebox_override("panel", _panel_style())
+	add_child(regen_workbench)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 14)
-	confirm_dialog.add_child(column)
-
+	column.add_theme_constant_override("separation", 5)
+	regen_workbench.add_child(column)
+	var heading := HBoxContainer.new()
+	heading.add_theme_constant_override("separation", 8)
+	column.add_child(heading)
+	var cancel_btn := _button("Back", func(): regen_workbench.visible = false)
+	cancel_btn.custom_minimum_size = Vector2(76, 36)
+	heading.add_child(cancel_btn)
 	var title := Label.new()
-	title.text = "CONFIRM MAP REGENERATION"
-	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
-	title.add_theme_font_size_override("font_size", 15)
+	title.text = "MAP REGENERATION"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(title)
+	title.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
+	title.add_theme_font_size_override("font_size", 15)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	heading.add_child(title)
+	var intro := Label.new()
+	intro.text = "Choose regeneration steps. Existing objects are cleared before new placements."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.add_theme_font_size_override("font_size", 12)
+	column.add_child(intro)
+	var options_scroll := ScrollContainer.new()
+	options_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	options_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	options_scroll.custom_minimum_size.y = 0
+	options_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(options_scroll)
+	var options := VBoxContainer.new()
+	options.add_theme_constant_override("separation", 2)
+	options_scroll.add_child(options)
+	var select_row := HBoxContainer.new()
+	options.add_child(select_row)
+	var select_all := _button("Select All", func(): _set_regeneration_options(true))
+	select_all.custom_minimum_size.y = 36
+	select_all.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	select_row.add_child(select_all)
+	var select_none := _button("Select None", func(): _set_regeneration_options(false))
+	select_none.custom_minimum_size.y = 36
+	select_none.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	select_row.add_child(select_none)
+	regen_elevations_check = CheckBox.new()
+	regen_elevations_check.text = "Regenerate elevations"
+	regen_elevations_check.button_pressed = true
+	regen_elevations_check.toggled.connect(func(_value): _update_regeneration_warning())
+	options.add_child(regen_elevations_check)
+	regen_terrain_check = CheckBox.new()
+	regen_terrain_check.text = "Regenerate terrain / biome classification"
+	regen_terrain_check.button_pressed = true
+	regen_terrain_check.toggled.connect(func(_value): _update_regeneration_warning())
+	options.add_child(regen_terrain_check)
+	regen_smooth_check = CheckBox.new()
+	regen_smooth_check.text = "Apply one smoothing pass to elevations"
+	regen_smooth_check.toggled.connect(func(_value): _update_regeneration_warning())
+	options.add_child(regen_smooth_check)
+	regen_clear_objects_check = CheckBox.new()
+	regen_clear_objects_check.text = "Clear existing objects"
+	regen_clear_objects_check.button_pressed = true
+	regen_clear_objects_check.toggled.connect(func(_value): _update_regeneration_warning())
+	options.add_child(regen_clear_objects_check)
+	regen_add_objects_check = CheckBox.new()
+	regen_add_objects_check.text = "Generate / add objects"
+	regen_add_objects_check.toggled.connect(func(_value): _update_regeneration_warning())
+	options.add_child(regen_add_objects_check)
+	regen_normalize_check = CheckBox.new()
+	regen_normalize_check.text = "Normalize elevations to biome ranges"
+	regen_normalize_check.button_pressed = true
+	regen_normalize_check.toggled.connect(func(_value): _update_regeneration_warning())
+	options.add_child(regen_normalize_check)
+	for option in [regen_elevations_check, regen_terrain_check, regen_smooth_check, regen_clear_objects_check, regen_add_objects_check, regen_normalize_check]:
+		option.custom_minimum_size.y = 32
+		option.add_theme_font_size_override("font_size", 13)
+	regen_warning_label = Label.new()
+	regen_warning_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	regen_warning_label.add_theme_font_size_override("font_size", 12)
+	regen_warning_label.add_theme_color_override("font_color", Color(1.0, 0.68, 0.4))
+	options.add_child(regen_warning_label)
+	var run_btn := _button("RUN SELECTED SEQUENCE", _execute_map_regeneration)
+	run_btn.name = "RunSelectedRegeneration"
+	run_btn.custom_minimum_size = Vector2(0, 50)
+	run_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	run_btn.add_theme_stylebox_override("normal", _danger_style())
+	run_btn.add_theme_stylebox_override("hover", _danger_style())
+	run_btn.add_theme_color_override("font_color", Color.WHITE)
+	column.add_child(run_btn)
+	regen_workbench.visible = false
+	_set_regeneration_options(true)
+	_update_regeneration_warning()
 
-	var warn := Label.new()
-	warn.text = "Are you sure? Regenerating will CLEAR all current terrain, elevation, and placed objects, and rebuild the world using the configured biome sliders."
-	warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	warn.add_theme_font_size_override("font_size", 12)
-	column.add_child(warn)
+func _danger_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.82, 0.12, 0.14, 1.0)
+	style.border_color = Color(1.0, 0.35, 0.35, 1.0)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(6)
+	return style
 
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	column.add_child(row)
+func _set_regeneration_options(enabled: bool) -> void:
+	for option in [regen_elevations_check, regen_terrain_check, regen_smooth_check, regen_clear_objects_check, regen_add_objects_check, regen_normalize_check]:
+		option.button_pressed = enabled
+	_update_regeneration_warning()
 
-	var cancel_btn := _button("CANCEL", func(): confirm_dialog.visible = false)
-	cancel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(cancel_btn)
-
-	var yes_btn := Button.new()
-	yes_btn.text = "YES, CLEAR & REGENERATE"
-	yes_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	yes_btn.custom_minimum_size = Vector2(0, 44)
-	var red_style := StyleBoxFlat.new()
-	red_style.bg_color = Color(0.85, 0.15, 0.15, 0.95)
-	red_style.set_corner_radius_all(6)
-	yes_btn.add_theme_stylebox_override("normal", red_style)
-	yes_btn.add_theme_color_override("font_color", Color.WHITE)
-	yes_btn.pressed.connect(_execute_map_regeneration)
-	row.add_child(yes_btn)
-
-	confirm_dialog.visible = false
+func _update_regeneration_warning() -> void:
+	if not regen_warning_label:
+		return
+	if not regen_elevations_check.button_pressed and not regen_terrain_check.button_pressed and not regen_smooth_check.button_pressed and not regen_clear_objects_check.button_pressed and not regen_add_objects_check.button_pressed and not regen_normalize_check.button_pressed:
+		regen_warning_label.text = "No operations selected. Nothing will be changed."
+	elif not regen_elevations_check.button_pressed and not regen_terrain_check.button_pressed and not regen_smooth_check.button_pressed and not regen_normalize_check.button_pressed and regen_clear_objects_check.button_pressed and not regen_add_objects_check.button_pressed:
+		regen_warning_label.text = "This removes all existing placed objects but preserves the map's spawn points and terrain."
+	elif regen_add_objects_check.button_pressed and not (regen_elevations_check.button_pressed and regen_terrain_check.button_pressed):
+		regen_warning_label.text = "Object placement will reuse the loaded elevation and biome layers; existing objects are %s." % ("cleared first" if regen_clear_objects_check.button_pressed else "preserved")
+	elif regen_clear_objects_check.button_pressed and regen_add_objects_check.button_pressed:
+		regen_warning_label.text = "Existing objects will be cleared first; newly generated placements will then be added."
+	elif not regen_elevations_check.button_pressed and not regen_terrain_check.button_pressed and (regen_smooth_check.button_pressed or regen_normalize_check.button_pressed):
+		regen_warning_label.text = "Smoothing / normalization will reuse the map's saved elevation and biome layers; procedural generation will be skipped.%s" % (" Existing objects will also be cleared." if regen_clear_objects_check.button_pressed else "")
+	elif regen_clear_objects_check.button_pressed:
+		regen_warning_label.text = "Existing objects will be cleared. Terrain and elevation are replaced only if their options are selected."
+	elif regen_add_objects_check.button_pressed:
+		regen_warning_label.text = "Existing objects will be kept and generated placements appended."
+	else:
+		regen_warning_label.text = "Only selected terrain/elevation operations will run. Existing objects and spawn points are preserved."
 
 func _build_progress_dialog() -> void:
 	progress_dialog = PanelContainer.new()
 	progress_dialog.name = "ProgressDialog"
+	progress_dialog.z_as_relative = false
+	progress_dialog.z_index = RenderingServer.CANVAS_ITEM_Z_MAX
+	progress_dialog.mouse_filter = Control.MOUSE_FILTER_STOP
 	progress_dialog.add_theme_stylebox_override("panel", _panel_style())
 	add_child(progress_dialog)
 
@@ -587,22 +698,23 @@ func _build_progress_dialog() -> void:
 	column.add_theme_constant_override("separation", 10)
 	progress_dialog.add_child(column)
 
-	var title := Label.new()
-	title.text = "REGENERATING WORLD MAP"
-	title.add_theme_color_override("font_color", Color(0.3, 0.85, 1.0))
-	title.add_theme_font_size_override("font_size", 15)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(title)
+	progress_title_label = Label.new()
+	progress_title_label.text = "REGENERATING WORLD MAP"
+	progress_title_label.add_theme_color_override("font_color", Color(0.3, 0.85, 1.0))
+	progress_title_label.add_theme_font_size_override("font_size", 15)
+	progress_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(progress_title_label)
 
 	# Bar 1 Label & Progress Bar
-	var l1 := Label.new()
-	l1.text = "1. Terrain & Biomes Generation"
-	l1.add_theme_font_size_override("font_size", 11)
-	l1.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
-	column.add_child(l1)
+	progress_stage1_label = Label.new()
+	progress_stage1_label.text = "1. Terrain & Biomes Generation"
+	progress_stage1_label.add_theme_font_size_override("font_size", 11)
+	progress_stage1_label.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
+	column.add_child(progress_stage1_label)
 
 	gen_progress_bar = ProgressBar.new()
-	gen_progress_bar.custom_minimum_size = Vector2(360, 20)
+	gen_progress_bar.custom_minimum_size = Vector2(0, 20)
+	gen_progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	gen_progress_bar.min_value = 0.0
 	gen_progress_bar.max_value = 100.0
 	gen_progress_bar.value = 0.0
@@ -621,14 +733,15 @@ func _build_progress_dialog() -> void:
 	column.add_child(gen_progress_bar)
 
 	# Bar 2 Label & Progress Bar
-	var l2 := Label.new()
-	l2.text = "2. World Reload & 3D Objects Spawning"
-	l2.add_theme_font_size_override("font_size", 11)
-	l2.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
-	column.add_child(l2)
+	progress_stage2_label = Label.new()
+	progress_stage2_label.text = "2. World Reload & 3D Objects Spawning"
+	progress_stage2_label.add_theme_font_size_override("font_size", 11)
+	progress_stage2_label.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
+	column.add_child(progress_stage2_label)
 
 	reload_progress_bar = ProgressBar.new()
-	reload_progress_bar.custom_minimum_size = Vector2(360, 20)
+	reload_progress_bar.custom_minimum_size = Vector2(0, 20)
+	reload_progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	reload_progress_bar.min_value = 0.0
 	reload_progress_bar.max_value = 100.0
 	reload_progress_bar.value = 0.0
@@ -649,7 +762,32 @@ func _build_progress_dialog() -> void:
 	progress_status_label.add_theme_color_override("font_color", Color(0.85, 0.9, 0.95))
 	column.add_child(progress_status_label)
 
+	var log_heading := Label.new()
+	log_heading.text = "LIVE GENERATION LOG"
+	log_heading.add_theme_font_size_override("font_size", 12)
+	log_heading.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
+	column.add_child(log_heading)
+
+	progress_log = RichTextLabel.new()
+	progress_log.name = "RegenerationLiveLog"
+	progress_log.bbcode_enabled = false
+	progress_log.scroll_active = true
+	progress_log.fit_content = false
+	progress_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	progress_log.custom_minimum_size = Vector2(0, 116)
+	progress_log.add_theme_font_size_override("normal_font_size", 11)
+	column.add_child(progress_log)
+
 	progress_dialog.visible = false
+
+func _show_progress_dialog() -> void:
+	if not is_instance_valid(progress_dialog):
+		return
+	_layout()
+	progress_dialog.visible = true
+	progress_dialog.move_to_front()
+	_layout()
+	queue_redraw()
 
 func set_clutter_dialog_open(open: bool) -> void:
 	if clutter_dialog:
@@ -658,45 +796,215 @@ func set_clutter_dialog_open(open: bool) -> void:
 			_layout()
 
 func _on_generate_biome_pressed() -> void:
-	_layout()
-	if confirm_dialog:
-		confirm_dialog.visible = true
+	if regen_workbench:
+		_update_regeneration_warning()
+		regen_workbench.visible = false
+		_layout()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_layout()
+		regen_workbench.visible = true
+		regen_workbench.move_to_front()
+		_layout()
+		await get_tree().process_frame
+		_layout()
+
+func _append_progress_log(message: String) -> void:
+	if not is_instance_valid(progress_log):
+		return
+	if progress_log.get_line_count() > 300:
+		progress_log.clear()
+		progress_log.append_text("Earlier log lines cleared to keep memory bounded.\n")
+	progress_log.append_text(message.replace("\n", " ") + "\n")
+	progress_log.scroll_to_line(progress_log.get_line_count())
+
+func _read_placements(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {"objects": [], "spawn_points": []}
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not parsed is Dictionary or not parsed.get("objects", []) is Array:
+		return {"objects": [], "spawn_points": []}
+	return parsed
+
+func _merge_regenerated_layers(result: Dictionary, world: Node, cb: Callable = Callable()) -> Dictionary:
+	var terrain_manager = world.terrain_manager
+	if not regen_elevations_check.button_pressed:
+		result.elevation_image = terrain_manager.create_elevation_image()
+	if not regen_terrain_check.button_pressed:
+		result.terrain_image = terrain_manager.create_terrain_image()
+	var objects_path := MapConfig.get_object_map_path(world.active_map_config)
+	var saved_placements := _read_placements(objects_path)
+	var full_map_regeneration := regen_elevations_check.button_pressed and regen_terrain_check.button_pressed
+	var generated_spawn_points: Array = result.objects_data.get("spawn_points", []).duplicate(true)
+	var existing_objects: Array = saved_placements.get("objects", []).duplicate(true)
+	var combined: Array = [] if regen_clear_objects_check.button_pressed else existing_objects
+	var generated_objects: Array = result.objects_data.get("objects", []) if regen_add_objects_check.button_pressed else []
+	for candidate in generated_objects:
+		var item: Dictionary = candidate.duplicate(true)
+		item.id = "regen_obj_%d" % (combined.size() + 1)
+		combined.append(item)
+	result.objects_data = saved_placements.duplicate(true)
+	result.objects_data.objects = combined
+	if full_map_regeneration and not generated_spawn_points.is_empty():
+		result.objects_data.spawn_points = generated_spawn_points
+	if not result.objects_data.has("spawn_points"):
+		result.objects_data.spawn_points = []
+	if regen_terrain_check.button_pressed:
+		result.document.generation_report = result.report
+		result.document.generation_warnings = result.warnings
+	else:
+		result.document.generation_report = map_editor.document.get("generation_report", {})
+		result.document.generation_warnings = map_editor.document.get("generation_warnings", [])
+	if regen_smooth_check.button_pressed:
+		_smooth_elevation_image(result.elevation_image)
+	if regen_normalize_check.button_pressed:
+		_normalize_elevations_to_terrain(result.elevation_image, result.terrain_image, map_editor.document)
+	var all_layers_regenerated := regen_elevations_check.button_pressed and regen_terrain_check.button_pressed
+	if regen_add_objects_check.button_pressed and not all_layers_regenerated:
+		var cached_scatter: Dictionary = await preload("res://scripts/map_generator.gd").generate_objects_from_layers(map_editor.document, result.elevation_image, result.terrain_image, cb)
+		if cached_scatter.has("error"):
+			return {"error": str(cached_scatter.error)}
+		result.objects_data.objects = cached_scatter.objects
+	if regen_add_objects_check.button_pressed:
+		var terrain_class = preload("res://scripts/terrain_manager.gd")
+		var final_heights: Image = result.elevation_image
+		var variance := float(map_editor.document.geometry.elevation_variance_m)
+		for item in result.objects_data.objects:
+			var u := fposmod(float(item.theta) / TAU, 1.0)
+			var v := clampf(float(item.z) / float(map_editor.document.geometry.cylinder_length_m) + 0.5, 0.0, 1.0)
+			item.elevation = terrain_class.sample_image(final_heights, u, v) * variance
+	return result
+
+func _normalize_elevations_to_terrain(elevation_image: Image, terrain_image: Image, document: Dictionary) -> void:
+	var w := elevation_image.get_width()
+	var h := elevation_image.get_height()
+	var tw := terrain_image.get_width()
+	var th := terrain_image.get_height()
+	var heights := elevation_image.get_data().to_float32_array()
+	var terrain_ids := terrain_image.get_data()
+	var variance := float(document.geometry.elevation_variance_m)
+	var biome_by_id: Dictionary = {}
+	for key in document.biomes:
+		biome_by_id[int(document.biomes[key].raster_id)] = document.biomes[key]
+	for y in h:
+		var terrain_y := clampi(roundi(float(y) * float(th - 1) / float(maxi(h - 1, 1))), 0, th - 1)
+		for x in w:
+			var terrain_x := posmod(roundi(float(x) * float(tw) / float(w)), tw)
+			var biome_id := int(terrain_ids[terrain_y * tw + terrain_x])
+			var biome: Dictionary = biome_by_id.get(biome_id, {})
+			if biome.is_empty():
+				continue
+			var biome_range: Array = biome.elevation_range_m
+			var low := clampf(float(biome_range[0]), 0.0, variance)
+			var high := clampf(float(biome_range[1]), low, variance)
+			if biome.get("submerged", false):
+				high = minf(high, float(document.geometry.water_sea_level_m))
+			else:
+				low = maxf(low, float(document.geometry.water_sea_level_m))
+			heights[y * w + x] = clampf(lerpf(low, maxf(low, high), heights[y * w + x] / variance) / variance, 0.0, 1.0)
+	elevation_image.set_data(w, h, false, Image.FORMAT_RF, heights.to_byte_array())
+
+func _smooth_elevation_image(image: Image) -> void:
+	var w := image.get_width()
+	var h := image.get_height()
+	var source := image.get_data().to_float32_array()
+	var smoothed := PackedFloat32Array()
+	smoothed.resize(source.size())
+	for y in h:
+		for x in w:
+			var total := 0.0
+			for oy in range(-1, 2):
+				var sy := clampi(y + oy, 0, h - 1)
+				for ox in range(-1, 2):
+					var sx := posmod(x + ox, w)
+					total += source[sy * w + sx]
+			smoothed[y * w + x] = total / 9.0
+	image.set_data(w, h, false, Image.FORMAT_RF, smoothed.to_byte_array())
 
 func _execute_map_regeneration() -> void:
+	if not regen_elevations_check.button_pressed and not regen_terrain_check.button_pressed and not regen_smooth_check.button_pressed and not regen_clear_objects_check.button_pressed and not regen_add_objects_check.button_pressed and not regen_normalize_check.button_pressed:
+		regen_warning_label.text = "Select at least one regeneration operation. Nothing has been changed."
+		return
 	if str(map_editor.document.get("name", "")).strip_edges().is_empty():
 		_map_failure("Give the map a name before generating")
 		return
-	if confirm_dialog:
-		confirm_dialog.visible = false
+	var world = get_tree().get_first_node_in_group("cylinder_world")
+	if not world or not world.terrain_manager:
+		_map_failure("The active terrain is unavailable")
+		return
+	if regen_add_objects_check.button_pressed and (world.terrain_manager.elevation_data.is_empty() or world.terrain_manager.terrain_data.is_empty()):
+		regen_warning_label.text = "Object placement needs saved elevation and biome layers. Regenerate both layers first."
+		return
+	if regen_workbench:
+		regen_workbench.visible = false
 	_layout()
-	if progress_dialog:
-		progress_dialog.visible = true
+	progress_title_label.text = "REGENERATING SELECTED MAP DATA"
+	progress_stage1_label.text = "1. Generation / selected passes"
+	progress_stage2_label.text = "2. Save package and refresh runtime"
 	gen_progress_bar.value = 0
 	reload_progress_bar.value = 0
+	progress_log.clear()
+	_append_progress_log("Starting selected regeneration passes")
+	_append_progress_log("Note: the current generator computes elevation and biome candidates together; unselected layer output is discarded and preserved from the active map.")
+	_show_progress_dialog()
+	# Let the progress panel render before generation performs any expensive work.
+	await get_tree().process_frame
 	var generator = preload("res://scripts/map_generator.gd")
 	var cb = func(value: float, message: String):
 		if is_instance_valid(gen_progress_bar):
 			gen_progress_bar.value = value * 100
 		if is_instance_valid(progress_status_label):
 			progress_status_label.text = message
-		var tree = get_tree()
-		if tree:
-			await tree.process_frame
-	var result = await generator.generate(map_editor.document, cb)
+		_append_progress_log(message)
+	var generation_document: Dictionary = map_editor.document.duplicate(true)
+	var both_layers_selected := regen_elevations_check.button_pressed and regen_terrain_check.button_pressed
+	generation_document.generation.skip_objects = not (regen_add_objects_check.button_pressed and both_layers_selected)
+	var clear_objects_only := regen_clear_objects_check.button_pressed and not regen_elevations_check.button_pressed and not regen_terrain_check.button_pressed and not regen_smooth_check.button_pressed and not regen_add_objects_check.button_pressed and not regen_normalize_check.button_pressed
+	var reuse_cached_layers := not regen_elevations_check.button_pressed and not regen_terrain_check.button_pressed
+	var result: Dictionary
+	if clear_objects_only:
+		await cb.call(0.15, "Preparing a placements-only update; terrain and spawn points will be preserved")
+		var current_placements := _read_placements(MapConfig.get_object_map_path(world.active_map_config))
+		result = {
+			"document": map_editor.document.duplicate(true),
+			"elevation_image": world.terrain_manager.create_elevation_image(),
+			"terrain_image": world.terrain_manager.create_terrain_image(),
+			"objects_data": current_placements,
+			"report": map_editor.document.get("generation_report", {}),
+			"warnings": map_editor.document.get("generation_warnings", []),
+			"pois": []
+		}
+	elif reuse_cached_layers:
+		await cb.call(0.15, "Reusing the loaded map's saved elevation and biome layers; procedural generation skipped")
+		result = {
+			"document": map_editor.document.duplicate(true),
+			"elevation_image": world.terrain_manager.create_elevation_image(),
+			"terrain_image": world.terrain_manager.create_terrain_image(),
+			"objects_data": _read_placements(MapConfig.get_object_map_path(world.active_map_config)),
+			"report": map_editor.document.get("generation_report", {}),
+			"warnings": map_editor.document.get("generation_warnings", []),
+			"pois": []
+		}
+	else:
+		result = await generator.generate(generation_document, cb)
+	if result.has("error"):
+		_map_failure(result.error)
+		return
+	result.document = map_editor.document.duplicate(true)
+	result = await _merge_regenerated_layers(result, world, cb)
 	if result.has("error"):
 		_map_failure(result.error)
 		return
 	var directory = MapConfig.new_user_directory("generated")
-	await cb.call(0.93, "Saving generated map")
+	progress_status_label.text = "Saving generated map package..."
+	gen_progress_bar.value = 90
+	_append_progress_log("Writing generated package")
+	await get_tree().process_frame
 	if not generator.save_generated_map_package(result, directory, cb):
 		_map_failure("Unable to save generated map: " + MapConfig.last_error)
 		return
-	var previous: Dictionary = map_editor.document
-	map_editor.document = result.document
-	if not map_editor.package_imports(directory) or MapConfig.save_document(map_editor.document, directory) != OK:
-		map_editor.document = previous
-		_map_failure("Unable to package imported assets")
-		return
+	gen_progress_bar.value = 100
+	_append_progress_log("Generated package saved; activating it")
 	await _activate_map(directory)
 
 func _save_map_definition(as_new: bool = false) -> bool:
@@ -709,11 +1017,38 @@ func _save_map_definition(as_new: bool = false) -> bool:
 		return false
 	var world = get_tree().get_first_node_in_group("cylinder_world")
 	var refs = get_tree().get_first_node_in_group("reference_objects")
+	if not world or not refs:
+		_map_failure("The active world is unavailable")
+		return false
+	var storage = preload("res://scripts/world_edit_storage.gd")
+	var terrain = world.terrain_manager
+	var descriptor_changed := _authored_document(map_editor.document) != _authored_document(world.active_map_config)
+	var placements_changed: bool = refs.placement_dirty or not storage.player_spawn_matches_current(refs, editor.player)
+	var elevation_changed: bool = terrain != null and terrain.elevation_dirty
+	var classification_changed: bool = terrain != null and terrain.terrain_dirty
+	if not as_new and not descriptor_changed and not placements_changed and not elevation_changed and not classification_changed:
+		map_editor.message.text = "No changes to save"
+		status_label.text = "Map is already up to date"
+		return true
+	progress_title_label.text = "SAVING MAP"
+	progress_stage1_label.text = "1. Package definition and changed data"
+	progress_stage2_label.text = "2. Reload map and placements"
+	gen_progress_bar.value = 0
+	reload_progress_bar.value = 0
+	progress_status_label.text = "Preparing map snapshot..."
+	progress_log.clear()
+	_append_progress_log("Starting map save")
+	_show_progress_dialog()
+	await get_tree().process_frame
 	var directory = MapConfig.new_user_directory("edited")
 	if MapConfig.copy_directory(world.active_map_config.map_directory, directory) != OK:
 		_map_failure("Unable to prepare map save: " + MapConfig.last_error)
 		return false
-	var original_document = map_editor.document.duplicate(true)
+	gen_progress_bar.value = 20
+	progress_status_label.text = "Packaging map definition and referenced assets..."
+	_append_progress_log("Copied map package")
+	await get_tree().process_frame
+	var original_document: Dictionary = map_editor.document.duplicate(true)
 	if as_new:
 		map_editor.document.world_id = MapConfig.new_map_id()
 	if not map_editor.package_imports(directory) or MapConfig.save_document(map_editor.document, directory) != OK:
@@ -721,25 +1056,116 @@ func _save_map_definition(as_new: bool = false) -> bool:
 		map_editor.rebuild()
 		_map_failure("Unable to save definition and assets")
 		return false
-	if preload("res://scripts/world_edit_storage.gd").save(refs, directory.path_join(map_editor.document.files.object_map), editor.player) != OK:
+	gen_progress_bar.value = 45
+	progress_status_label.text = "Writing changed placements and terrain..."
+	_append_progress_log("Saved map definition and packaged assets")
+	await get_tree().process_frame
+	if (as_new or placements_changed) and storage.save(refs, MapConfig.get_object_map_path(map_editor.document), editor.player) != OK:
 		map_editor.document = original_document
 		map_editor.rebuild()
 		_map_failure("Unable to save placed objects")
 		return false
-	if world and world.terrain_manager:
-		var elev_path = directory.path_join(map_editor.document.files.elevation_map)
-		var terr_path = directory.path_join(map_editor.document.files.terrain_map)
-		DirAccess.make_dir_recursive_absolute(elev_path.get_base_dir())
-		DirAccess.make_dir_recursive_absolute(terr_path.get_base_dir())
-		world.terrain_manager.save_elevation(elev_path)
-		world.terrain_manager.save_terrain(terr_path)
-	var activated = await _activate_map(directory)
+	if terrain:
+		if elevation_changed and not terrain.save_elevation_map(MapConfig.get_elevation_map_path(map_editor.document)):
+			map_editor.document = original_document
+			map_editor.rebuild()
+			_map_failure("Unable to save elevation layer: " + terrain.last_error)
+			return false
+		if classification_changed and not terrain.save_terrain_map(MapConfig.get_terrain_map_path(map_editor.document)):
+			map_editor.document = original_document
+			map_editor.rebuild()
+			_map_failure("Unable to save biome layer")
+			return false
+	gen_progress_bar.value = 75
+	_append_progress_log("Changed map data written")
+	progress_status_label.text = "Loading saved map..."
+	await get_tree().process_frame
+	var activated: bool
+	if as_new:
+		activated = await _activate_map(directory)
+	else:
+		activated = await _activate_saved_map_selectively(directory, world.active_map_config, placements_changed, elevation_changed, classification_changed)
 	if not activated:
 		var failure_message = map_editor.message.text
 		map_editor.document = original_document
 		map_editor.rebuild()
 		_map_failure(failure_message)
 	return activated
+
+func _authored_document(document: Dictionary) -> Dictionary:
+	var authored := document.duplicate(true)
+	authored.erase("map_directory")
+	authored.erase("saved_at_unix")
+	return authored
+
+func _activate_saved_map_selectively(directory: String, old_doc: Dictionary, placements_changed: bool, elevation_changed: bool, classification_changed: bool) -> bool:
+	var world = get_tree().get_first_node_in_group("cylinder_world")
+	if not world:
+		_map_failure("The active world is unavailable")
+		return false
+	var next_doc := MapConfig.load_map_config(directory)
+	if next_doc.is_empty():
+		_map_failure("Saved map failed validation: " + MapConfig.last_error)
+		return false
+	var geometry_changed: bool = old_doc.geometry != next_doc.geometry
+	var mesh_render_changed := false
+	for key in ["radial_segments", "length_segments", "include_end_caps", "end_cap_rings", "end_cap_dish_depth_m"]:
+		if old_doc.rendering.get(key) != next_doc.rendering.get(key):
+			mesh_render_changed = true
+	var material_changed: bool = old_doc.biomes != next_doc.biomes or old_doc.rendering != next_doc.rendering or old_doc.environment.water != next_doc.environment.water or classification_changed
+	var biome_ids_changed := false
+	for biome_key in old_doc.biomes:
+		if not next_doc.biomes.has(biome_key) or int(old_doc.biomes[biome_key].raster_id) != int(next_doc.biomes[biome_key].raster_id):
+			biome_ids_changed = true
+	for biome_key in next_doc.biomes:
+		if not old_doc.biomes.has(biome_key):
+			biome_ids_changed = true
+	var catalog_changed: bool = old_doc.objects.model_catalog != next_doc.objects.model_catalog
+	var clutter_changed: bool = old_doc.biomes != next_doc.biomes or old_doc.ground_clutter != next_doc.ground_clutter or catalog_changed or classification_changed or geometry_changed
+	var reload_placements: bool = placements_changed or elevation_changed or geometry_changed or catalog_changed
+	var rebuild_geometry: bool = geometry_changed or mesh_render_changed or elevation_changed or biome_ids_changed
+	progress_status_label.text = "Applying only changed map systems..."
+	_append_progress_log("Selective refresh: geometry=%s materials=%s clutter=%s placements=%s" % [str(rebuild_geometry), str(material_changed), str(clutter_changed), str(reload_placements)])
+	await get_tree().process_frame
+	var loaded: bool = world.load_map_package(directory, biome_ids_changed, rebuild_geometry, material_changed)
+	if not loaded:
+		_map_failure("Map could not apply saved changes: " + world.map_load_error)
+		return false
+	if MapConfig.activate(directory) != OK:
+		world.load_map_package(str(old_doc.map_directory))
+		_map_failure("Could not persist the active map selection")
+		return false
+	reload_progress_bar.value = 35
+	if clutter_changed:
+		var clutter = get_tree().get_first_node_in_group("clutter_manager")
+		if clutter:
+			clutter.reload_clutter()
+	var refs = get_tree().get_first_node_in_group("reference_objects")
+	if refs and reload_placements:
+		var placement_progress = func(value: float, message: String):
+			reload_progress_bar.value = 35.0 + value * 60.0
+			progress_status_label.text = message
+			_append_progress_log(message)
+			await get_tree().process_frame
+		await refs.load_object_map_with_progress(MapConfig.get_object_map_path(world.active_map_config), placement_progress)
+		preload("res://scripts/world_edit_storage.gd").restore(refs)
+	if geometry_changed and editor.player:
+		editor.player.reset_to_spawn()
+	map_editor.document = world.active_map_config.duplicate(true)
+	map_editor.rebuild()
+	if catalog_changed or old_doc.biomes != next_doc.biomes:
+		editor.reload_catalog()
+	for child in palette_grid.get_children():
+		palette_grid.remove_child(child)
+		child.queue_free()
+	selection_buttons.clear()
+	previews.clear()
+	_update_current_object()
+	reload_progress_bar.value = 100
+	progress_dialog.visible = false
+	status_label.text = "Saved; refreshed changed map systems"
+	map_editor.message.text = "Saved. Only affected runtime systems were refreshed."
+	return true
 
 func _new_map() -> void:
 	var directory = MapConfig.create_from_template()
@@ -766,7 +1192,10 @@ func _export_map(path: String) -> void:
 func _activate_map(directory: String) -> bool:
 	var world = get_tree().get_first_node_in_group("cylinder_world")
 	var previous_directory = world.map_package if world else ""
-	if not world or not world.load_map_package(directory):
+	if not world:
+		_map_failure("Map failed validation: the world is unavailable; current world preserved")
+		return false
+	if not world.load_map_package(directory):
 		_map_failure("Map failed validation: %s; current world preserved" % (world.map_load_error if world else "World is unavailable"))
 		return false
 	if MapConfig.activate(directory) != OK:
@@ -779,7 +1208,13 @@ func _activate_map(directory: String) -> bool:
 		clutter.reload_clutter()
 	var refs = get_tree().get_first_node_in_group("reference_objects")
 	if refs:
-		await refs.load_object_map_with_progress(MapConfig.get_object_map_path(world.active_map_config))
+		var placement_progress = func(value: float, message: String):
+			if progress_dialog.visible:
+				reload_progress_bar.value = 35.0 + value * 60.0
+				progress_status_label.text = message
+				_append_progress_log(message)
+				await get_tree().process_frame
+		await refs.load_object_map_with_progress(MapConfig.get_object_map_path(world.active_map_config), placement_progress)
 		preload("res://scripts/world_edit_storage.gd").restore(refs)
 	if editor.player:
 		editor.player.reset_to_spawn()
@@ -799,6 +1234,7 @@ func _activate_map(directory: String) -> bool:
 	return true
 
 func _map_failure(message: String) -> void:
+	_append_progress_log("ERROR: " + message)
 	progress_dialog.visible = false
 	status_label.text = message
 	map_editor.message.text = message
@@ -815,15 +1251,18 @@ func _populate_palette() -> void:
 		return
 
 	if editor.sub_mode == Editor.SubMode.OBJECT:
+		var object_entries := _map_selection_object_entries() if not map_asset_selection_kind.is_empty() else editor.catalog
 		if palette_title_label:
-			palette_title_label.text = "SELECT OBJECT"
+			palette_title_label.text = "SELECT CLUTTER MODEL" if map_asset_selection_kind == "clutter" else "SELECT OBJECT"
 		if import_palette_btn:
-			import_palette_btn.text = "ADD OBJECT"
+			import_palette_btn.text = "ADD CLUTTER MODEL" if map_asset_selection_kind == "clutter" else "ADD OBJECT"
 		if edit_clutter_btn:
 			edit_clutter_btn.visible = false
 
-		for index in range(editor.catalog.size()):
-			var entry := editor.catalog[index]
+		if map_asset_selection_kind in ["object", "clutter"]:
+			_add_empty_selection_card()
+		for index in range(object_entries.size()):
+			var entry := object_entries[index]
 			var card := VBoxContainer.new()
 			card.custom_minimum_size = Vector2(128, 164)
 			palette_grid.add_child(card)
@@ -841,6 +1280,7 @@ func _populate_palette() -> void:
 			card.add_child(button)
 			selection_buttons.append(button)
 			var preview := Preview.new()
+			preview.name = "AssetMiniPreview"
 			# The preview is visual content inside the selection button. Let the
 			# button receive taps on the model instead of the child consuming them.
 			preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -850,7 +1290,7 @@ func _populate_palette() -> void:
 			preview.offset_top = 6
 			preview.offset_right = -6
 			preview.offset_bottom = -6
-			preview.show_model(entry.path)
+			preview.show_model(entry.path, MapConfig.color(entry.get("tint", [1, 1, 1, 1])))
 			previews.append(preview)
 			var label := Label.new()
 			label.text = str(entry.get("name", "Object"))
@@ -867,8 +1307,9 @@ func _populate_palette() -> void:
 		if edit_clutter_btn:
 			edit_clutter_btn.visible = true
 
-		for index in range(editor.texture_catalog.size()):
-			var entry := editor.texture_catalog[index]
+		var texture_entries := editor.texture_catalog
+		for index in range(texture_entries.size()):
+			var entry := texture_entries[index]
 			var card := VBoxContainer.new()
 			card.custom_minimum_size = Vector2(128, 192)
 			palette_grid.add_child(card)
@@ -932,6 +1373,17 @@ func _populate_palette() -> void:
 			card.add_child(replace_btn)
 
 func _select(index: int) -> void:
+	if not map_asset_selection_kind.is_empty():
+		var selected: Dictionary = {}
+		if map_asset_selection_kind == "texture":
+			if index >= 0 and index < editor.texture_catalog.size():
+				selected = editor.texture_catalog[index].duplicate(true)
+		else:
+			var entries := _map_selection_object_entries()
+			if index >= 0 and index < entries.size():
+				selected = entries[index].duplicate(true)
+		_finish_map_asset_selection(selected)
+		return
 	if editor.sub_mode == Editor.SubMode.OBJECT:
 		editor.selected_index = index
 	elif editor.sub_mode == Editor.SubMode.PAINTER:
@@ -940,6 +1392,86 @@ func _select(index: int) -> void:
 			editor.selected_biome_id = int(editor.texture_catalog[index].get("id", 0))
 	_update_active_box_content()
 	set_palette_open(false)
+
+func _add_empty_selection_card() -> void:
+	var card := VBoxContainer.new()
+	card.custom_minimum_size = Vector2(128, 164)
+	palette_grid.add_child(card)
+	var choice := _button("NONE", func(): _finish_map_asset_selection({"empty_selection": true}))
+	choice.custom_minimum_size = Vector2(128, 126)
+	var style := _panel_style()
+	style.bg_color = Color(0.12, 0.12, 0.14)
+	choice.add_theme_stylebox_override("normal", style)
+	card.add_child(choice)
+	var hint := Label.new()
+	hint.text = "Don't add a rule"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 12)
+	card.add_child(hint)
+
+func _map_selection_object_entries() -> Array[Dictionary]:
+	if map_asset_selection_kind != "clutter" or not map_editor:
+		return editor.catalog
+	var entries: Array[Dictionary] = []
+	for model_id in map_editor.document.get("ground_clutter", {}).get("models", {}):
+		var definition: Dictionary = map_editor.document.ground_clutter.models[model_id].duplicate(true)
+		var resolved := MapConfig.resolve_map_asset_path(map_editor.document, str(definition.get("scene_path", "")))
+		var base_color := MapConfig.color(definition.get("base_color", [1, 1, 1, 1]))
+		var tip_color := MapConfig.color(definition.get("tip_color", definition.get("base_color", [1, 1, 1, 1])))
+		entries.append({
+			"id": str(model_id), "name": str(model_id).replace("_", " ").capitalize(),
+			"scene_path": str(definition.get("scene_path", "")), "path": resolved,
+			"clutter_model_id": str(model_id), "definition": definition,
+		"tint": MapConfig.rgba(base_color.lerp(tip_color, 0.5))
+		})
+	for catalog_entry in editor.catalog:
+		var entry := catalog_entry.duplicate(true)
+		entry["scene_path"] = str(entry.get("scene_path", ""))
+		entry["object_asset_id"] = str(entry.get("id", ""))
+		entries.append(entry)
+	return entries
+
+func request_map_asset_selection(kind: String, callback: Callable) -> void:
+	if kind not in ["object", "texture", "clutter"] or not editor:
+		return
+	map_asset_selection_kind = kind
+	map_asset_selection_callback = callback
+	map_asset_selection_previous_submode = editor.sub_mode
+	map_asset_selection_previous_object_index = editor.selected_index
+	map_asset_selection_previous_texture_index = editor.selected_texture_index
+	editor.sub_mode = Editor.SubMode.PAINTER if kind == "texture" else Editor.SubMode.OBJECT
+	if kind == "texture":
+		editor.reload_texture_catalog()
+	else:
+		editor.reload_catalog()
+	_update_submode_buttons()
+	_update_action_buttons()
+	_update_active_box_content()
+	set_palette_open(true)
+
+func _finish_map_asset_selection(entry: Dictionary) -> void:
+	var callback := map_asset_selection_callback
+	var previous_submode := map_asset_selection_previous_submode
+	var previous_object_index := map_asset_selection_previous_object_index
+	var previous_texture_index := map_asset_selection_previous_texture_index
+	map_asset_selection_kind = ""
+	map_asset_selection_callback = Callable()
+	editor.sub_mode = previous_submode
+	editor.selected_index = previous_object_index
+	editor.selected_texture_index = previous_texture_index
+	_update_submode_buttons()
+	_update_action_buttons()
+	_update_active_box_content()
+	set_palette_open(false)
+	set_regen_dialog_open(true)
+	if callback.is_valid():
+		callback.call(entry)
+
+func _cancel_map_asset_selection() -> void:
+	if not map_asset_selection_kind.is_empty():
+		_finish_map_asset_selection({})
+	else:
+		set_palette_open(false)
 
 func _update_current_object() -> void:
 	_update_active_box_content()
@@ -968,7 +1500,7 @@ func _update_active_box_content() -> void:
 			place_button.disabled = true
 		else:
 			current_name.text = str(entry.get("name", "Object"))
-			current_preview.show_model(entry.path)
+			current_preview.show_model(entry.path, MapConfig.color(entry.get("tint", [1, 1, 1, 1])))
 			place_button.disabled = false
 		for index in range(selection_buttons.size()):
 			selection_buttons[index].set_pressed_no_signal(index == editor.selected_index)
@@ -1057,7 +1589,7 @@ func set_regen_dialog_open(open: bool) -> void:
 func contains_ui_point(point: Vector2) -> bool:
 	if not is_visible_in_tree():
 		return false
-	if palette_open or regen_open or (confirm_dialog and confirm_dialog.visible) or (progress_dialog and progress_dialog.visible) or (clutter_dialog and clutter_dialog.visible):
+	if palette_open or regen_open or (regen_workbench and regen_workbench.visible) or (progress_dialog and progress_dialog.visible) or (clutter_dialog and clutter_dialog.visible):
 		return true
 	var in_submode := submode_bar.get_global_rect().has_point(point) if submode_bar and submode_bar.visible else false
 	var in_active := active_box.get_global_rect().has_point(point) if active_box and active_box.visible else false
@@ -1067,32 +1599,47 @@ func contains_ui_point(point: Vector2) -> bool:
 func _layout() -> void:
 	if not active_box:
 		return
-	active_box.position = Vector2((size.x - 390) * 0.5, 60)
-	active_box.size = Vector2(390, 88)
+	var content_width := maxf(size.x - 16.0, 1.0)
+	var active_width := minf(390.0, content_width)
+	active_box.position = Vector2((size.x - active_width) * 0.5, 60)
+	active_box.size = Vector2(active_width, 88)
 	if submode_bar:
-		submode_bar.position = Vector2((size.x - 390) * 0.5, 154)
-		submode_bar.size = Vector2(390, 36)
-	actions.position = Vector2((size.x - 280) * 0.5, size.y - (360 if size.x < 640 else 84))
+		submode_bar.position = Vector2((size.x - active_width) * 0.5, 154)
+		submode_bar.size = Vector2(active_width, 36)
+		var submode_button_width := maxf((active_width - 18.0) / 4.0, 1.0)
+		for mode_button in [obj_mode_btn, paint_mode_btn, elev_mode_btn, map_button]:
+			mode_button.custom_minimum_size.x = submode_button_width
+	var actions_width := minf(280.0, content_width)
+	actions.position = Vector2((size.x - actions_width) * 0.5, size.y - (360 if size.x < 640 else 84))
+	actions.size = Vector2(actions_width, actions.size.y)
 	status_label.position = Vector2(0, 196)
 	status_label.size = Vector2(size.x, 24)
-	palette.position = Vector2(20, 60)
-	palette.size = Vector2(maxf(size.x - 40, 180), maxf(size.y - 80, 180))
+	var palette_width := maxf(minf(size.x - 16.0, 620.0), 1.0)
+	var palette_height := maxf(minf(size.y - 32.0, 900.0), 1.0)
+	palette.position = Vector2((size.x - palette_width) * 0.5, clampf(16.0, 0.0, maxf(size.y - palette_height, 0.0)))
+	palette.size = Vector2(palette_width, palette_height)
 	_update_palette_columns()
 
 	if regen_dialog:
-		regen_dialog.position = Vector2(maxf((size.x - minf(620, size.x - 20)) * 0.5, 10), 50)
-		regen_dialog.size = Vector2(minf(620, size.x - 20), maxf(size.y - 100, 200))
-	if confirm_dialog:
-		confirm_dialog.position = Vector2(maxf((size.x - 360) * 0.5, 10), (size.y - 200) * 0.5)
-		confirm_dialog.size = Vector2(minf(360, size.x - 20), 200)
+		var map_width := maxf(minf(620.0, content_width), 1.0)
+		var map_height := maxf(minf(size.y - 56.0, 900.0), 1.0)
+		regen_dialog.position = Vector2((size.x - map_width) * 0.5, clampf(40.0, 0.0, maxf(size.y - map_height, 0.0)))
+		regen_dialog.size = Vector2(map_width, map_height)
+	if regen_workbench:
+		var workbench_width := maxf(minf(460.0, content_width), 1.0)
+		var workbench_height := maxf(minf(size.y - 40.0, 420.0), 1.0)
+		regen_workbench.position = Vector2((size.x - workbench_width) * 0.5, (size.y - workbench_height) * 0.5)
+		regen_workbench.size = Vector2(workbench_width, workbench_height)
 	if progress_dialog:
-		var dialog_w = minf(440, size.x - 20)
-		var dialog_h = 230.0
+		var dialog_w := maxf(minf(500.0, content_width), 1.0)
+		var dialog_h := maxf(minf(size.y - 16.0, 460.0), 1.0)
 		progress_dialog.position = Vector2((size.x - dialog_w) * 0.5, (size.y - dialog_h) * 0.5)
 		progress_dialog.size = Vector2(dialog_w, dialog_h)
 	if clutter_dialog:
-		clutter_dialog.position = Vector2((size.x - 320) * 0.5, (size.y - 180) * 0.5)
-		clutter_dialog.size = Vector2(320, 180)
+		var clutter_width := maxf(minf(320.0, content_width), 1.0)
+		var clutter_height := minf(180.0, maxf(size.y - 16.0, 1.0))
+		clutter_dialog.position = Vector2((size.x - clutter_width) * 0.5, (size.y - clutter_height) * 0.5)
+		clutter_dialog.size = Vector2(clutter_width, clutter_height)
 	queue_redraw()
 
 func get_terrain_ground_normal() -> Vector3:

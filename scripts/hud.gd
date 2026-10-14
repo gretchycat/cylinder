@@ -377,6 +377,12 @@ func _setup_underwater_overlay() -> void:
 
 func _setup_ui_scaling() -> void:
 	auto_scale_info = UIScaleManager.calculate_intelligent_scale(-1.0, Vector2.ZERO, OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios"))
+	print("[UI Scale] mobile=%s screen=%s px reported_dpi=%.1f implied_diagonal=%.1f in used_dpi=%.1f valid=%s scale=%.2f%s" % [
+		auto_scale_info["mobile_platform"],
+		auto_scale_info["screen_size"], auto_scale_info["reported_dpi"], auto_scale_info["reported_diagonal_inches"],
+		auto_scale_info["dpi"], auto_scale_info["dpi_valid"], auto_scale_info["scale"],
+		("; fallback: " + auto_scale_info["fallback_reason"]) if not auto_scale_info["dpi_valid"] else ""
+	])
 	var saved_pref = UIScaleManager.load_user_scale()
 
 	# If running on a mobile device, ignore any saved manual scale and enforce auto scaling
@@ -1423,7 +1429,7 @@ func _setup_performance_tab(vbox: VBoxContainer) -> void:
 	perf_clutter_dist_val = r_clutter[1]
 	_update_clutter_dist_label(cur_clutter_dist)
 	var cur_clutter_density = clutter_mgr.density_multiplier if clutter_mgr else 1.0
-	var r_clutter_density = _create_slider_row(vbox, "Ground Clutter Density:", 0.0, 2.0, 0.1, cur_clutter_density, _on_perf_clutter_density_changed)
+	var r_clutter_density = _create_slider_row(vbox, "Ground Clutter Density:", 0.0, 16.0, 0.1, cur_clutter_density, _on_perf_clutter_density_changed)
 	perf_clutter_density_slider = r_clutter_density[0]
 	_limit_performance_slider_width(perf_clutter_density_slider)
 	perf_clutter_density_val = r_clutter_density[1]
@@ -3194,7 +3200,7 @@ func _update_looking_at_inspection() -> void:
 		if t_axis > 0.0:
 			var p_closest = ray_origin + ray_dir * t_axis
 			var closest_r = Vector2(p_closest.x, p_closest.y).length()
-			var cyl_len_ref = player.cylinder_length if player else 18000.0
+			var cyl_len_ref = player.cylinder_length if player else 24000.0
 			if closest_r < 60.0 and absf(p_closest.z) <= (cyl_len_ref * 0.5 + 500.0):
 				if not hit_found or t_axis < hit_distance:
 					hit_found = true
@@ -3234,7 +3240,7 @@ func _update_looking_at_inspection() -> void:
 	# 4. Analytical Cylinder & End Cap Intersection for Terrain
 	var cyl_world = get_tree().get_first_node_in_group("cylinder_world") as CylinderGenerator if is_inside_tree() else null
 	var cyl_radius = cyl_world.radius if cyl_world else (player.cylinder_radius if player else 4000.0)
-	var cyl_len = cyl_world.cylinder_length if cyl_world else (player.cylinder_length if player else 18000.0)
+	var cyl_len = cyl_world.cylinder_length if cyl_world else (player.cylinder_length if player else 24000.0)
 	var water_level = cyl_world.water_level if cyl_world else 20.0
 
 	var a = dir_xy.length_squared()

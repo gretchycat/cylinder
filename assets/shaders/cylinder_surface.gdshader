@@ -13,7 +13,7 @@ uniform float metallic : hint_range(0.0, 1.0) = 0.15;
 uniform vec4 air_color : source_color = vec4(0.52, 0.72, 0.88, 1.0);
 uniform float air_density : hint_range(0.0, 1.0) = 0.65;
 uniform float air_distance_min = 200.0;
-uniform float air_distance_max = 18000.0;
+uniform float air_distance_max = 24000.0;
 
 varying vec3 world_pos;
 

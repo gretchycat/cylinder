@@ -47,7 +47,7 @@ func _run() -> void:
 	if cli.has("radius") or cli.has("cylinder_radius_m"):
 		doc.geometry["cylinder_radius_m"] = float(cli.get("radius", cli.get("cylinder_radius_m", 4000.0)))
 	if cli.has("length") or cli.has("cylinder_length_m"):
-		doc.geometry["cylinder_length_m"] = float(cli.get("length", cli.get("cylinder_length_m", 18000.0)))
+		doc.geometry["cylinder_length_m"] = float(cli.get("length", cli.get("cylinder_length_m", 24000.0)))
 
 	var dims = Config.get_grid_dimensions(doc)
 	doc.generation["elevation_width"] = dims.elevation_width

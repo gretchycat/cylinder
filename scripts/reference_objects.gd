@@ -2,7 +2,7 @@
 class_name ReferenceObjects
 extends Node3D
 
-@export_category("Cylinder Dimensions (8 km dia x 18 km length)")
+@export_category("Cylinder Dimensions (8 km dia x 24 km length)")
 var cylinder_radius: float = 0
 var cylinder_length: float = 0
 var object_map_path: String = ""
@@ -15,16 +15,23 @@ var active_map_config: Dictionary = {}
 var surface_light_selection_timer: float = 0.0
 var placement_records: Array = []
 var live_placements: Dictionary = {}
+var placement_dirty := false
 var placement_stream_timer: float = 0.0
 var placement_stream_center := Vector2.ZERO
 var has_placement_stream_center := false
+
+func mark_placements_dirty() -> void:
+	placement_dirty = true
+
+func mark_placements_saved() -> void:
+	placement_dirty = false
 
 # Generated maps can contain thousands of placements. Keep the map data intact,
 # but instantiate only nearby objects so loading a map does not allocate every
 # imported model and light at once (particularly important on Android).
 const PLACEMENT_STREAM_RADIUS_M := 850.0
 const PLACEMENT_RETENTION_RADIUS_M := 1250.0
-const MAX_LIVE_PLACEMENTS := 256
+const MAX_LIVE_PLACEMENTS := 1024
 const PLACEMENTS_PER_TICK := 24
 const PLACEMENT_STREAM_INTERVAL := 0.1
 
@@ -247,6 +254,7 @@ func _load_and_spawn_from_json(progress_cb: Callable = Callable()) -> bool:
 			push_error("Unknown placement asset: " + str(record.get("asset")))
 			return false
 		placement_records.append(record.duplicate(true))
+	placement_dirty = false
 	_rebuild_spatial_chunks()
 	var spawn_points: Array = data.get("spawn_points", [])
 	if not spawn_points.is_empty() and spawn_points[0] is Dictionary:
@@ -410,6 +418,8 @@ func get_all_placement_records() -> Array:
 				_capture_live_placement(record, object)
 	for record in removed_records:
 		placement_records.erase(record)
+	if not removed_records.is_empty():
+		placement_dirty = true
 	# Include objects added by the in-world editor since the map was loaded.
 	for child in get_children():
 		if not child is SurfaceLightObject or child.is_queued_for_deletion():

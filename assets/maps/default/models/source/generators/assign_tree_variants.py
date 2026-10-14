@@ -30,7 +30,7 @@ def assign_tree_variants():
     settlement_coords = []
     for s in settlements:
         theta_s = s.get("u", 0.5) * 2 * math.pi - math.pi
-        z_s = (s.get("v", 0.5) - 0.5) * 18000.0
+        z_s = (s.get("v", 0.5) - 0.5) * 24000.0
         settlement_coords.append((theta_s, z_s))
 
     tree_count = 0

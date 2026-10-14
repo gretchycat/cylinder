@@ -42,7 +42,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 0,
 					"name": "Oak Tree",
-					"density_per_sq_km": 11.25,
+					"density_per_sq_km": 22.5,
 					"noise_threshold": 0.55,
 					"scale_range": [
 						0.8,
@@ -53,7 +53,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 2,
 					"name": "Birch Tree",
-					"density_per_sq_km": 6.0,
+					"density_per_sq_km": 12.0,
 					"noise_threshold": 0.65,
 					"scale_range": [
 						0.7,
@@ -63,7 +63,7 @@
 				{
 					"object_type_name": "BOULDER",
 					"name": "Field Boulder",
-					"density_per_sq_km": 4.0,
+					"density_per_sq_km": 8.0,
 					"scale_range": [
 						0.5,
 						1.5
@@ -72,7 +72,7 @@
 				{
 					"object_type_name": "CAMPFIRE",
 					"name": "Traveler Campfire",
-					"density_per_sq_km": 0.5,
+					"density_per_sq_km": 1.0,
 					"light_color": [
 						1.0,
 						0.7,
@@ -121,7 +121,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 4,
 					"name": "Cherry Blossom Tree",
-					"density_per_sq_km": 9.0,
+					"density_per_sq_km": 18.0,
 					"noise_threshold": 0.5,
 					"scale_range": [
 						0.8,
@@ -131,7 +131,7 @@
 				{
 					"object_type_name": "BEACON_LANTERN",
 					"name": "Meadow Lantern",
-					"density_per_sq_km": 1.0,
+					"density_per_sq_km": 2.0,
 					"light_color": [
 						0.9,
 						0.8,
@@ -169,7 +169,8 @@
 					"small_twigs",
 					"wild_mushrooms",
 					"sprouting_roots",
-					"grass_tuft"
+					"grass_tuft",
+					"shrubs"
 				],
 				"clutter_density": 0.35,
 				"scale_range": [
@@ -183,39 +184,54 @@
 					"object_type_name": "TREE",
 					"tree_variant": 0,
 					"name": "Young Oak",
-					"density_per_sq_km": 30.0,
+					"density_per_sq_km": 360.0,
+					"placement_cap": 20000,
 					"noise_threshold": 0.35,
 					"scale_range": [
-						0.7,
-						1.2
-					]
-				},
-				{
-					"object_type_name": "TREE",
-					"tree_variant": 2,
-					"name": "Young Birch",
-					"density_per_sq_km": 26.25,
-					"noise_threshold": 0.4,
-					"scale_range": [
-						0.7,
-						1.2
+						0.45,
+						0.8
 					]
 				},
 				{
 					"object_type_name": "TREE",
 					"tree_variant": 1,
 					"name": "Young Pine",
-					"density_per_sq_km": 15.0,
+					"density_per_sq_km": 270.0,
+					"placement_cap": 20000,
+					"noise_threshold": 0.4,
+					"scale_range": [
+						0.45,
+						0.8
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 3,
+					"name": "Young Willow",
+					"density_per_sq_km": 120.0,
+					"placement_cap": 20000,
 					"noise_threshold": 0.5,
 					"scale_range": [
-						0.8,
-						1.3
+						0.45,
+						0.8
+					]
+				},
+				{
+					"object_type_name": "TREE",
+					"tree_variant": 2,
+					"name": "Young Birch",
+					"density_per_sq_km": 90.0,
+					"placement_cap": 20000,
+					"noise_threshold": 0.5,
+					"scale_range": [
+						0.45,
+						0.8
 					]
 				},
 				{
 					"object_type_name": "FALLEN_LOG",
 					"name": "Fallen Woodland Log",
-					"density_per_sq_km": 5.0,
+					"density_per_sq_km": 10.0,
 					"scale_range": [
 						0.8,
 						1.5
@@ -264,7 +280,8 @@
 					"object_type_name": "TREE",
 					"tree_variant": 10,
 					"name": "Ancient Giant Oak",
-					"density_per_sq_km": 45.0,
+					"density_per_sq_km": 360.0,
+					"placement_cap": 3200,
 					"noise_threshold": 0.25,
 					"scale_range": [
 						1.0,
@@ -275,7 +292,8 @@
 					"object_type_name": "TREE",
 					"tree_variant": 11,
 					"name": "Ancient Giant Pine",
-					"density_per_sq_km": 33.75,
+					"density_per_sq_km": 270.0,
+					"placement_cap": 3200,
 					"noise_threshold": 0.3,
 					"scale_range": [
 						1.0,
@@ -286,7 +304,8 @@
 					"object_type_name": "TREE",
 					"tree_variant": 12,
 					"name": "Ancient Giant Willow",
-					"density_per_sq_km": 15.0,
+					"density_per_sq_km": 120.0,
+					"placement_cap": 3200,
 					"noise_threshold": 0.45,
 					"scale_range": [
 						1.0,
@@ -297,7 +316,8 @@
 					"object_type_name": "TREE",
 					"tree_variant": 13,
 					"name": "Ancient Giant Birch",
-					"density_per_sq_km": 11.25,
+					"density_per_sq_km": 90.0,
+					"placement_cap": 3200,
 					"noise_threshold": 0.5,
 					"scale_range": [
 						1.0,
@@ -308,7 +328,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 5,
 					"name": "Standing Dead Tree",
-					"density_per_sq_km": 6.0,
+					"density_per_sq_km": 12.0,
 					"noise_threshold": 0.6,
 					"scale_range": [
 						0.9,
@@ -318,7 +338,7 @@
 				{
 					"object_type_name": "FALLEN_LOG",
 					"name": "Mossy Fallen Log",
-					"density_per_sq_km": 12.0,
+					"density_per_sq_km": 24.0,
 					"scale_range": [
 						1.0,
 						2.0
@@ -327,7 +347,7 @@
 				{
 					"object_type_name": "BONFIRE",
 					"name": "Forest Haven Bonfire",
-					"density_per_sq_km": 0.3,
+					"density_per_sq_km": 0.6,
 					"light_color": [
 						1.0,
 						0.6,
@@ -376,7 +396,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 5,
 					"name": "Desert Dead Wood",
-					"density_per_sq_km": 2.25,
+					"density_per_sq_km": 4.5,
 					"noise_threshold": 0.7,
 					"scale_range": [
 						0.6,
@@ -386,7 +406,7 @@
 				{
 					"object_type_name": "BOULDER",
 					"name": "Sandstone Monolith",
-					"density_per_sq_km": 8.0,
+					"density_per_sq_km": 16.0,
 					"scale_range": [
 						1.0,
 						3.0
@@ -395,7 +415,7 @@
 				{
 					"object_type_name": "LAMP_POST",
 					"name": "Desert Trail Waymark",
-					"density_per_sq_km": 0.5,
+					"density_per_sq_km": 1.0,
 					"light_color": [
 						1.0,
 						0.85,
@@ -446,7 +466,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 3,
 					"name": "Swamp Willow",
-					"density_per_sq_km": 30.0,
+					"density_per_sq_km": 60.0,
 					"noise_threshold": 0.3,
 					"scale_range": [
 						1.0,
@@ -457,7 +477,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 5,
 					"name": "Submerged Dead Snag",
-					"density_per_sq_km": 11.25,
+					"density_per_sq_km": 22.5,
 					"noise_threshold": 0.5,
 					"scale_range": [
 						0.8,
@@ -467,7 +487,7 @@
 				{
 					"object_type_name": "REEDS",
 					"name": "Dense Cattail Patch",
-					"density_per_sq_km": 50.0,
+					"density_per_sq_km": 100.0,
 					"scale_range": [
 						0.6,
 						1.5
@@ -476,7 +496,7 @@
 				{
 					"object_type_name": "CAMPFIRE",
 					"name": "Bog Explorer Campfire",
-					"density_per_sq_km": 0.4,
+					"density_per_sq_km": 0.8,
 					"light_color": [
 						0.4,
 						0.9,
@@ -527,7 +547,7 @@
 				{
 					"object_type_name": "BOULDER",
 					"name": "Glacial Erratic Boulder",
-					"density_per_sq_km": 45.0,
+					"density_per_sq_km": 90.0,
 					"scale_range": [
 						1.0,
 						3.5
@@ -537,7 +557,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 1,
 					"name": "Stunted Alpine Pine",
-					"density_per_sq_km": 7.5,
+					"density_per_sq_km": 15.0,
 					"noise_threshold": 0.6,
 					"scale_range": [
 						0.6,
@@ -548,7 +568,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 5,
 					"name": "Weathered Dead Trunk",
-					"density_per_sq_km": 4.5,
+					"density_per_sq_km": 9.0,
 					"scale_range": [
 						0.7,
 						1.3
@@ -592,7 +612,7 @@
 				{
 					"object_type_name": "BOULDER",
 					"name": "Granite Massif Peak Rock",
-					"density_per_sq_km": 60.0,
+					"density_per_sq_km": 120.0,
 					"scale_range": [
 						2.0,
 						5.0
@@ -602,7 +622,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 1,
 					"name": "High Summit Pine",
-					"density_per_sq_km": 3.0,
+					"density_per_sq_km": 6.0,
 					"noise_threshold": 0.75,
 					"scale_range": [
 						0.5,
@@ -612,7 +632,7 @@
 				{
 					"object_type_name": "BEACON_LANTERN",
 					"name": "Peak Beacon Light",
-					"density_per_sq_km": 0.3,
+					"density_per_sq_km": 0.6,
 					"light_color": [
 						1.0,
 						0.4,
@@ -662,7 +682,7 @@
 				{
 					"object_type_name": "FALLEN_LOG",
 					"name": "Coastal Driftwood Log",
-					"density_per_sq_km": 8.0,
+					"density_per_sq_km": 16.0,
 					"scale_range": [
 						0.7,
 						1.6
@@ -672,7 +692,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 3,
 					"name": "Coastal Willow",
-					"density_per_sq_km": 4.5,
+					"density_per_sq_km": 9.0,
 					"noise_threshold": 0.65,
 					"scale_range": [
 						0.8,
@@ -722,7 +742,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 3,
 					"name": "Riparian Willow",
-					"density_per_sq_km": 22.5,
+					"density_per_sq_km": 45.0,
 					"noise_threshold": 0.35,
 					"scale_range": [
 						0.9,
@@ -733,7 +753,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 2,
 					"name": "Riparian Birch",
-					"density_per_sq_km": 18.75,
+					"density_per_sq_km": 37.5,
 					"noise_threshold": 0.4,
 					"scale_range": [
 						0.8,
@@ -743,7 +763,7 @@
 				{
 					"object_type_name": "REEDS",
 					"name": "Riverbank Reeds",
-					"density_per_sq_km": 35.0,
+					"density_per_sq_km": 70.0,
 					"scale_range": [
 						0.5,
 						1.3
@@ -789,7 +809,7 @@
 					"object_type_name": "TREE",
 					"tree_variant": 1,
 					"name": "Tundra Dwarf Pine",
-					"density_per_sq_km": 9.0,
+					"density_per_sq_km": 18.0,
 					"noise_threshold": 0.55,
 					"scale_range": [
 						0.5,
@@ -799,7 +819,7 @@
 				{
 					"object_type_name": "BOULDER",
 					"name": "Tundra Glacial Stone",
-					"density_per_sq_km": 25.0,
+					"density_per_sq_km": 50.0,
 					"scale_range": [
 						0.8,
 						2.0

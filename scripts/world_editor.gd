@@ -204,6 +204,8 @@ func place() -> SurfaceLightObject:
 	object.name = str(entry.get("name", "Object")).replace(" ", "")
 	references.add_child(object)
 	object.global_transform = Transform3D(object.basis, position)
+	if references.has_method("mark_placements_dirty"):
+		references.mark_placements_dirty()
 	status = "Placed %s · Unsaved" % entry.get("name", "object")
 	return object
 
@@ -215,6 +217,10 @@ func remove() -> bool:
 		status = "Aim at an object within %d m to remove it" % int(REACH)
 		return false
 	status = "Removed %s · Unsaved" % object.name
+	var references = get_tree().get_first_node_in_group("reference_objects")
+	if references:
+		if references.has_method("mark_placements_dirty"):
+			references.mark_placements_dirty()
 	object.queue_free()
 	return true
 
@@ -270,6 +276,7 @@ func paint_terrain(hit: Dictionary = {}) -> bool:
 					count_modified += 1
 
 	if count_modified > 0:
+		tm.terrain_dirty = true
 		var texture_entry := current_texture()
 		if not texture_entry.is_empty():
 			var b_key: String = str(texture_entry.get("key", ""))
@@ -339,6 +346,7 @@ func modify_elevation(hit: Dictionary = {}, delta_h: float = 0.0) -> bool:
 					count_modified += 1
 
 	if count_modified > 0:
+		tm.elevation_dirty = true
 		world.generate_cylinder()
 		var verb := "Raised" if delta_h > 0 else "Lowered"
 		status = "%s terrain elevation (%d cells) · Unsaved" % [verb, count_modified]
@@ -427,6 +435,7 @@ func smooth_elevation(hit: Dictionary = {}, strength: float = 0.75, max_angle_de
 			count_modified += 1
 
 	if count_modified > 0:
+		tm.elevation_dirty = true
 		world.generate_cylinder()
 		status = "Smoothed terrain elevation (%d cells) · Unsaved" % count_modified
 		return true
@@ -446,6 +455,8 @@ func save_edits() -> Error:
 	if error != OK:
 		status = "Could not save object placements (%s)" % error_string(error)
 		return error
+	if references.has_method("mark_placements_saved"):
+		references.mark_placements_saved()
 
 	# Save terrain elevation and biome rasters into the active user map package
 	if world and world.terrain_manager:
@@ -474,6 +485,10 @@ func tint_target(appearance: Color, emission: Color) -> void:
 	object.tint = appearance
 	object.light_color = emission
 	object.rebuild_object()
+	var references = get_tree().get_first_node_in_group("reference_objects")
+	if references:
+		if references.has_method("mark_placements_dirty"):
+			references.mark_placements_dirty()
 	status = "Tinted %s · Unsaved" % object.name
 
 func import_object_model(source_path: String, collision_categories: Dictionary = {}) -> bool:
@@ -642,5 +657,3 @@ func set_biome_rotate(texture_index: int, rotate_enabled: bool) -> bool:
 
 	status = "%s texture rotation: %s" % [config.biomes[biome_key].get("name", biome_key), "ENABLED" if rotate_enabled else "DISABLED"]
 	return true
-
-

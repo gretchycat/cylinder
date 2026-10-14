@@ -4,7 +4,7 @@ render_mode cull_disabled, blend_mix, depth_draw_never, diffuse_burley, specular
 // Atmospheric Cloud Layer for O'Neill Cylinder (~1.25 km overhead)
 // Render Priority = 4
 uniform float cylinder_radius = 4000.0;
-uniform float cylinder_length = 18000.0;
+uniform float cylinder_length = 24000.0;
 uniform float cloud_altitude = 1250.0;    // Meters above ground (1.0 to 1.5 km)
 uniform float cloud_thickness = 250.0;   // Vertical deck thickness in meters (50m - 800m)
 
@@ -31,7 +31,7 @@ uniform vec4 dust_tint : source_color = vec4(0.90, 0.84, 0.72, 1.0);
 uniform vec4 air_color : source_color = vec4(0.52, 0.72, 0.88, 1.0);
 uniform float air_density : hint_range(0.0, 3.0) = 1.0;
 uniform float air_distance_min = 200.0;
-uniform float air_distance_max = 18000.0;
+uniform float air_distance_max = 24000.0;
 
 uniform sampler2D axial_light_lut : hint_default_white, filter_linear, repeat_disable;
 uniform float axial_light_enabled = 1.0;
@@ -77,7 +77,7 @@ void fragment() {
 
 	// Optical depth & soft volumetric alpha
 	float cov_remap = clamp(cloud_coverage, 0.0, 1.0);
-	if (cov_remap <= 0.001) {
+	if (cov_remap <= 0.0) {
 		discard;
 	}
 
@@ -86,16 +86,12 @@ void fragment() {
 	float wisp_smooth = smoothstep(0.0, 1.0, wisp);
 
 	float thick_norm = clamp(cloud_thickness / 300.0, 0.3, 1.6);
-	float opt_depth = wisp_smooth * cloud_density * thick_norm * (0.35 + cov_remap * 0.65);
+	float opt_depth = wisp_smooth * cloud_density * thick_norm * (0.35 + cov_remap * 0.65) * cov_remap;
 
 	// End cap soft edge fading
 	float z_half = cylinder_length * 0.5;
 	float endcap_fade = 1.0 - smoothstep(z_half * 0.70, z_half * 0.95, abs(world_pos.z));
 	opt_depth *= endcap_fade;
-
-	if (opt_depth < 0.002) {
-		discard;
-	}
 
 	float final_alpha = clamp(1.0 - exp(-opt_depth * 3.5), 0.0, 0.98);
 

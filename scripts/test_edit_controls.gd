@@ -13,7 +13,7 @@ class MockCylinderWorld extends Node3D:
 	var active_map_config: Dictionary
 	var surface_material: Material = null
 	var radius: float = 4000.0
-	var cylinder_length: float = 18000.0
+	var cylinder_length: float = 24000.0
 	func generate_cylinder() -> void:
 		pass
 	func load_map_package(dir: String) -> void:
@@ -100,6 +100,7 @@ func _run() -> void:
 	check(not controls.fly_up_btn.disabled, "Fly up enabled in flight")
 	controls._on_fly_pressed()
 	var editor_ui = controls.editor_ui
+	check(editor_ui.clutter_density_slider != null and is_equal_approx(editor_ui.clutter_density_slider.max_value, 16.0), "Editor ground-clutter density slider reaches 16x")
 	check(not editor_ui.editor.enabled and not editor_ui.actions.visible, "Edit actions initially hidden")
 	controls.edit_btn.button_pressed = true
 	check(editor_ui.editor.enabled and editor_ui.actions.visible, "Edit toggle reveals actions")
@@ -142,6 +143,10 @@ func _run() -> void:
 	editor_ui._select(windmill_index)
 	check(editor_ui.editor.current_object().type == SurfaceLightObject.ObjectType.WINDMILL, "Windmill catalog ID maps to correct runtime type")
 	check(not player.ui_input_blocked and not editor_ui.palette_open, "Selection closes palette and restores input")
+	editor_ui.set_regen_dialog_open(true)
+	check(not controls.joystick_base.visible and not controls.action_buttons.visible and not controls.debug_panel.visible, "Map properties editor hides gameplay touch controls")
+	editor_ui.set_regen_dialog_open(false)
+	check(controls.joystick_base.visible and controls.action_buttons.visible and controls.debug_panel.visible, "Closing map properties editor restores gameplay touch controls")
 
 	await screenshot("edit-controls")
 	for layout_size in [Vector2(1280, 720), Vector2(1024, 576), Vector2(480, 900)]:

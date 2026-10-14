@@ -22,8 +22,8 @@ uniform vec4 deep_water_color : source_color;
 uniform vec4 air_color : source_color = vec4(0.52, 0.72, 0.88, 1.0);
 uniform float air_density : hint_range(0.0, 3.0) = 1.0;
 uniform float air_distance_min = 200.0;
-uniform float air_distance_max = 18000.0;
-uniform float cylinder_length = 18000.0;
+uniform float air_distance_max = 24000.0;
+uniform float cylinder_length = 24000.0;
 uniform sampler2D axial_light_lut : hint_default_white, filter_linear, repeat_disable;
 uniform float axial_light_enabled = 1.0;
 

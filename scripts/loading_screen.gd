@@ -1,6 +1,8 @@
 class_name LoadingScreen
 extends CanvasLayer
 
+const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
+
 signal loading_completed
 
 @export var auto_start: bool = true
@@ -24,6 +26,7 @@ var is_loading_finished: bool = false
 var elapsed_time: float = 0.0
 var spinner_idx: int = 0
 var spinner_timer: float = 0.0
+var loading_ui_scale: float = 1.0
 const SPINNER_CHARS = ["◓", "◑", "◒", "◐"]
 
 func _init() -> void:
@@ -193,7 +196,7 @@ func _build_ui() -> void:
 
 	# Habitat Metrics footer
 	var specs_label = Label.new()
-	specs_label.text = "• Radius: 4,000 m  • Length: 18,000 m\n• Gravity: 1.00 G  • Surface Area: ~452 km²"
+	specs_label.text = "• Radius: 4,000 m  • Length: 24,000 m\n• Gravity: 1.00 G  • Surface Area: ~603 km²"
 	specs_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	specs_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	specs_label.add_theme_color_override("font_color", Color(0.45, 0.60, 0.75, 0.7))
@@ -215,9 +218,15 @@ func _on_viewport_resized() -> void:
 	var vp_size = vp.get_visible_rect().size
 	if vp_size.x <= 0:
 		return
-	# Scale card panel smoothly to screen width on mobile phone screens (320px..480px)
-	var max_card_w = minf(vp_size.x - 24.0, 440.0)
-	card_panel.custom_minimum_size.x = maxf(max_card_w, 280.0)
+	var mobile_platform = OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios")
+	loading_ui_scale = float(UIScaleManager.calculate_intelligent_scale(-1.0, Vector2.ZERO, mobile_platform)["scale"])
+	card_panel.scale = Vector2.ONE * loading_ui_scale
+	# Keep the scaled card centered while constraining its displayed width to the
+	# viewport. Resolution only constrains layout here; the scale itself comes
+	# from the validated DPI calculation shared with the HUD.
+	var available_width = maxf(vp_size.x - 24.0, 1.0) / loading_ui_scale
+	card_panel.custom_minimum_size.x = minf(available_width, 440.0)
+	card_panel.pivot_offset = card_panel.get_combined_minimum_size() * 0.5
 
 func _process(delta: float) -> void:
 	elapsed_time += delta
@@ -268,7 +277,8 @@ func start_loading_sequence() -> void:
 	if cylinder_world:
 		if not cylinder_world.terrain_manager:
 			cylinder_world._initialize_terrain_manager()
-		cylinder_world.generate_cylinder()
+		if not is_instance_valid(cylinder_world.mesh_instance) or not cylinder_world.mesh_instance.mesh:
+			cylinder_world.generate_cylinder()
 	await get_tree().process_frame
 
 	# Step 2: Atmospheric & Cloud Deck Physics
@@ -276,7 +286,7 @@ func start_loading_sequence() -> void:
 	await get_tree().process_frame
 
 	var weather = get_tree().get_first_node_in_group("weather_system") as WeatherSystem
-	if weather:
+	if weather and not weather.is_weather_ready:
 		weather._warm_up_texture_caches()
 		weather._build_cloud_mesh()
 	await get_tree().process_frame
@@ -285,7 +295,7 @@ func start_loading_sequence() -> void:
 	_set_step("Initializing Precipitation Surfaces...", "Pre-baking rain/snow streaks & transparent shader material buffers...", 75.0)
 	await get_tree().process_frame
 
-	if weather:
+	if weather and not weather.is_weather_ready:
 		weather._warm_up_texture_caches()
 		weather._build_rain_sheets()
 		if weather.precipitation_rate_mmh > 0.05:

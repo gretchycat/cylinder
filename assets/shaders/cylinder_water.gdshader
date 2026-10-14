@@ -12,7 +12,7 @@ uniform vec4 deep_color : source_color = vec4(0.015, 0.18, 0.38, 0.72);
 uniform sampler2D elevation_map : hint_default_black, filter_linear_mipmap, repeat_enable;
 uniform vec2 elevation_map_size;
 uniform float cylinder_radius = 3980.0;
-uniform float cylinder_length = 18000.0;
+uniform float cylinder_length = 24000.0;
 uniform float water_level = 20.0;
 uniform float max_elevation = 100.0;
 uniform float wave_speed : hint_range(0.0, 5.0) = 0.65;
@@ -22,7 +22,7 @@ uniform float specular : hint_range(0.0, 1.0) = 0.95;
 uniform vec4 air_color : source_color = vec4(0.52, 0.72, 0.88, 1.0);
 uniform float air_density : hint_range(0.0, 3.0) = 1.25;
 uniform float air_distance_min = 200.0;
-uniform float air_distance_max = 18000.0;
+uniform float air_distance_max = 24000.0;
 
 uniform sampler2D axial_light_lut : hint_default_white, filter_linear, repeat_disable;
 uniform float axial_light_enabled = 1.0;
@@ -72,7 +72,7 @@ vec2 get_wave_offset(vec2 pos, float time, float speed) {
 
 // Procedural expanding raindrop ripples on the water surface
 vec2 get_raindrop_ripples(vec2 pos, float time, float rate) {
-	if (rate <= 0.05) return vec2(0.0);
+	if (rate <= 0.001) return vec2(0.0);
 	float intensity = clamp(rate / 25.0, 0.0, 1.0);
 	vec2 total_ripple = vec2(0.0);
 
@@ -141,8 +141,8 @@ void fragment() {
 
 	// Dynamic Raindrop Surface Ripples
 	float rain_atten = clamp(1.0 - (dist_to_cam - 40.0) / 180.0, 0.0, 1.0);
-	if (rain_atten > 0.001 && is_snow_mode < 0.5 && precipitation_rate > 0.05) {
-		vec2 rain_offset = get_raindrop_ripples(surface_pos, TIME, precipitation_rate) * rain_atten;
+	if (rain_atten > 0.001 && is_snow_mode < 0.999 && precipitation_rate > 0.001) {
+		vec2 rain_offset = get_raindrop_ripples(surface_pos, TIME, precipitation_rate) * rain_atten * (1.0 - is_snow_mode);
 		vec3 rain_perturb = TANGENT * rain_offset.x + BINORMAL * rain_offset.y;
 		perturbed_normal = normalize(perturbed_normal + rain_perturb);
 	}

@@ -14,6 +14,13 @@ func check(ok: bool, message: String):
 	else:
 		print("PASS: ", message)
 
+func clutter_density_for(biome: Dictionary, model_id: String) -> float:
+	for rule_variant in biome.get("clutter", []):
+		var rule: Dictionary = rule_variant
+		if str(rule.get("model", "")) == model_id:
+			return float(rule.get("density_per_m2", -1.0))
+	return -1.0
+
 func write_bad_elevation(path: String, kind: String) -> void:
 	var file = FileAccess.open(path, FileAccess.WRITE)
 	match kind:
@@ -521,6 +528,29 @@ func _run():
 	if doc.is_empty():
 		quit(1)
 		return
+	check(is_equal_approx(float(doc.ground_clutter.density_multiplier), 4.0),
+		"Bundled default applies the 4x clutter multiplier across every biome")
+	for biome_data in [
+		["flower_fields", "grass_tuft", 0.08], ["flower_fields", "wildflowers", 0.14],
+		["grassland", "grass_tuft", 0.05], ["grassland", "wildflowers", 0.006]
+	]:
+		var biome_id: String = biome_data[0]
+		var model_id: String = biome_data[1]
+		var expected_density: float = biome_data[2]
+		check(is_equal_approx(clutter_density_for(doc.biomes[biome_id], model_id), expected_density),
+			"Packaged %s %s clutter density is %.3f instances/m²" % [biome_id, model_id, expected_density])
+	var source_expectations := {
+		"flower_fields": {"grass_tuft": 0.08, "wildflowers": 0.14},
+		"grassland": {"grass_tuft": 0.05, "wildflowers": 0.006}
+	}
+	for biome_id in source_expectations:
+		var source_data: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://assets/biomes/%s.json" % biome_id))
+		check(source_data is Dictionary, "Authoring biome source parses: " + biome_id)
+		if source_data is Dictionary:
+			for model_id in source_expectations[biome_id]:
+				var expected_density: float = source_expectations[biome_id][model_id]
+				check(is_equal_approx(clutter_density_for(source_data, model_id), expected_density),
+					"Authoring %s %s clutter density matches packaged map" % [biome_id, model_id])
 	var tm = Terrain.new()
 	tm.configure(doc)
 	check(tm.load_layers(Config.get_elevation_map_path(doc), Config.get_terrain_map_path(doc)), "Current map layers load")
@@ -606,6 +636,13 @@ func _run():
 	var b = await Generator.generate(doc)
 	check(a.elevation_image.get_data() == b.elevation_image.get_data() and a.terrain_image.get_data() == b.terrain_image.get_data(), "Seed reproduces layers")
 	check(a.objects_data == b.objects_data, "Seed reproduces object placements and IDs")
+	var scatter_doc: Dictionary = doc.duplicate(true)
+	var scatter_asset: String = str(scatter_doc.objects.model_catalog.keys()[0])
+	for biome in scatter_doc.biomes.values():
+		biome.objects = [{"asset": scatter_asset, "density_per_sq_km": 0.01, "scale_range": [1.0, 1.0]}]
+	var cached_scatter_a: Dictionary = await Generator.generate_objects_from_layers(scatter_doc, a.elevation_image, a.terrain_image)
+	var cached_scatter_b: Dictionary = await Generator.generate_objects_from_layers(scatter_doc, a.elevation_image, a.terrain_image)
+	check(not cached_scatter_a.has("error") and cached_scatter_a.objects.size() > 0 and cached_scatter_a.objects == cached_scatter_b.objects, "Object-only scattering reuses cached layers deterministically")
 	var max_area_error = 0.0
 	for coverage in a.report.values():
 		max_area_error = maxf(max_area_error, absf(coverage.achieved - coverage.requested))
@@ -619,6 +656,8 @@ func _run():
 	layer.configure(reloaded)
 	check(layer.load_layers(Config.get_elevation_map_path(reloaded), Config.get_terrain_map_path(reloaded)), "Generated package reloads")
 	check(layer.elevation_grid_u == 48 and layer.elevation_grid_v == 25 and layer.terrain_grid_u == 23 and layer.terrain_grid_v == 13, "Independent non-square resolutions round-trip")
+	var packaged_scatter: Dictionary = await Generator.generate_objects_from_layers(scatter_doc, layer.create_elevation_image(), layer.create_terrain_image())
+	check(not packaged_scatter.has("error") and packaged_scatter.objects == cached_scatter_a.objects, "Packaged elevation and biome rasters support deterministic object-only regeneration after reload")
 	check(layer.create_terrain_type_id_image().get_width() == 23, "GPU biome texture uses biome resolution")
 	check(layer.create_elevation_image().get_data() == a.elevation_image.get_data(), "Float32 elevation round-trip is exact")
 	for v in [0.0, 0.31, 1.0]:

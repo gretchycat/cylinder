@@ -243,6 +243,8 @@ static func validate(doc: Dictionary) -> String:
 		for rule in b.objects:
 			if not rule is Dictionary or not valid_range(rule.get("scale_range"), 0.001, 100) or not finite_number(rule.get("density_per_sq_km")) or rule.density_per_sq_km < 0 or rule.density_per_sq_km > 10000:
 				return "Invalid object scale/density: " + key
+			if rule.has("placement_cap") and (not integer_number(rule.placement_cap) or rule.placement_cap < 0 or rule.placement_cap > 100000):
+				return "Invalid object placement_cap: " + key
 			if not doc.objects.model_catalog.has(rule.get("asset")):
 				return "Unknown object asset in " + key
 	if weight <= 0:
@@ -630,26 +632,27 @@ static func get_grid_dimensions(doc: Dictionary) -> Dictionary:
 	var g: Dictionary = doc.get("geometry", {})
 	var gen: Dictionary = doc.get("generation", {})
 	var r_m = float(g.get("cylinder_radius_m", 4000.0))
-	var l_m = float(g.get("cylinder_length_m", 18000.0))
-	
+	var l_m = float(g.get("cylinder_length_m", 24000.0))
+	if gen.has("sample_pitch_m"):
+		var pitch := 8.0
+		if finite_number(gen.sample_pitch_m) and float(gen.sample_pitch_m) > 0.0:
+			pitch = float(gen.sample_pitch_m)
+		var pitch_width := maxi(16, int(round((2.0 * PI * r_m) / pitch)))
+		var pitch_height := maxi(16, int(round(l_m / pitch)))
+		return {
+			"elevation_width": pitch_width,
+			"elevation_height": pitch_height,
+			"terrain_width": pitch_width,
+			"terrain_height": pitch_height,
+			"sample_pitch_m": pitch
+		}
+
 	if gen.has("elevation_width") and gen.has("elevation_height"):
 		var ew = int(gen.elevation_width)
 		var eh = int(gen.elevation_height)
 		var tw = int(gen.get("terrain_width", ew))
 		var th = int(gen.get("terrain_height", eh))
 		var calc_pitch = (2.0 * PI * r_m) / float(ew) if ew > 0 else 8.0
-		if gen.has("sample_pitch_m"):
-			var user_pitch = float(gen.sample_pitch_m)
-			if user_pitch > 0 and absf(user_pitch - calc_pitch) > 0.05:
-				ew = max(16, int(round((2.0 * PI * r_m) / user_pitch)))
-				eh = max(16, int(round(l_m / user_pitch)))
-				return {
-					"elevation_width": ew,
-					"elevation_height": eh,
-					"terrain_width": ew,
-					"terrain_height": eh,
-					"sample_pitch_m": user_pitch
-				}
 		return {
 			"elevation_width": ew,
 			"elevation_height": eh,

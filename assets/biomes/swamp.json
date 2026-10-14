@@ -42,7 +42,7 @@
 	"objects": [
 		{
 			"asset": "tree_3",
-			"density_per_sq_km": 480.0,
+			"density_per_sq_km": 960.0,
 			"scale_range": [
 				1.0,
 				4.0
@@ -50,7 +50,7 @@
 		},
 		{
 			"asset": "tree_5",
-			"density_per_sq_km": 180.0,
+			"density_per_sq_km": 360.0,
 			"scale_range": [
 				1.0,
 				4.0
@@ -58,7 +58,7 @@
 		},
 		{
 			"asset": "campfire",
-			"density_per_sq_km": 0.4,
+			"density_per_sq_km": 0.8,
 			"scale_range": [
 				1.0,
 				1.0

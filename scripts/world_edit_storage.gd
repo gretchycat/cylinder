@@ -6,6 +6,7 @@ static func save_path(references: Node) -> String:
 	return Config.get_object_map_path(references.active_map_config)
 
 static func save(references: Node, path: String = "", player: Node3D = null) -> Error:
+	var saving_active_state := path.is_empty()
 	var cfg: Dictionary = references.active_map_config
 	if path.is_empty():
 		if cfg.map_directory.begins_with("res://"):
@@ -19,8 +20,46 @@ static func save(references: Node, path: String = "", player: Node3D = null) -> 
 				return ERR_CANT_CREATE
 			references.active_map_config = cfg
 		path = Config.get_object_map_path(cfg)
+	var snapshot := _current_snapshot(references, player)
+	var error := Config.write_json(path, snapshot)
+	if error == OK and snapshot.has("player_spawn"):
+		references.set_meta("saved_player_spawn", snapshot.player_spawn.duplicate(true))
+	if error == OK and saving_active_state and references.has_method("mark_placements_saved"):
+		references.mark_placements_saved()
+	return error
+
+static func player_spawn_matches_current(references: Node, player: Node3D) -> bool:
+	var path := Config.get_object_map_path(references.active_map_config)
+	var existing: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not existing is Dictionary:
+		return false
+	if not player:
+		return not existing.has("player_spawn")
+	return _values_equal(existing.get("player_spawn", {}), _player_spawn_record(player))
+
+static func _values_equal(left: Variant, right: Variant) -> bool:
+	if left is Dictionary or right is Dictionary:
+		if not left is Dictionary or not right is Dictionary or left.size() != right.size():
+			return false
+		for key in left:
+			if not right.has(key) or not _values_equal(left[key], right[key]):
+				return false
+		return true
+	if left is Array or right is Array:
+		if not left is Array or not right is Array or left.size() != right.size():
+			return false
+		for index in left.size():
+			if not _values_equal(left[index], right[index]):
+				return false
+		return true
+	if (left is float or left is int) and (right is float or right is int):
+		# Reconstructed Godot transforms can drift slightly after a map reload.
+		return absf(float(left) - float(right)) <= 0.01
+	return left == right
+
+static func _current_snapshot(references: Node, player: Node3D) -> Dictionary:
 	var existing: Variant = JSON.parse_string(FileAccess.get_file_as_string(Config.get_object_map_path(references.active_map_config)))
-	var snapshot: Dictionary = existing if existing is Dictionary else {}
+	var snapshot: Dictionary = existing.duplicate(true) if existing is Dictionary else {}
 	var objects: Array = references.get_all_placement_records() if references.has_method("get_all_placement_records") else []
 	if not references.has_method("get_all_placement_records"):
 		for object in references.get_children():
@@ -32,13 +71,13 @@ static func save(references: Node, path: String = "", player: Node3D = null) -> 
 			objects.append({"id": object.instance_id, "asset": object.asset_id, "name": str(object.name), "transform": packed, "tint": Config.rgba(object.tint), "light_color": Config.rgba(object.light_color), "light_energy": object.light_energy, "light_range_m": object.light_range, "flicker": object.enable_flicker})
 	snapshot["objects"] = objects
 	if player:
-		var position = player.global_position
-		var basis = player.global_basis.orthonormalized()
-		snapshot["player_spawn"] = {"position": [position.x, position.y, position.z], "basis": [basis.x.x,basis.x.y,basis.x.z,basis.y.x,basis.y.y,basis.y.z,basis.z.x,basis.z.y,basis.z.z], "pitch": player.pitch, "is_flying": player.is_flying}
-	var error = Config.write_json(path, snapshot)
-	if error == OK and snapshot.has("player_spawn"):
-		references.set_meta("saved_player_spawn", snapshot.player_spawn.duplicate(true))
-	return error
+		snapshot["player_spawn"] = _player_spawn_record(player)
+	return snapshot
+
+static func _player_spawn_record(player: Node3D) -> Dictionary:
+	var position = player.global_position
+	var basis = player.global_basis.orthonormalized()
+	return {"position": [position.x, position.y, position.z], "basis": [basis.x.x,basis.x.y,basis.x.z,basis.y.x,basis.y.y,basis.y.z,basis.z.x,basis.z.y,basis.z.z], "pitch": player.pitch, "is_flying": player.is_flying}
 
 static func restore(references: Node, path: String = "") -> bool:
 	var restore_objects = not path.is_empty()

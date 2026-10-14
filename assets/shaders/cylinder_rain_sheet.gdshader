@@ -4,16 +4,18 @@ render_mode cull_disabled, blend_mix, depth_draw_never, unshaded, fog_disabled;
 // Rain Sheet Shader for O'Neill Cylinder Atmospheric Weather
 // Renders scrolling pre-rendered raindrop / snowflake streaks on layered hexagonal sheets around the player
 uniform sampler2D rain_texture : hint_default_transparent, filter_linear_mipmap, repeat_enable;
+uniform sampler2D snow_texture : hint_default_transparent, filter_linear_mipmap, repeat_enable;
 uniform vec2 uv_scale = vec2(0.25, 0.25);
 uniform vec2 uv_scroll_offset = vec2(0.0, 0.0);
 uniform vec4 rain_tint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform float rain_alpha_multiplier : hint_range(0.0, 2.0) = 0.0;
+uniform float snow_mix : hint_range(0.0, 1.0) = 0.0;
 
 // Lighting & Intensity synchronization
 uniform sampler2D axial_light_lut : hint_default_white, filter_linear, repeat_disable;
 uniform float axial_light_enabled = 1.0;
 uniform float global_light_intensity = 3.5;
-uniform float cylinder_length = 18000.0;
+uniform float cylinder_length = 24000.0;
 uniform float cloud_thickness = 250.0;
 uniform vec4 night_tint : source_color = vec4(0.04, 0.04, 0.06, 1.0);
 
@@ -34,13 +36,13 @@ void vertex() {
 }
 
 void fragment() {
-	if (rain_alpha_multiplier <= 0.001) {
+	if (rain_alpha_multiplier <= 0.0) {
 		discard;
 	}
 
 	vec2 layer_scroll = uv_scroll_offset * v_layer_speed;
 	vec2 scrolled_uv = (UV + layer_scroll) * uv_scale;
-	vec4 tex = texture(rain_texture, scrolled_uv);
+	vec4 tex = mix(texture(rain_texture, scrolled_uv), texture(snow_texture, scrolled_uv), snow_mix);
 	if (tex.a < 0.02) {
 		discard;
 	}
@@ -76,4 +78,3 @@ void fragment() {
 	ALBEDO = tex.rgb * rain_tint.rgb * lit_color;
 	ALPHA = clamp(total_alpha, 0.0, 1.0);
 }
-

@@ -160,7 +160,7 @@ static func get_solar_lighting_at_time(lat_deg: float, day_of_year: int, time_ho
 	props["azimuth_deg"] = calculate_solar_azimuth(lat_deg, day_of_year, time_hours)
 	return props
 
-# Generate the diurnal axial gradient along the 18 km cylinder
+# Generate the diurnal axial gradient along the 24 km cylinder
 # Segment i samples a time offset around base_time_hours
 static func get_cylinder_axial_gradient(
 	lat_deg: float,

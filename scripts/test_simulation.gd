@@ -5,6 +5,7 @@ const ClimateSystem = preload("res://scripts/climate_system.gd")
 const LoadingScreen = preload("res://scripts/loading_screen.gd")
 const ClutterManager = preload("res://scripts/clutter_manager.gd")
 const MapConfig = preload("res://scripts/map_config.gd")
+const UIScaleManager = preload("res://scripts/ui_scale_manager.gd")
 
 func _watchdog(timeout_sec: float = 60.0) -> void:
 	await create_timer(timeout_sec).timeout
@@ -19,6 +20,14 @@ func test_check(condition: bool, failure_message: String) -> void:
 		OS.kill(OS.get_process_id())
 
 func _init() -> void:
+	var bad_mobile_dpi := UIScaleManager.calculate_intelligent_scale(72.0, Vector2(1080, 2400), true)
+	test_check(not bad_mobile_dpi["dpi_valid"], "Implausible mobile DPI is rejected against panel resolution")
+	test_check(bad_mobile_dpi["reported_diagonal_inches"] > 30.0, "DPI diagnostic exposes the implausible reported physical size")
+	test_check(is_equal_approx(bad_mobile_dpi["dpi"], 420.0), "Implausible mobile DPI uses the explicit mobile fallback")
+	var valid_mobile_dpi := UIScaleManager.calculate_intelligent_scale(420.0, Vector2(1080, 2400), true)
+	test_check(valid_mobile_dpi["dpi_valid"], "Plausible mobile DPI is accepted")
+	test_check(valid_mobile_dpi["scale"] > 2.6 and valid_mobile_dpi["scale"] < 2.7, "Mobile UI scale follows valid DPI")
+
 	# Keep this legacy simulation suite independent of whichever user map was
 	# active in a previous editor/library test or local app session.
 	MapConfig.active_map_file = "user://test_simulation_active_%d.txt" % Time.get_ticks_usec()
@@ -396,7 +405,7 @@ func _init() -> void:
 	# --- TEST 9: PNG Elevation Map & 2D RPG Tilemap System ---
 	print("\n--- TEST 9: PNG Elevation Map (0-100m) & RPG Tilemap (Water at 20m) ---")
 	test_check(cylinder_world.radius == 4000.0, "Cylinder radius must be 4 km (8 km diameter)")
-	test_check(cylinder_world.cylinder_length == 18000.0, "Cylinder length must be 18 km")
+	test_check(cylinder_world.cylinder_length == 24000.0, "Cylinder length must be 24 km")
 	test_check(cylinder_world.elevation_variance == 100.0, "Elevation variance must be 100 m (0 to 100m valid range)")
 	test_check(cylinder_world.water_level == 20.0, "Water level must be 20.0 m from elevation 0")
 	test_check(cylinder_world.include_end_caps, "End caps must be enabled on the cylinder")
@@ -470,20 +479,20 @@ func _init() -> void:
 	test_check(water_shader.code.contains("cull_disabled"), "Water shader has cull_disabled so water faces are never backface culled")
 	print("[PASS] Test 9: PNG elevation heightmap, water volume tinting, and axial specular reflection line verified.")
 
-	# --- TEST 10: Max On Daylight Lighting System & 18 km Scale ---
-	print("\n--- TEST 10: Max On Daylight Lighting System & 18 km Scale with End Caps ---")
-	test_check(light_bar.bar_length == 18000.0, "Axis light bar length must match 18 km cylinder")
+	# --- TEST 10: Max On Daylight Lighting System & 24 km Scale ---
+	print("\n--- TEST 10: Max On Daylight Lighting System & 24 km Scale with End Caps ---")
+	test_check(light_bar.bar_length == 24000.0, "Axis light bar length must match 24 km cylinder")
 	test_check(light_bar.cylinder_radius == 4000.0, "Axis light bar radius must match 4 km radius")
 	test_check(light_bar.global_intensity_multiplier >= 3.0, "Max On lighting intensity must be at full illumination level (>= 3.0)")
 	for light in light_bar.light_nodes:
 		test_check(light.omni_range >= 6000.0, "Axial omni light range must cover 4 km radial distance")
 
-	# Verify 18 km atmospheric air tinting across cylinder materials and WorldEnvironment
+	# Verify 24 km atmospheric air tinting across cylinder materials and WorldEnvironment
 	var world_env = root_node.get_node_or_null("WorldEnvironment") as WorldEnvironment
 	test_check(world_env != null and world_env.environment != null, "WorldEnvironment must exist with configured Environment")
 	test_check(world_env.environment.fog_enabled, "Depth fog must be enabled for atmospheric aerial perspective")
 	test_check(world_env.environment.fog_mode == Environment.FOG_MODE_DEPTH, "Fog mode must be depth-based (FOG_MODE_DEPTH)")
-	test_check(world_env.environment.fog_depth_end == 18000.0, "Fog depth end must reach 18 km across the cylinder")
+	test_check(world_env.environment.fog_depth_end == 24000.0, "Fog depth end must reach 24 km across the cylinder")
 	print("WorldEnvironment depth fog verified: light_color=%s, begin=%.1f m, end=%.1f m" % [
 		world_env.environment.fog_light_color, world_env.environment.fog_depth_begin, world_env.environment.fog_depth_end
 	])
@@ -499,17 +508,17 @@ func _init() -> void:
 	print("Water air tint: color=%s, max_dist=%.1f m" % [water_air_col, water_air_max])
 
 	test_check(terr_air_col != null and terr_air_col.b > terr_air_col.r, "Terrain air color must have cyan/blue Rayleigh scattering tint")
-	test_check(terr_air_max == 18000.0, "Terrain air tint distance max must be 18 km")
+	test_check(terr_air_max == 24000.0, "Terrain air tint distance max must be 24 km")
 	test_check(terr_air_density > 0.0 and terr_air_density <= 3.0, "Terrain air density must be within (0, 3]")
-	test_check(water_air_col != null and water_air_max == 18000.0, "Water air tint must reach 18 km")
+	test_check(water_air_col != null and water_air_max == 24000.0, "Water air tint must reach 24 km")
 
-	# Verify end cap mesh structure & hemispherical depth (4 km radius hemispheres on both ends = 26 km total)
+	# Verify end cap mesh structure & hemispherical depth (4 km radius hemispheres on both ends = 32 km total)
 	var face_count = cylinder_world.mesh_instance.mesh.get_faces().size() / 3
 	var aabb = cylinder_world.mesh_instance.mesh.get_aabb()
 	print("Mesh generated: %d triangles (barrel + hemispherical end caps)" % face_count)
 	print("Mesh total bounds: size=%s, position=%s" % [aabb.size, aabb.position])
 	test_check(face_count > 50000, "Mesh must contain high-fidelity barrel and hemispherical end cap bulkheads")
-	test_check(aabb.size.z >= 25900.0, "Mesh must span full 26 km from South hemisphere pole to North hemisphere pole")
+	test_check(aabb.size.z >= 25900.0, "Mesh must span full 32 km from South hemisphere pole to North hemisphere pole")
 	test_check(aabb.position.z <= -12900.0, "South hemisphere end cap must reach -13,000 m")
 
 	# Verify end cap rib texture
@@ -732,6 +741,7 @@ func _init() -> void:
 	test_check(test_loading_screen.layer == 100, "Loading screen canvas layer must be 100 (rendered on top of all 3D/2D content)")
 	test_check(test_loading_screen.root_control != null, "Loading screen root control must be created")
 	test_check(test_loading_screen.progress_bar != null, "Loading screen progress bar must be created")
+	test_check(is_equal_approx(test_loading_screen.loading_ui_scale, test_loading_screen.card_panel.scale.x), "Loading screen card applies the validated DPI scale")
 	
 	test_loading_screen._set_step("Testing Stage", "Verifying UI update", 50.0)
 	test_check(test_loading_screen.target_progress == 50.0, "Loading screen target progress must update")
@@ -789,6 +799,7 @@ func _init() -> void:
 	test_check(test_hud.telemetry_panel != null, "Telemetry panel must exist")
 	test_check(test_hud.control_panel != null, "Control/Settings panel must exist")
 	test_check(test_hud.log_panel != null, "Event Log panel must exist")
+	test_check(test_hud.perf_clutter_density_slider != null and is_equal_approx(test_hud.perf_clutter_density_slider.max_value, 16.0), "Performance-tab ground-clutter density slider reaches 16x")
 
 	test_hud._update_panel_constraints()
 	# Panels use different anchor/scale strategies; verify visible screen margins.
