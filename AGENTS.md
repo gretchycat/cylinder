@@ -7,13 +7,17 @@
 Cylinder is a **data-driven 3D world simulation and authoring platform**, initially demonstrated as an O'Neill cylinder habitat. It is **not merely a fixed game or level**. Users should eventually be able to create, edit, save, share, and load worlds, import models and textures, place objects, define interactions and events, and build experiences without programming. Future worlds may use other habitat geometries; the cylinder is the first supported geometry, not necessarily the permanent platform boundary.
 
 **Near-term roadmap (in order):**
-1. **Usable world editor:** create, select, transform, configure, delete, save, reopen, and continue editing world contents. Make this reliable before broad feature expansion.
-2. **Movable/interactable entities:** players, vehicles, machinery, and other dynamic objects, including persistent identity and state, streaming, and appropriate physics/animation.
-3. **Event engine:** triggers, conditions, and actions coordinating entities and world systems, ideally editable through the world editor without requiring code.
+1. **Simulation backend and event history (current project):** develop the presentation-independent state, action, and event foundations described in `docs/about.md`.
+2. **Usable world editor:** create, select, transform, configure, delete, save, reopen, and continue editing world contents.
+3. **Movable/interactable entities and authored events:** add persistent dynamic entities and, later, editor-authored triggers, conditions, and actions.
+
+**Current project direction:** focus first on simulation, event recording, and other backend systems. They may read state from existing cylinder systems and request supported state changes through those systems' functionality. Keep this work independent of UI controls, labels, and scene presentation. Do not build simulation authoring UI, new object presentation, or animations as part of this backend phase. Objects and animation can be added when the underlying system is ready to use them.
+
+Read [`docs/about.md`](docs/about.md) before changing this area. It records the design work already discussed: the world and ecosystem premise; autonomous agents; actions, effects, and causal event history; maintenance-AI behavior; simulation at near, distant, and unloaded scales; a suggested implementation sequence; and open design questions. It is a living design reference, not proof that those systems or schemas already exist. Treat examples and possibilities there as provisional unless the owner makes a specific decision.
 
 The **critical end-to-end milestone** is: create an object in the editor → save → reload → move/interact with it at runtime → persist and reload the changed state.
 
-**Current priorities:** correctness, editor usability, maintainability, stable mobile performance, regression prevention. Do not pursue speculative optimization or premature generalization at the expense of these priorities.
+**Current priorities:** correctness, backend maintainability, stable mobile performance, and regression prevention. Preserve editor usability while the simulation foundation is developed separately. Do not pursue speculative optimization or premature generalization at the expense of these priorities.
 
 ## 2. Current technical baseline (verify against code)
 
@@ -129,9 +133,9 @@ Cylinder-specific mathematics are appropriate in cylinder implementations, but a
 
 These are **investigation targets based on a prior static review**, not assertions that every issue is still present in the latest branch.
 
-## 5. World editor: next deliverable
+## 5. World editor: future deliverable
 
-Prioritize a coherent, usable editing loop:
+After the backend foundation is established, prioritize a coherent, usable editing loop:
 
 1. Load/create a world from a map package.
 2. Browse an object/asset palette; import supported assets where appropriate.
@@ -146,6 +150,7 @@ A **workable editor** is one in which a user can create a small world entirely t
 
 ## 6. Movable entities: following milestone
 
+- This follows the initial backend and event-history foundation; full object behavior, physics, and animation are not the current focus.
 - Introduce stable identity and lifecycle for players, vehicles, machinery, and interactive props.
 - Distinguish authored spawn/default state, current runtime state, and persisted edits.
 - Define movement and physics appropriate to local radial gravity and curved surfaces; explicitly test transitions between orientations and streamed areas.
@@ -153,13 +158,23 @@ A **workable editor** is one in which a user can create a small world entirely t
 - Avoid running full physics or AI for distant/inactive entities; define dormant state and wake-up behavior.
 - Test object ownership, collision, transforms, saves, and reloads before adding complicated vehicle simulation.
 
-## 7. Event engine: later milestone
+## 7. Simulation backend and event history: current project
 
-- Build on stable entity IDs and commands, rather than hard-coded NodePaths or editor UI implementation details.
-- Support triggers (area entry, timer, interaction, state change), conditions, and actions (entity commands, world changes, notifications).
-- Use a serializable, versioned representation that can be authored in the world editor and extended later.
-- Specify deterministic ordering where important, cancellation, lifecycle, persistence, and safe handling of missing or unloaded entities.
-- Design for debugging: inspectable event history, clear error reporting, reproducible tests, and cycle/recursion safeguards.
+- Keep simulation state, action evaluation, effects, and event recording independent of the HUD and other presentation/UI code. The backend may read current state from existing cylinder systems and apply changes through their supported APIs. Do not duplicate an existing system's state as a competing authority.
+- Make the backend useful without adding UI panels or controls. UI may later inspect backend state and invoke supported operations; that is a separate integration step.
+- Begin with a small, validated contract for state changes and events. Define stable event identity, actor/target references where applicable, payload shape, ordering, and causal references as the implementation needs them. Avoid committing to a large ECS, scripting language, or final schema before a concrete use case requires it.
+- Treat the design in `docs/about.md`, Part II (“How It Works”), as prior design work and a guide to intended behavior. Its event/action example, autonomous-agent model, maintenance AI, ecological examples, and implementation sequence are proposals; the document also lists unresolved questions. Confirm decisions against the current code and owner direction before treating them as requirements.
+- **Existing implementation:** `scripts/hud.gd` has a System Event Log console. It stores a bounded in-memory history for display/copy/clear and records diagnostics with real time, simulation time, and FPS. It is presentation-oriented diagnostic output, not a durable or authoritative simulation event history. Extend or replace its role only through a clear backend interface; do not mistake the existing console for the simulation event store.
+- Persist meaningful world state and event history independently of whether related Godot nodes are loaded. Define retention, save/load, map/session ownership, and migration behavior as the durable format is designed.
+- Prefer causal state changes over scripted story sequences: an action has validated preconditions and effects, and resulting events explain the changes. Agent perception, memory, dialogue, ecology, and caretaker-AI behavior can build on this foundation incrementally.
+- Keep near-player detail, distant approximations, and unloaded-region updates consistent without requiring every entity to update each frame or exist as a live scene node.
+- Defer new object actors, full object simulation, animation, and editor-authored event UI until the backend foundation demonstrates a concrete need for them.
+
+### Later event authoring and presentation integration
+
+- Build editor-authored events on stable entity IDs and backend commands, not hard-coded NodePaths or UI implementation details.
+- Add triggers, conditions, and actions after the local backend contracts are reliable. Specify deterministic ordering where important, cancellation, lifecycle, persistence, and safe handling of missing or unloaded entities.
+- Let presentation tools inspect event history and invoke validated backend operations without becoming the source of truth.
 - Consider network/IRC relay or multiplayer integration as future extensions; do not build speculative distributed infrastructure before local semantics are reliable.
 
 ## 8. Existing configuration conventions (defaults, not invariants)
