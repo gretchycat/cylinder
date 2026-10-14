@@ -9,6 +9,9 @@ const EditorUI = preload("res://scripts/object_editor_ui.gd")
 const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 const TAP_MAX_MS := 300
 const TAP_SLOP := 14.0
+const MAX_LOOK_MOMENTUM_SPEED := 3.0
+const LOOK_MOMENTUM_FRICTION := 1.5
+const LOOK_MOMENTUM_CUTOFF := 0.04
 var ui_scale: float = 1.0
 var joystick_press_position := Vector2.ZERO
 var joystick_press_time := 0
@@ -28,6 +31,13 @@ var is_mouse_joystick: bool = false
 var look_touch_id: int = -1
 var is_mouse_looking: bool = false
 var last_look_pos: Vector2 = Vector2.ZERO
+var look_touch_anchor := Vector3.ZERO
+var has_look_touch_anchor: bool = false
+var mouse_look_anchor := Vector3.ZERO
+var has_mouse_look_anchor: bool = false
+var look_drag_velocity := Vector2.ZERO
+var look_momentum := Vector2.ZERO
+var last_look_drag_usec: int = 0
 
 @onready var joystick_base: Control = $JoystickBase
 @onready var joystick_knob: Control = $JoystickBase/Knob
@@ -100,6 +110,12 @@ func _process(_delta: float) -> void:
 	_update_fly_buttons_visibility()
 	if (look_touch_id != -1 or is_mouse_looking) and player:
 		player.look_control_timer = 0.5
+		look_drag_velocity *= exp(-8.0 * _delta)
+	elif player and look_momentum.length() > LOOK_MOMENTUM_CUTOFF:
+		player.apply_look_input(look_momentum * _delta)
+		look_momentum *= exp(-LOOK_MOMENTUM_FRICTION * _delta)
+	else:
+		look_momentum = Vector2.ZERO
 
 func _input(event: InputEvent) -> void:
 	if not player or not is_visible_in_tree():
@@ -136,8 +152,14 @@ func _input(event: InputEvent) -> void:
 				if not _is_pos_inside_ui(event.position):
 					is_mouse_looking = true
 					last_look_pos = event.position
+					_begin_look_drag()
+					var anchor := _pick_landscape_anchor(event.position)
+					has_mouse_look_anchor = bool(anchor.get("hit", false))
+					mouse_look_anchor = anchor.get("position", Vector3.ZERO)
 			else:
 				is_mouse_looking = false
+				has_mouse_look_anchor = false
+				_end_look_drag()
 
 	elif event is InputEventMouseMotion and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		_handle_mouse_motion(event.position, event.relative)
@@ -200,6 +222,10 @@ func _handle_touch_start(id: int, pos: Vector2) -> void:
 	elif look_touch_id == -1:
 		look_touch_id = id
 		last_look_pos = pos
+		_begin_look_drag()
+		var anchor := _pick_landscape_anchor(pos)
+		has_look_touch_anchor = bool(anchor.get("hit", false))
+		look_touch_anchor = anchor.get("position", Vector3.ZERO)
 
 func _handle_touch_drag(id: int, pos: Vector2, rel: Vector2) -> void:
 	# Virtual joystick drag: moves player, NEVER rotates view
@@ -208,8 +234,13 @@ func _handle_touch_drag(id: int, pos: Vector2, rel: Vector2) -> void:
 
 	# Screen drag anywhere else: rotates camera view
 	elif id == look_touch_id:
-		var look_delta = rel * touch_look_sensitivity
-		player.apply_look_input(look_delta)
+		var applied_delta: Vector2
+		if has_look_touch_anchor:
+			applied_delta = _apply_landscape_drag(pos, look_touch_anchor)
+		else:
+			applied_delta = _look_delta_from_drag(rel)
+			player.apply_look_input(applied_delta)
+		_record_look_drag(applied_delta)
 
 func _handle_touch_end(id: int) -> void:
 	if id == joystick_touch_id:
@@ -217,6 +248,8 @@ func _handle_touch_end(id: int) -> void:
 		_reset_joystick()
 	elif id == look_touch_id:
 		look_touch_id = -1
+		has_look_touch_anchor = false
+		_end_look_drag()
 
 func _handle_mouse_press(pos: Vector2) -> void:
 	if _is_pos_inside_ui(pos):
@@ -235,13 +268,101 @@ func _handle_mouse_press(pos: Vector2) -> void:
 
 	is_mouse_looking = true
 	last_look_pos = pos
+	_begin_look_drag()
+	var anchor := _pick_landscape_anchor(pos)
+	has_mouse_look_anchor = bool(anchor.get("hit", false))
+	mouse_look_anchor = anchor.get("position", Vector3.ZERO)
 
 func _handle_mouse_motion(pos: Vector2, rel: Vector2) -> void:
 	if is_mouse_joystick and joystick_active:
 		_update_joystick_knob(pos)
 	elif is_mouse_looking:
-		var look_delta = rel * touch_look_sensitivity
+		var applied_delta: Vector2
+		if has_mouse_look_anchor:
+			applied_delta = _apply_landscape_drag(pos, mouse_look_anchor)
+		else:
+			applied_delta = _look_delta_from_drag(rel)
+			player.apply_look_input(applied_delta)
+		_record_look_drag(applied_delta)
+
+func _look_delta_from_drag(rel: Vector2) -> Vector2:
+	# Treat the landscape as grabbed: camera rotation opposes the screen drag.
+	return -rel * touch_look_sensitivity
+
+func _begin_look_drag() -> void:
+	look_drag_velocity = Vector2.ZERO
+	look_momentum = Vector2.ZERO
+	last_look_drag_usec = Time.get_ticks_usec()
+
+func _look_velocity_for_delta(look_delta: Vector2, elapsed_seconds: float) -> Vector2:
+	if elapsed_seconds <= 0.0:
+		return Vector2.ZERO
+	return (look_delta / elapsed_seconds).limit_length(MAX_LOOK_MOMENTUM_SPEED)
+
+func _record_look_drag(look_delta: Vector2) -> void:
+	var now_usec := Time.get_ticks_usec()
+	var elapsed_seconds := maxf(float(now_usec - last_look_drag_usec) / 1000000.0, 0.001)
+	last_look_drag_usec = now_usec
+	var sample_velocity := _look_velocity_for_delta(look_delta, elapsed_seconds)
+	look_drag_velocity = look_drag_velocity.lerp(sample_velocity, 0.7)
+	look_drag_velocity = look_drag_velocity.limit_length(MAX_LOOK_MOMENTUM_SPEED)
+
+func _end_look_drag() -> void:
+	look_momentum = look_drag_velocity
+	look_drag_velocity = Vector2.ZERO
+
+func _pick_landscape_anchor(screen_pos: Vector2) -> Dictionary:
+	if not player or not player.camera or not player.get_world_3d():
+		return {"hit": false, "position": Vector3.ZERO}
+	var camera := player.camera
+	var ray_origin := camera.project_ray_origin(screen_pos)
+	var ray_direction := camera.project_ray_normal(screen_pos)
+	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_direction * 100000.0)
+	query.exclude = [player.get_rid()]
+	var hit := player.get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return {"hit": false, "position": Vector3.ZERO}
+	return {"hit": true, "position": hit.position}
+
+func _apply_landscape_drag(screen_pos: Vector2, anchor_world: Vector3) -> Vector2:
+	if not player or not player.camera:
+		return Vector2.ZERO
+	var camera := player.camera
+	var total_look_delta := Vector2.ZERO
+	# Correct against the anchor's projected position so it tracks the pointer
+	# pixel-for-pixel, including perspective at its actual landscape depth.
+	for _iteration in range(8):
+		if camera.is_position_behind(anchor_world):
+			return total_look_delta
+		var projected := camera.unproject_position(anchor_world)
+		var pixel_error := screen_pos - projected
+		if pixel_error.length() < 0.25:
+			return total_look_delta
+
+		# Measure the pixel response of each look axis so perspective and the
+		# player's curved-surface orientation are handled by the actual camera.
+		const probe_angle := 0.001
+		player.apply_look_input(Vector2(probe_angle, 0.0))
+		var projected_x := camera.unproject_position(anchor_world)
+		player.apply_look_input(Vector2(-probe_angle, 0.0))
+		player.apply_look_input(Vector2(0.0, probe_angle))
+		var projected_y := camera.unproject_position(anchor_world)
+		player.apply_look_input(Vector2(0.0, -probe_angle))
+		var response_x := (projected_x - projected) / probe_angle
+		var response_y := (projected_y - projected) / probe_angle
+		var determinant := response_x.x * response_y.y - response_y.x * response_x.y
+		if absf(determinant) < 0.001:
+			return total_look_delta
+		var look_delta := Vector2(
+			(pixel_error.x * response_y.y - response_y.x * pixel_error.y) / determinant,
+			(response_x.x * pixel_error.y - pixel_error.x * response_x.y) / determinant
+		)
+		var max_step := 0.35
+		if look_delta.length() > max_step:
+			look_delta = look_delta.normalized() * max_step
 		player.apply_look_input(look_delta)
+		total_look_delta += look_delta
+	return total_look_delta
 
 func _handle_mouse_release() -> void:
 	if is_mouse_joystick:
@@ -249,6 +370,8 @@ func _handle_mouse_release() -> void:
 		is_mouse_joystick = false
 		_reset_joystick()
 	is_mouse_looking = false
+	has_mouse_look_anchor = false
+	_end_look_drag()
 
 func _update_joystick_knob(pos: Vector2) -> void:
 	if pos.distance_to(joystick_press_position) > TAP_SLOP * ui_scale:
@@ -504,7 +627,11 @@ func _update_run_indicator() -> void:
 func _cancel_gestures() -> void:
 	_reset_joystick()
 	look_touch_id = -1
+	has_look_touch_anchor = false
 	is_mouse_looking = false
+	has_mouse_look_anchor = false
+	look_drag_velocity = Vector2.ZERO
+	look_momentum = Vector2.ZERO
 	if player:
 		player.fly_vertical_axis = 0.0
 		player.jump_requested = false

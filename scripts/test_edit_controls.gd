@@ -78,6 +78,42 @@ func _run() -> void:
 	controls._handle_touch_end(10)
 	check(player.mobile_sprint_active == original_run, "Dragging never toggles run")
 	check(player.input_axis == Vector2.ZERO, "Release stops joystick movement")
+	var right_up_look := controls._look_delta_from_drag(Vector2(40, -40))
+	check(right_up_look.x < 0.0 and right_up_look.y > 0.0,
+		"Right and upward landscape drags rotate the camera oppositely")
+	var saved_drag_transform := player.global_transform
+	var saved_drag_pitch := player.pitch
+	var camera := player.camera
+	var drag_anchor := camera.global_position + camera.global_basis * Vector3(0.0, 0.0, -20.0)
+	var viewport_center := camera.get_viewport().get_visible_rect().size * 0.5
+	for drag_offset in [Vector2(40.0, -30.0), Vector2(120.0, -80.0), Vector2(-65.0, 55.0)]:
+		var drag_target: Vector2 = viewport_center + drag_offset
+		controls._apply_landscape_drag(drag_target, drag_anchor)
+		check(camera.unproject_position(drag_anchor).distance_to(drag_target) < 1.0,
+			"A grabbed landscape point stays under the pointer through successive drags")
+	player.global_transform = saved_drag_transform
+	player.pitch = saved_drag_pitch
+	player.head.rotation.x = saved_drag_pitch
+	var fast_swipe_velocity := controls._look_velocity_for_delta(Vector2(0.2, 0.0), 0.05)
+	var slow_swipe_velocity := controls._look_velocity_for_delta(Vector2(0.2, 0.0), 0.4)
+	check(fast_swipe_velocity.length() > slow_swipe_velocity.length(),
+		"Faster swipes produce stronger look momentum")
+	var momentum_pitch_before := player.pitch
+	controls.look_momentum = Vector2(0.0, 1.0)
+	controls._process(0.1)
+	check(player.pitch < momentum_pitch_before and controls.look_momentum.y < 1.0,
+		"Released look momentum continues camera motion and gradually slows")
+	controls.look_momentum = Vector2.ZERO
+	var touch_pitch_before := player.pitch
+	controls._handle_touch_start(11, Vector2(700, 360))
+	controls._handle_touch_drag(11, Vector2(700, 320), Vector2(0, -40))
+	check(player.pitch < touch_pitch_before, "Dragging upward on touch pulls the landscape upward")
+	controls._handle_touch_end(11)
+	var mouse_pitch_before := player.pitch
+	controls._handle_mouse_press(Vector2(700, 360))
+	controls._handle_mouse_motion(Vector2(700, 320), Vector2(0, -40))
+	check(player.pitch < mouse_pitch_before, "Dragging upward with the mouse pulls the landscape upward")
+	controls._handle_mouse_release()
 	controls._handle_touch_start(10, joy)
 	controls.joystick_press_time -= 400
 	controls._handle_touch_end(10)

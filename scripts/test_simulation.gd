@@ -399,6 +399,7 @@ func _init() -> void:
 	var pitch_after_drag = player.pitch
 	print("Pitch after dragging screen: %.4f° (was %.4f°)" % [rad_to_deg(pitch_after_drag), rad_to_deg(initial_pitch)])
 	test_check(not is_equal_approx(pitch_after_drag, initial_pitch), "Dragging screen must rotate camera pitch")
+	test_check(pitch_after_drag < initial_pitch, "Dragging a finger upward must pull the landscape upward")
 	touch_controls._handle_touch_end(11)
 	print("[PASS] Test 8: Movement joystick only moves; dragging anywhere else rotates view.")
 
