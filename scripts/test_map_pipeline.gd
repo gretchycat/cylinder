@@ -531,7 +531,7 @@ func _run():
 	check(is_equal_approx(float(doc.ground_clutter.density_multiplier), 4.0),
 		"Bundled default applies the 4x clutter multiplier across every biome")
 	for biome_data in [
-		["flower_fields", "grass_tuft", 0.08], ["flower_fields", "wildflowers", 0.14],
+		["flower_fields", "grass_tuft", 0.04], ["flower_fields", "wildflowers", 0.07],
 		["grassland", "grass_tuft", 0.05], ["grassland", "wildflowers", 0.006]
 	]:
 		var biome_id: String = biome_data[0]
@@ -540,7 +540,7 @@ func _run():
 		check(is_equal_approx(clutter_density_for(doc.biomes[biome_id], model_id), expected_density),
 			"Packaged %s %s clutter density is %.3f instances/m²" % [biome_id, model_id, expected_density])
 	var source_expectations := {
-		"flower_fields": {"grass_tuft": 0.08, "wildflowers": 0.14},
+		"flower_fields": {"grass_tuft": 0.04, "wildflowers": 0.07},
 		"grassland": {"grass_tuft": 0.05, "wildflowers": 0.006}
 	}
 	for biome_id in source_expectations:

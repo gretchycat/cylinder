@@ -50,7 +50,7 @@
 	],
 	"clutter": [
 		{
-			"density_per_m2": 0.080,
+			"density_per_m2": 0.040,
 			"model": "grass_tuft",
 			"palette": [
 				[
@@ -78,7 +78,7 @@
 			]
 		},
 		{
-			"density_per_m2": 0.140,
+			"density_per_m2": 0.070,
 			"model": "wildflowers",
 			"palette": [
 				[

@@ -211,7 +211,7 @@
 			"blended": true,
 			"clutter": [
 				{
-					"density_per_m2": 0.08,
+					"density_per_m2": 0.04,
 					"model": "grass_tuft",
 					"palette": [
 						[
@@ -239,7 +239,7 @@
 					]
 				},
 				{
-					"density_per_m2": 0.14,
+					"density_per_m2": 0.07,
 					"model": "wildflowers",
 					"palette": [
 						[

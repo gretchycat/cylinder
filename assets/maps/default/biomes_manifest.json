@@ -109,7 +109,7 @@
 					"bluebell_clusters",
 					"golden_buttercups"
 				],
-				"clutter_density": 0.6,
+				"clutter_density": 0.3,
 				"scale_range": [
 					0.4,
 					1.6
