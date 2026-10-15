@@ -158,6 +158,7 @@ var snow_texture_cache: Dictionary = {}
 var cloud_noise_texture: ImageTexture = null
 var current_rendered_density_tier: int = -1
 var current_wind_speed_m_s: float = 6.0
+var wind_boost_enabled: bool = false
 var rain_scroll_offset: Vector2 = Vector2.ZERO
 var is_weather_ready: bool = false
 var is_precip_active: bool = false
@@ -238,7 +239,27 @@ func _calculate_current_wind_speed_m_s() -> float:
 	var snow_wind := lerpf(5.0, 22.0, clampf(precipitation_rate_mmh / 30.0, 0.0, 1.0))
 	var precipitation_wind := lerpf(snow_wind, rain_wind, _get_rain_phase_weight())
 	var precipitation_blend := smoothstep(0.0, 1.0, precipitation_rate_mmh)
-	return lerpf(cloud_wind, precipitation_wind, precipitation_blend)
+	var base_speed := lerpf(cloud_wind, precipitation_wind, precipitation_blend)
+	return base_speed * (2.0 if wind_boost_enabled else 1.0)
+
+func set_wind_boost_enabled(enabled: bool) -> void:
+	wind_boost_enabled = enabled
+	current_wind_speed_m_s = _calculate_current_wind_speed_m_s()
+	var cloud_r := maxf(cylinder_radius - cloud_altitude_m, 100.0)
+	wind_velocity = Vector2((current_wind_speed_m_s / cloud_r) * float(spin_direction), 0.5)
+
+func get_surface_wind_velocity(theta: float) -> Vector3:
+	"""Return the current wind as a world-space vector in the cylinder surface tangent plane."""
+	var speed := maxf(current_wind_speed_m_s, 0.0)
+	if speed <= 0.0:
+		return Vector3.ZERO
+	var tangent := Vector3(-sin(theta), cos(theta), 0.0)
+	var tangent_speed := wind_velocity.x * maxf(cylinder_radius, 1.0)
+	var axial_speed := wind_velocity.y
+	var direction := tangent * tangent_speed + Vector3.BACK * axial_speed
+	if direction.is_zero_approx():
+		return tangent * speed
+	return direction.normalized() * speed
 
 func _ready() -> void:
 	preload("res://scripts/map_runtime.gd").configure_node(self, "weather_system")

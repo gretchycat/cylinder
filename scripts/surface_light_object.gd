@@ -26,6 +26,7 @@ enum TreeVariant {
 const MapConfigClass = preload("res://scripts/map_config.gd")
 const MapAssetLoaderClass = preload("res://scripts/map_asset_loader.gd")
 const MapRuntimeClass = preload("res://scripts/map_runtime.gd")
+const WindmillSimulationClass = preload("res://scripts/windmill_simulation.gd")
 const TWO_SIDED_FOLIAGE_SHADER = preload("res://assets/shaders/two_sided_foliage.gdshader")
 
 @export var object_type: ObjectType = ObjectType.CAMPFIRE:
@@ -73,6 +74,12 @@ var omni_light: OmniLight3D = null
 var flame_nodes: Array[Node3D] = []
 var flame_mats: Array[StandardMaterial3D] = []
 var rotor_hub_node: Node3D = null
+var surface_theta: float = 0.0
+@export_range(-1, 1, 2) var rotor_spin_direction: int = 1
+var windmill_simulation: Variant = null
+var simulation_event_tracker: Variant = null
+var simulation_state_data: Dictionary = {}
+var windmill_generated_energy_j: float = 0.0
 var base_energy: float = 5.5
 var flicker_time: float = 0.0
 var rng_offset: float = 0.0
@@ -126,7 +133,19 @@ func rebuild_object() -> void:
 		instance.add_child(omni_light)
 		base_energy = light_energy * light_color.a
 	apply_appearance(instance)
+	if object_type == ObjectType.WINDMILL and windmill_simulation == null:
+		var simulation_id := instance_id if not instance_id.is_empty() else "windmill_%d" % get_instance_id()
+		var references := get_tree().get_first_node_in_group("reference_objects") if is_inside_tree() else null
+		var shared_tracker: Variant = simulation_event_tracker
+		if shared_tracker == null and references:
+			shared_tracker = references.simulation_event_tracker
+		windmill_simulation = WindmillSimulationClass.new(simulation_id, shared_tracker, simulation_state_data)
+		windmill_generated_energy_j = float(windmill_simulation.generated_energy_j)
 	_update_process_state()
+
+func _exit_tree() -> void:
+	if windmill_simulation != null and windmill_simulation.has_method("dispose"):
+		windmill_simulation.dispose()
 
 func _apply_map_shader_parameters(root: Node) -> void:
 	var map_doc: Dictionary = MapRuntimeClass.document(self)
@@ -344,7 +363,9 @@ func set_surface_light_active(light: OmniLight3D, active: bool) -> void:
 
 func _process(delta: float) -> void:
 	if rotor_hub_node and is_instance_valid(rotor_hub_node):
-		rotor_hub_node.rotate_object_local(Vector3.UP, delta * 0.7)
+		var weather := get_tree().get_first_node_in_group("weather_system") as WeatherSystem if is_inside_tree() else null
+		var wind_vector := weather.get_surface_wind_velocity(surface_theta) if weather else Vector3.ZERO
+		_step_windmill(delta, wind_vector)
 
 	if not omni_light:
 		return
@@ -397,6 +418,34 @@ func _process(delta: float) -> void:
 			if flame_mats.size() > 0:
 				flame_mats[0].emission_energy_multiplier = lerpf(1.5, 5.0, pulse)
 
+func _step_windmill(delta: float, wind_vector: Vector3) -> Dictionary:
+	if not rotor_hub_node or not is_instance_valid(rotor_hub_node):
+		return {}
+	var tangent := Vector3(-sin(surface_theta), cos(surface_theta), 0.0)
+	var axial := Vector3.BACK
+	var wind_heading_deg := rad_to_deg(atan2(wind_vector.dot(axial), wind_vector.dot(tangent)))
+	# The rotor shaft follows the object's surface-up axis; its blade disk spans
+	# the tangent/axial surface plane and accepts the prevailing tangent wind.
+	var rotor_heading_deg := 0.0
+	if windmill_simulation == null:
+		var simulation_id := instance_id if not instance_id.is_empty() else "windmill_%d" % get_instance_id()
+		windmill_simulation = WindmillSimulationClass.new(simulation_id)
+	var windmill_state: Dictionary = windmill_simulation.step(
+		delta,
+		wind_vector.length(),
+		wind_heading_deg,
+		rotor_heading_deg,
+		rotor_spin_direction
+	)
+	windmill_generated_energy_j = float(windmill_state.get("generated_energy_j", windmill_generated_energy_j))
+	if int(windmill_state.get("ticks_processed", 0)) > 0:
+		simulation_state_data = windmill_simulation.get_persistent_state()
+		var references := get_tree().get_first_node_in_group("reference_objects") if is_inside_tree() else null
+		if references and references.has_method("capture_simulation_state"):
+			references.capture_simulation_state(self)
+	rotor_hub_node.rotate_object_local(Vector3.UP, float(windmill_state.get("rotor_angular_velocity_rad_s", 0.0)) * delta)
+	return windmill_state
+
 
 # Static factory to create and orient a surface light object anywhere on the curved cylinder floor
 static func create_on_cylinder(
@@ -421,6 +470,7 @@ static func create_on_cylinder(
 	var obj = SurfaceLightObject.new()
 	obj.object_type = type
 	obj.model_scene_path = model_path
+	obj.surface_theta = theta
 
 	if type == ObjectType.TREE and tree_variant_idx >= 0 and tree_variant_idx < TreeVariant.size():
 		obj.tree_variant = tree_variant_idx as TreeVariant

@@ -6,6 +6,10 @@ const Assets = preload("res://scripts/map_asset_loader.gd")
 const References = preload("res://scripts/reference_objects.gd")
 const SurfaceObject = preload("res://scripts/surface_light_object.gd")
 const ObjectFactory = preload("res://scripts/map_object_factory.gd")
+const EventTrackerClass = preload("res://scripts/event_tracker.gd")
+const FiniteStateAutomatonClass = preload("res://scripts/finite_state_automaton.gd")
+const WindmillSimulationClass = preload("res://scripts/windmill_simulation.gd")
+const WeatherSystemClass = preload("res://scripts/weather_system.gd")
 var failures = 0
 func check(ok: bool, message: String):
 	if not ok:
@@ -162,6 +166,204 @@ func check_clutter_descriptors() -> void:
 	check(near_priority.score < far_priority.score, "Nearby clutter behind player loads before distant clutter ahead")
 	clutter.free()
 	world.free()
+
+func check_event_tracker_and_windmill() -> void:
+	var tracker := EventTrackerClass.new()
+	check(tracker.load_default_descriptors(), "Simulation action and FSA descriptors load and validate")
+	if tracker.automaton_descriptors.is_empty():
+		return
+	for actor_type: String in ["grazer", "predator", "raccoon", "canine", "windmill"]:
+		check(tracker.automaton_descriptors.has(actor_type), "FSA descriptor exists for %s" % actor_type)
+	check(tracker.action_descriptors.has("graze") and tracker.action_descriptors.has("drink")
+		and tracker.action_descriptors.has("flee") and tracker.action_descriptors.has("investigate"),
+		"Initial NPC action descriptors are available")
+	check(tracker.register_agent("grazer_test_1", "grazer"), "A grazer receives an independent FSA instance")
+	check(is_equal_approx(tracker.get_tick_interval("grazer_test_1"), 1.0),
+		"Each processor reads its simulation tick interval from its object type")
+	var grazer_step := tracker.advance_agent("grazer_test_1", 1.0, {
+		"hunger": 0.8,
+		"edible_vegetation": true,
+		"drinkable_water": false,
+		"threat_detected": false,
+		"energy": 0.8
+	})
+	check(grazer_step.get("state", "") == "grazing" and grazer_step.get("action_id", "") == "graze",
+		"Grazer transitions from idle into its descriptor-backed graze action")
+	check(grazer_step.get("action", {}).get("event_type", "") == "animal_grazed",
+		"NPC action result exposes its event descriptor")
+	var grazer_events := tracker.get_events_after()
+	check(grazer_events.size() == 2 and grazer_events[0].event_type == "state_changed"
+		and grazer_events[1].event_type == "action_started",
+		"State transitions and action starts are recorded in deterministic order")
+	check(not tracker.register_agent("bad_initial_state", "grazer", "not_a_state"),
+		"FSA registration rejects unknown initial states")
+	check(not tracker.register_agent("grazer_test_1", "grazer"), "Event tracker rejects duplicate agent IDs")
+	var invalid_fsa := FiniteStateAutomatonClass.new()
+	check(not invalid_fsa.configure({"initial_state": "idle", "states": {"idle": {"transitions": [
+		{"to": "idle", "when": {"key": "hunger", "op": "gte"}}
+	]}}}), "FSA validation rejects numeric conditions without a comparison value")
+	check(tracker.register_agent("predator_test_1", "predator"), "A predator receives its own FSA instance")
+	var predator_stalk := tracker.advance_agent("predator_test_1", 0.5, {"prey_visible": true, "hunger": 0.8})
+	check(predator_stalk.get("state", "") == "stalking" and predator_stalk.get("action_id", "") == "stalk",
+		"Predator FSA selects stalking when hungry prey is visible")
+	var predator_chase := tracker.advance_agent("predator_test_1", 0.5, {"prey_visible": true, "prey_in_range": true, "hunger": 0.8})
+	check(predator_chase.get("state", "") == "chasing" and predator_chase.get("action_id", "") == "chase",
+		"Predator FSA transitions from stalking to chasing when prey is in range")
+	check(tracker.register_agent("raccoon_event_target", "raccoon"), "An event receiver registers its own processor")
+	check(tracker.push_event("predator_test_1", "raccoon_event_target", "notable_event", {"kind": "windmill_started"}),
+		"A processor can enqueue an event on another processor")
+	var not_due := tracker.advance_agent("raccoon_event_target", 0.5, {})
+	check(not_due.ticks_processed == 0 and not_due.state == "idle",
+		"An event stays queued until its receiver's type-specific simulation tick")
+	var event_tick := tracker.advance_agent("raccoon_event_target", 0.5, {})
+	check(event_tick.ticks_processed == 1 and event_tick.state == "investigating"
+		and event_tick.received_event_count == 1,
+		"A processor consumes only its own queue when its tick runs")
+	check(not tracker.has_method("get_agent_queue"), "The event tracker does not expose another processor's queue")
+	var rest_action: Dictionary = tracker.action_descriptors.rest.duplicate(true)
+	rest_action["effects"] = [{"target": "self", "state": "test_pulse", "operation": "set", "value": 3}]
+	rest_action["emits"] = [{"target": "raccoon_event_target", "event_type": "action_notice", "payload": {"source": "test"}}]
+	tracker.action_descriptors["rest"] = rest_action
+	check(tracker.register_agent("event_action_sender", "grazer"), "An event action sender registers")
+	var action_result := tracker.advance_agent("event_action_sender", 1.0, {})
+	check(action_result.properties.get("test_pulse") == 3 and action_result.action_started,
+		"An action can update one of its processor's own properties")
+	var action_message := tracker.advance_agent("raccoon_event_target", 1.0, {})
+	check(action_message.received_event_count == 2,
+		"An action can queue a message on another event processor")
+	var queued_state := tracker._get_persistent_state_for_save("raccoon_event_target")
+	check(queued_state.get("fsm_state", "") == "investigating"
+		and is_equal_approx(float(queued_state.get("tick_accumulator_seconds", -1.0)), 0.0),
+		"Processor state includes its automaton state and simulation clock for persistence")
+
+	var aligned := WindmillSimulationClass.new("windmill_aligned_test")
+	var fresh_windmill := WindmillSimulationClass.new("windmill_fresh_test")
+	check(is_zero_approx(fresh_windmill.rotor_angular_velocity_rad_s),
+		"A newly placed windmill starts with zero rotor velocity")
+	check(fresh_windmill.event_tracker.get_sensory_abilities("windmill_fresh_test").has("wind"),
+		"Windmill object type declares its wind sensory ability")
+	var half_tick := fresh_windmill.step(0.5, 8.0, 0.0, 0.0, 1)
+	check(half_tick.ticks_processed == 0 and is_zero_approx(half_tick.rotor_angular_velocity_rad_s),
+		"Windmill waits for its configured one-second simulation tick")
+	var first_tick := fresh_windmill.step(0.5, 8.0, 0.0, 0.0, 1)
+	check(first_tick.ticks_processed == 1 and first_tick.rotor_angular_velocity_rad_s > 0.0,
+		"Windmill applies sensed wind on the first due simulation tick")
+	var stored_windmill_state := fresh_windmill.get_persistent_state()
+	var restored_windmill := WindmillSimulationClass.new("windmill_restored_test", null, stored_windmill_state)
+	check(is_equal_approx(restored_windmill.rotor_angular_velocity_rad_s, fresh_windmill.rotor_angular_velocity_rad_s)
+		and restored_windmill.get_state().tick_interval_seconds == 1.0,
+		"Windmill rotor speed and processor clock settings survive state restoration")
+	var restored_record := ObjectFactory.create(Config.load_map_config("default"), {
+		"id": "windmill_state_restore_record",
+		"asset": "windmill",
+		"theta": 0.0,
+		"z": 0.0,
+		"simulation_state": stored_windmill_state
+	}) as SurfaceLightObject
+	check(restored_record != null and restored_record.simulation_state_data == stored_windmill_state,
+		"Map object factory restores windmill simulation state from its placement record")
+	if restored_record:
+		restored_record.free()
+	var aligned_state := aligned.step(1.0, 8.0, 0.0, 0.0, 1)
+	check(aligned_state.state == "turning" and aligned_state.drive_torque_nm > 0.0,
+		"Wind within the rotor heading tolerance applies driving torque")
+	check(aligned_state.rotor_angular_velocity_rad_s > 0.0 and aligned_state.generated_energy_j > 0.0,
+		"Aligned wind accelerates the rotor and accumulates generated energy")
+	var negative_spin := WindmillSimulationClass.new("windmill_reverse_test")
+	var reverse_state := negative_spin.step(1.0, 8.0, 0.0, 0.0, -1)
+	check(reverse_state.rotor_angular_velocity_rad_s < 0.0,
+		"Windmill rotor follows its configured spin direction")
+	var outside_tolerance := WindmillSimulationClass.new("windmill_misaligned_test")
+	var misaligned_state := outside_tolerance.step(1.0, 8.0, 60.0, 0.0, 1)
+	check(misaligned_state.state == "stopped" and is_zero_approx(misaligned_state.drive_torque_nm),
+		"Wind outside the configured heading tolerance does not drive the rotor")
+	var tolerance_edge := WindmillSimulationClass.new("windmill_tolerance_edge_test")
+	var edge_state := tolerance_edge.step(1.0, 8.0, 25.0, 0.0, 1)
+	check(edge_state.state == "turning", "Wind at the inclusive alignment tolerance still drives the rotor")
+	var wrapped_heading := WindmillSimulationClass.new("windmill_wrapped_heading_test")
+	var wrap_state := wrapped_heading.step(1.0, 8.0, -179.0, 179.0, 1)
+	check(wrap_state.state == "turning", "Wind heading comparison wraps correctly across ±180 degrees")
+	var reverse_wind := WindmillSimulationClass.new("windmill_reverse_wind_test")
+	var reverse_wind_state := reverse_wind.step(1.0, 8.0, 180.0, 0.0, -1)
+	check(reverse_wind_state.state == "turning" and reverse_wind_state.rotor_angular_velocity_rad_s < 0.0,
+		"Wind from either side of the rotor axis drives it in the configured spin direction")
+	var low_wind := WindmillSimulationClass.new("windmill_low_wind_test")
+	var low_wind_state := low_wind.step(1.0, 1.0, 0.0, 0.0, 1)
+	check(low_wind_state.state == "stopped" and is_zero_approx(low_wind_state.generated_energy_j),
+		"Wind below cut-in speed does not generate energy")
+	var high_wind := WindmillSimulationClass.new("windmill_high_wind_test")
+	var high_wind_state := high_wind.step(1.0, 30.0, 0.0, 0.0, 1)
+	check(high_wind_state.state == "stopped" and is_zero_approx(high_wind_state.drive_torque_nm),
+		"Wind above cut-out speed leaves the turbine stopped for overspeed protection")
+	var low_speed_turbine := WindmillSimulationClass.new("windmill_low_speed_test")
+	var high_speed_turbine := WindmillSimulationClass.new("windmill_high_speed_test")
+	var low_speed_state := low_speed_turbine.step(1.0, 4.0, 0.0, 0.0, 1)
+	var high_speed_state := high_speed_turbine.step(1.0, 8.0, 0.0, 0.0, 1)
+	check(high_speed_state.drive_torque_nm > low_speed_state.drive_torque_nm * 3.9,
+		"Windmill driving torque scales with the square of wind speed")
+	var weather := WeatherSystemClass.new()
+	weather.current_wind_speed_m_s = 10.0
+	weather.wind_velocity = Vector2(0.002, 0.5)
+	var surface_wind: Vector3 = weather.get_surface_wind_velocity(0.0)
+	check(is_equal_approx(surface_wind.length(), 10.0) and surface_wind.y > 9.0,
+		"Weather exposes a speed-scaled local tangent wind vector for windmill consumers")
+	weather.set_wind_boost_enabled(true)
+	var boosted_speed := weather.current_wind_speed_m_s
+	var boosted_surface_wind: Vector3 = weather.get_surface_wind_velocity(0.0)
+	check(weather.wind_boost_enabled and boosted_speed > 0.0
+		and is_equal_approx(boosted_surface_wind.length(), boosted_speed),
+		"Wind boost updates the simulated wind speed immediately")
+	weather.set_wind_boost_enabled(false)
+	check(not weather.wind_boost_enabled and is_equal_approx(
+		weather.current_wind_speed_m_s * 2.0, boosted_speed),
+		"Wind boost toggle restores the unboosted climate wind speed")
+	weather.free()
+	var windmill_object: SurfaceLightObject = SurfaceObject.new()
+	windmill_object.object_type = SurfaceObject.ObjectType.WINDMILL
+	var rotor_hub := Node3D.new()
+	root.add_child(rotor_hub)
+	windmill_object.rotor_hub_node = rotor_hub
+	windmill_object.windmill_simulation = WindmillSimulationClass.new("windmill_scene_binding_test")
+	var scene_windmill_state: Dictionary = windmill_object._step_windmill(1.0, Vector3(0.0, 8.0, 0.0))
+	check(scene_windmill_state.state == "turning" and rotor_hub.rotation.y > 0.0
+		and windmill_object.windmill_generated_energy_j > 0.0,
+		"Windmill map object applies backend rotor speed and generated energy to its attached rotor")
+	var misaligned_scene_state: Dictionary = windmill_object._step_windmill(1.0, Vector3(0.0, 0.0, 8.0))
+	check(misaligned_scene_state.state == "stopped" and misaligned_scene_state.drive_torque_nm == 0.0,
+		"Windmill map object stops accepting torque when local wind turns outside its heading window")
+	windmill_object.free()
+	rotor_hub.free()
+	var windmill_scene := load("res://assets/maps/default/models/objects/windmill.tscn").instantiate() as Node3D
+	var model_rotor := windmill_scene.find_child("RotorHub", true, false) as Node3D
+	var rotor_axle := windmill_scene.find_child("RotorAxle", true, false) as MeshInstance3D
+	var vertical_blade := windmill_scene.find_child("BladeVertical", true, false) as Node3D
+	var horizontal_blade := windmill_scene.find_child("BladeHorizontal", true, false) as Node3D
+	check(model_rotor != null and model_rotor.transform.basis.y.is_equal_approx(Vector3.BACK),
+		"Windmill rotor shaft points out from the side of the building")
+	check(model_rotor != null
+		and is_zero_approx(model_rotor.position.x)
+		and is_equal_approx(model_rotor.position.y, 8.5)
+		and is_equal_approx(model_rotor.position.z, 3.1),
+		"Windmill rotor is positioned half a meter closer to the wall")
+	check(rotor_axle != null and rotor_axle.mesh is CylinderMesh
+		and is_equal_approx(rotor_axle.position.y, -0.45)
+		and is_equal_approx((model_rotor.transform.basis * rotor_axle.transform.basis).y.z, 1.0),
+		"Windmill axle bridges the wall and rotor along the shaft axis")
+	var placed_windmill := SurfaceObject.create_on_cylinder(SurfaceObject.ObjectType.WINDMILL, 0.0, 0.0, 4000.0)
+	var placed_rotor_axis := placed_windmill.basis * model_rotor.transform.basis.y if model_rotor else Vector3.ZERO
+	check(absf(placed_rotor_axis.normalized().dot(Vector3(0.0, 0.0, 1.0))) > 0.99
+		and absf(placed_rotor_axis.normalized().dot(Vector3(-1.0, 0.0, 0.0))) < 0.01,
+		"Placed windmill rotor shaft points out from the side instead of through the roof")
+	placed_windmill.free()
+	check(vertical_blade != null and horizontal_blade != null
+		and vertical_blade.position.is_zero_approx() and horizontal_blade.position.is_zero_approx()
+		and (model_rotor.transform.basis * vertical_blade.transform.basis).z.is_equal_approx(Vector3.DOWN)
+		and (model_rotor.transform.basis * horizontal_blade.transform.basis).z.is_equal_approx(Vector3.RIGHT),
+		"Windmill blades cross in a vertical plane beside the building")
+	var blade_mesh := (vertical_blade as MeshInstance3D).mesh as BoxMesh if vertical_blade is MeshInstance3D else null
+	check(blade_mesh != null and is_equal_approx(blade_mesh.size.x, 0.55),
+		"Windmill blade width remains at its original size")
+	windmill_scene.free()
 
 func check_configuration_boundaries() -> void:
 	var base_doc: Dictionary = Config.load_map_config("default")
@@ -421,8 +623,9 @@ func check_reference_streaming_lifecycle() -> void:
 	references.cylinder_radius = 4000.0
 	references.cylinder_length = 400.0
 	var records: Array[Dictionary] = []
-	for index: int in range(30):
+	for index: int in range(29):
 		records.append({"id": "stationary-%d" % index, "asset": "campfire", "theta": 0.0, "z": float(index) * 2.0})
+	records.append({"id": "persistent-mill", "asset": "windmill", "theta": 0.0, "z": 0.0})
 	references.placement_records = records
 	references.placement_stream_center = Vector2.ZERO
 	references.has_placement_stream_center = false
@@ -437,6 +640,17 @@ func check_reference_streaming_lifecycle() -> void:
 		ids[str(id_variant)] = true
 	check(first_tick_count == 24 and second_tick_count == 30 and references.live_placements.size() == ids.size(),
 		"Stationary reference streaming fills more than one capped spawn tick without duplicates")
+	var mill := references.live_placements.get("persistent-mill") as SurfaceLightObject
+	if mill:
+		mill._step_windmill(1.0, Vector3(0.0, 8.0, 0.0))
+	var saved_records: Array = references.get_all_placement_records()
+	var saved_mill_record: Dictionary = {}
+	for record_variant in saved_records:
+		if record_variant is Dictionary and str(record_variant.get("id", "")) == "persistent-mill":
+			saved_mill_record = record_variant
+	check(mill != null and references.placement_dirty
+		and float(saved_mill_record.get("simulation_state", {}).get("rotor_angular_velocity_rad_s", 0.0)) > 0.0,
+		"Windmill ticks write their persistent runtime state into the placement record")
 	references.clear_all_placed_objects()
 	references.free()
 
@@ -517,6 +731,7 @@ func check_clutter_streaming_lifecycle() -> void:
 func _run():
 	check_surface_normals()
 	check_clutter_descriptors()
+	check_event_tracker_and_windmill()
 	await check_configuration_boundaries()
 	check_solid_collision_cache()
 	await check_tree_collision_coverage()

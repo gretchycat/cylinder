@@ -3,7 +3,7 @@ extends RefCounted
 const Config = preload("res://scripts/map_config.gd")
 const ObjectClass = preload("res://scripts/surface_light_object.gd")
 
-static func create(doc: Dictionary, record: Dictionary, world: Node = null) -> Node3D:
+static func create(doc: Dictionary, record: Dictionary, world: Node = null, event_tracker: Variant = null) -> Node3D:
 	var definition: Dictionary = doc.objects.model_catalog[record.asset]
 	var theta: float = record.get("theta", 0)
 	var z: float = record.get("z", 0)
@@ -37,6 +37,9 @@ static func create(doc: Dictionary, record: Dictionary, world: Node = null) -> N
 	inst.light_color = Config.color(record.get("light_color", definition.light_color))
 	inst.light_energy = record.get("light_energy", definition.light_energy)
 	inst.enable_flicker = record.get("flicker", definition.flicker)
+	var simulation_state: Variant = record.get("simulation_state", {})
+	inst.simulation_state_data = simulation_state.duplicate(true) if simulation_state is Dictionary else {}
+	inst.simulation_event_tracker = event_tracker
 	inst.scale *= float(record.get("scale", 1))
 	if record.has("transform"):
 		var t: Array = record.transform

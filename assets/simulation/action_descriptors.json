@@ -1,0 +1,86 @@
+{
+	"schema_version": 1,
+	"actions": [
+		{
+			"id": "graze",
+			"label": "Graze",
+			"preconditions": {"all": [{"key": "edible_vegetation", "op": "eq", "value": true}, {"key": "hunger", "op": "gte", "value": 0.55}]},
+			"effects": [{"target": "actor", "state": "hunger", "operation": "decrease"}, {"target": "local_resource", "state": "edible_vegetation", "operation": "decrease"}],
+			"event_type": "animal_grazed"
+		},
+		{
+			"id": "forage",
+			"label": "Forage",
+			"preconditions": {"all": [{"key": "food_available", "op": "eq", "value": true}, {"key": "hunger", "op": "gte", "value": 0.5}]},
+			"effects": [{"target": "actor", "state": "hunger", "operation": "decrease"}, {"target": "local_resource", "state": "food_available", "operation": "decrease"}],
+			"event_type": "agent_foraged"
+		},
+		{
+			"id": "drink",
+			"label": "Drink",
+			"preconditions": {"all": [{"key": "drinkable_water", "op": "eq", "value": true}, {"key": "thirst", "op": "gte", "value": 0.45}]},
+			"effects": [{"target": "actor", "state": "thirst", "operation": "decrease"}, {"target": "local_resource", "state": "available_water", "operation": "decrease"}],
+			"event_type": "animal_drank"
+		},
+		{
+			"id": "flee",
+			"label": "Flee",
+			"preconditions": {"key": "threat_detected", "op": "eq", "value": true},
+			"effects": [{"target": "actor", "state": "movement", "operation": "move_away_from_threat"}],
+			"event_type": "agent_fled"
+		},
+		{
+			"id": "rest",
+			"label": "Rest",
+			"preconditions": {"key": "threat_detected", "op": "eq", "value": false},
+			"effects": [{"target": "actor", "state": "energy", "operation": "increase"}],
+			"event_type": "agent_rested"
+		},
+		{
+			"id": "stalk",
+			"label": "Stalk",
+			"preconditions": {"all": [{"key": "prey_visible", "op": "eq", "value": true}, {"key": "hunger", "op": "gte", "value": 0.5}]},
+			"effects": [{"target": "actor", "state": "movement", "operation": "approach_prey_cautiously"}],
+			"event_type": "predator_stalked"
+		},
+		{
+			"id": "chase",
+			"label": "Chase",
+			"preconditions": {"all": [{"key": "prey_visible", "op": "eq", "value": true}, {"key": "prey_in_range", "op": "eq", "value": true}]},
+			"effects": [{"target": "actor", "state": "movement", "operation": "pursue_prey"}],
+			"event_type": "predator_chased"
+		},
+		{
+			"id": "feed",
+			"label": "Feed",
+			"preconditions": {"key": "prey_caught", "op": "eq", "value": true},
+			"effects": [{"target": "actor", "state": "hunger", "operation": "decrease"}, {"target": "prey", "state": "alive", "operation": "set_false"}],
+			"event_type": "predator_fed"
+		},
+		{
+			"id": "investigate",
+			"label": "Investigate",
+			"preconditions": {"key": "notable_event_known", "op": "eq", "value": true},
+			"effects": [
+				{"target": "actor", "state": "goal", "operation": "set_investigate_event"},
+				{"target": "self", "state": "last_action", "operation": "set", "value": "investigate"}
+			],
+			"emits": [{"target": "self", "event_type": "agent_investigation_started", "payload": {}}],
+			"event_type": "agent_investigated"
+		},
+		{
+			"id": "windmill_idle",
+			"label": "Wait for usable wind",
+			"preconditions": {"key": "wind_usable", "op": "eq", "value": false},
+			"effects": [],
+			"event_type": "windmill_idle"
+		},
+		{
+			"id": "convert_wind_to_rotation",
+			"label": "Convert wind to rotor motion",
+			"preconditions": {"key": "wind_usable", "op": "eq", "value": true},
+			"effects": [{"target": "windmill", "state": "rotor_angular_velocity_rad_s", "operation": "integrate_wind_torque"}],
+			"event_type": "windmill_turning"
+		}
+	]
+}

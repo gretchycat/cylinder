@@ -10,8 +10,10 @@ var object_map_path: String = ""
 const DebugConsole = preload("res://scripts/debug_console.gd")
 const MapConfigClass = preload("res://scripts/map_config.gd")
 const EditStorage = preload("res://scripts/world_edit_storage.gd")
+const EventTrackerClass = preload("res://scripts/event_tracker.gd")
 
 var active_map_config: Dictionary = {}
+var simulation_event_tracker: Variant = null
 var surface_light_selection_timer: float = 0.0
 var placement_records: Array = []
 var live_placements: Dictionary = {}
@@ -41,6 +43,9 @@ const FORWARD_LIGHT_LOOKAHEAD_MULTIPLIER: float = 8.0
 func _ready() -> void:
 	add_to_group("reference_objects")
 	active_map_config = MapConfigClass.load_map_config(MapConfigClass.active_map())
+	simulation_event_tracker = EventTrackerClass.new()
+	if not simulation_event_tracker.load_default_descriptors():
+		push_error("Simulation event descriptors failed validation")
 	# Ensure DebugConsole exists in the scene
 	if not get_node_or_null("DebugConsole"):
 		var console_node = DebugConsole.new()
@@ -372,7 +377,7 @@ func _update_placement_streaming(force: bool = false) -> void:
 		var id := str(record.get("id", ""))
 		if live_placements.has(id):
 			continue
-		var instance = preload("res://scripts/map_object_factory.gd").create(active_map_config, record, world)
+		var instance = preload("res://scripts/map_object_factory.gd").create(active_map_config, record, world, simulation_event_tracker)
 		instance.set_meta("map_stream_initial_transform", instance.transform)
 		instance.set_meta("placement_record", record)
 		add_child(instance)
@@ -399,6 +404,18 @@ func _capture_live_placement(record: Dictionary, object: Node) -> void:
 	record["light_range_m"] = object.light_range
 	record["flicker"] = object.enable_flicker
 	record["name"] = str(object.name)
+	if object is SurfaceLightObject and object.windmill_simulation != null:
+		var runtime_state: Dictionary = object.windmill_simulation.get_persistent_state()
+		if record.get("simulation_state", {}) != runtime_state:
+			record["simulation_state"] = runtime_state
+			mark_placements_dirty()
+
+func capture_simulation_state(object: SurfaceLightObject) -> void:
+	if not object.has_meta("placement_record"):
+		return
+	var record: Variant = object.get_meta("placement_record")
+	if record is Dictionary:
+		_capture_live_placement(record, object)
 
 func get_all_placement_records() -> Array:
 	var known_ids: Dictionary = {}
@@ -431,7 +448,10 @@ func get_all_placement_records() -> Array:
 		var transform := object.transform
 		for vector in [transform.basis.x, transform.basis.y, transform.basis.z, transform.origin]:
 			packed.append_array([vector.x, vector.y, vector.z])
-		placement_records.append({"id": object.instance_id, "asset": object.asset_id, "name": str(object.name), "transform": packed, "tint": MapConfigClass.rgba(object.tint), "light_color": MapConfigClass.rgba(object.light_color), "light_energy": object.light_energy, "light_range_m": object.light_range, "flicker": object.enable_flicker})
+		var record := {"id": object.instance_id, "asset": object.asset_id, "name": str(object.name), "transform": packed, "tint": MapConfigClass.rgba(object.tint), "light_color": MapConfigClass.rgba(object.light_color), "light_energy": object.light_energy, "light_range_m": object.light_range, "flicker": object.enable_flicker}
+		if object.windmill_simulation != null:
+			record["simulation_state"] = object.windmill_simulation.get_persistent_state()
+		placement_records.append(record)
 		known_ids[object.instance_id] = true
 	return placement_records.duplicate(true)
 

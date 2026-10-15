@@ -34,6 +34,7 @@ usage() {
     echo "                  Architectures: x86_64, x86_32, arm64, arm32, rv64, ppc64, loongarch64"
     echo "  install [abi]   Install APK; build it for this ABI if needed"
     echo "  preflight       Check test, Android, and native Linux build requirements"
+    echo "                  Also checks Rust/GDExtension tools and crate dependencies"
     echo "  maps SRC DEST [SEED]  Generate a new map from its descriptor"
     echo "  templates       Check status of Godot export templates"
     echo "  help            Show this help message"
@@ -116,6 +117,83 @@ prompt_to_install() {
         y|Y|yes|YES|Yes) return 0 ;;
         *) return 1 ;;
     esac
+}
+
+rust_host_target() {
+    local host_os host_arch
+    host_os="$(uname -s)"
+    host_arch="$(uname -m)"
+    case "$host_os:$host_arch" in
+        Linux:aarch64|Linux:arm64) echo "aarch64-unknown-linux-gnu" ;;
+        Linux:x86_64|Linux:amd64) echo "x86_64-unknown-linux-gnu" ;;
+        Darwin:arm64) echo "aarch64-apple-darwin" ;;
+        Darwin:x86_64) echo "x86_64-apple-darwin" ;;
+        *) echo "" ;;
+    esac
+}
+
+install_rust_toolchain() {
+    if command -v pkg >/dev/null 2>&1; then
+        echo "        Termux command: pkg install rust"
+        prompt_to_install "Install Rust with pkg?" || return 1
+        pkg install rust || return 1
+    elif command -v apt-get >/dev/null 2>&1; then
+        if command -v sudo >/dev/null 2>&1; then
+            echo "        Debian/Ubuntu command: sudo apt-get install -y cargo rustc"
+            prompt_to_install "Install Rust with apt-get?" || return 1
+            sudo apt-get install -y cargo rustc || return 1
+        else
+            echo "        Debian/Ubuntu command: apt-get install -y cargo rustc"
+            prompt_to_install "Install Rust with apt-get?" || return 1
+            apt-get install -y cargo rustc || return 1
+        fi
+    elif command -v dnf >/dev/null 2>&1; then
+        echo "        Fedora command: sudo dnf install -y cargo rust"
+        prompt_to_install "Install Rust with dnf?" || return 1
+        sudo dnf install -y cargo rust || return 1
+    else
+        echo "        Install Rust and Cargo for $(uname -s) $(uname -m) using the platform's official Rust installer."
+        echo "        Then rerun: ./build.sh preflight"
+        return 1
+    fi
+}
+
+ensure_rust_build_requirements() {
+    local rust_target="$(rust_host_target)"
+    if ! command -v rustc >/dev/null 2>&1 || ! command -v cargo >/dev/null 2>&1; then
+        echo "[MISSING] Rust compiler and Cargo are required to build the Rust terrain extension."
+        if ! install_rust_toolchain; then
+            echo "[INFO] Rust installation skipped; Rust extension builds will be unavailable."
+            return 1
+        fi
+    fi
+    if ! command -v rustc >/dev/null 2>&1 || ! command -v cargo >/dev/null 2>&1; then
+        echo "[ERROR] Rust/Cargo are still unavailable after the installation step."
+        return 1
+    fi
+    echo "[READY] Rust $(rustc --version), Cargo $(cargo --version)"
+    if [ -n "$rust_target" ]; then
+        echo "[CHECK] Native Rust target: $rust_target"
+        if rustc --print target-list | grep -Fxq "$rust_target"; then
+            echo "[INFO] Rust target is supported by this toolchain; the target standard library may still need rustup for cross-builds."
+        fi
+    else
+        echo "[INFO] No native Rust target mapping is configured for $(uname -s) $(uname -m)."
+    fi
+    echo "[CHECK] Android GDExtension target: aarch64-linux-android (requires Android NDK linker for cross-compilation)."
+    if cargo fetch --locked --offline --manifest-path "$PROJECT_DIR/Cargo.toml" >/dev/null 2>&1; then
+        echo "[READY] Rust crate dependencies are cached."
+        return 0
+    fi
+    echo "[MISSING] One or more Cargo crates are not cached locally."
+    echo "        Fetch the locked dependencies with: cargo fetch --locked --manifest-path '$PROJECT_DIR/Cargo.toml'"
+    echo "        Cargo will show download progress while it fetches the crates."
+    if prompt_to_install "Download the missing Rust crates now?"; then
+        cargo fetch --locked --manifest-path "$PROJECT_DIR/Cargo.toml"
+        return $?
+    fi
+    echo "[INFO] Rust crate download skipped; offline Rust builds may fail until dependencies are fetched."
+    return 1
 }
 
 print_template_install_instructions() {
@@ -318,6 +396,8 @@ preflight_tests() {
     echo "[CHECK] Host: $(uname -s) $host_arch | Godot: $(godot_version)"
     echo "[CHECK] Native Linux package command: ./build.sh linux $linux_arch"
     echo "[CHECK] Android package command: ./build.sh android $android_arch"
+    local rust_missing=0
+    ensure_rust_build_requirements || rust_missing=1
     for script in scripts/test_map_pipeline.gd scripts/preview_woodland_bush.gd scripts/test_map_scene.gd scripts/test_map_imports.gd scripts/test_map_library.gd scripts/test_edit_controls.gd scripts/test_simulation.gd; do
         if [ ! -f "$PROJECT_DIR/$script" ]; then
             echo "[MISSING] Test script: $PROJECT_DIR/$script"
@@ -344,6 +424,9 @@ preflight_tests() {
         echo "[WARN] Package prerequisites are incomplete; headless tests can run, but the affected package command will stop before exporting."
     else
         echo "[READY] Headless tests and Android/native Linux package prerequisites."
+    fi
+    if [ "$rust_missing" -ne 0 ]; then
+        echo "[WARN] Rust extension prerequisites are incomplete; the GDScript terrain fallback will be used where the extension is unavailable."
     fi
     return 0
 }

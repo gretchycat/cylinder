@@ -64,6 +64,7 @@ var apply_climate_preset_btn: Button = null
 var gen_weather_state_btn: Button = null
 var force_snow_btn: Button = null
 var force_downpour_btn: Button = null
+var wind_boost_btn: Button = null
 
 # Tab 1: Weather & Atmosphere UI Controls
 var auto_cycle_btn: Button = null
@@ -947,6 +948,16 @@ func _setup_climate_tab(vbox: VBoxContainer) -> void:
 	force_downpour_btn.add_theme_font_size_override("font_size", 10)
 	force_downpour_btn.pressed.connect(_on_force_downpour_pressed)
 	hbox_triggers.add_child(force_downpour_btn)
+
+	var hbox_wind = _new_settings_row()
+	wind_boost_btn = Button.new()
+	wind_boost_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wind_boost_btn.focus_mode = Control.FOCUS_NONE
+	wind_boost_btn.add_theme_font_size_override("font_size", 10)
+	wind_boost_btn.pressed.connect(_on_wind_boost_pressed)
+	hbox_wind.add_child(wind_boost_btn)
+	vbox.add_child(hbox_wind)
+	_update_wind_boost_button()
 
 func _setup_weather_tab(vbox: VBoxContainer) -> void:
 	# 1. Active Trajectory & Queue Readout
@@ -1999,6 +2010,24 @@ func _on_force_downpour_pressed() -> void:
 		}
 		weather_system.push_weather_state(rain_state, true)
 	log_event("Forced Weather Triggered -> 🌧️ Heavy Atmospheric Downpour", "#55aaff")
+
+func _on_wind_boost_pressed() -> void:
+	if wind_boost_btn:
+		wind_boost_btn.release_focus()
+	if weather_system:
+		weather_system.set_wind_boost_enabled(not weather_system.wind_boost_enabled)
+	_update_wind_boost_button()
+	if weather_system:
+		log_event("Climate Control -> Wind boost %s (%.1f m/s)" % [
+			"enabled" if weather_system.wind_boost_enabled else "disabled",
+			weather_system.current_wind_speed_m_s
+		], "#77ccff")
+
+func _update_wind_boost_button() -> void:
+	if not wind_boost_btn:
+		return
+	var enabled := weather_system.wind_boost_enabled if weather_system else false
+	wind_boost_btn.text = "💨 Wind Boost: %s" % ("ON (2×)" if enabled else "OFF")
 
 func _on_add_preset_to_queue_pressed() -> void:
 	if add_preset_to_queue_btn:

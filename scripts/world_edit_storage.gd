@@ -68,7 +68,10 @@ static func _current_snapshot(references: Node, player: Node3D) -> Dictionary:
 			var packed: Array = []
 			for vector in [object.transform.basis.x, object.transform.basis.y, object.transform.basis.z, object.transform.origin]:
 				packed.append_array([vector.x, vector.y, vector.z])
-			objects.append({"id": object.instance_id, "asset": object.asset_id, "name": str(object.name), "transform": packed, "tint": Config.rgba(object.tint), "light_color": Config.rgba(object.light_color), "light_energy": object.light_energy, "light_range_m": object.light_range, "flicker": object.enable_flicker})
+			var record := {"id": object.instance_id, "asset": object.asset_id, "name": str(object.name), "transform": packed, "tint": Config.rgba(object.tint), "light_color": Config.rgba(object.light_color), "light_energy": object.light_energy, "light_range_m": object.light_range, "flicker": object.enable_flicker}
+			if object.windmill_simulation != null:
+				record["simulation_state"] = object.windmill_simulation.get_persistent_state()
+			objects.append(record)
 	snapshot["objects"] = objects
 	if player:
 		snapshot["player_spawn"] = _player_spawn_record(player)

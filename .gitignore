@@ -3,6 +3,7 @@
 .import/
 export_presets.cfg
 build/
+/target/
 android/
 *.apk
 *.aab

@@ -1,0 +1,111 @@
+{
+	"schema_version": 1,
+	"automata": {
+		"grazer": {
+			"simulation_tick_seconds": 1.0,
+			"sensory_abilities": ["vegetation", "water", "threat"],
+			"initial_state": "idle",
+			"states": {
+				"idle": {"action_id": "rest", "transitions": [
+					{"to": "fleeing", "when": {"key": "threat_detected", "op": "eq", "value": true}},
+					{"to": "drinking", "when": {"all": [{"key": "drinkable_water", "op": "eq", "value": true}, {"key": "thirst", "op": "gte", "value": 0.45}]}},
+					{"to": "grazing", "when": {"all": [{"key": "edible_vegetation", "op": "eq", "value": true}, {"key": "hunger", "op": "gte", "value": 0.55}]}},
+					{"to": "resting", "when": {"key": "energy", "op": "lte", "value": 0.2}}
+				]},
+				"grazing": {"action_id": "graze", "transitions": [
+					{"to": "fleeing", "when": {"key": "threat_detected", "op": "eq", "value": true}},
+					{"to": "idle", "when": {"any": [{"key": "edible_vegetation", "op": "eq", "value": false}, {"key": "hunger", "op": "lte", "value": 0.2}]}}
+				]},
+				"drinking": {"action_id": "drink", "transitions": [
+					{"to": "fleeing", "when": {"key": "threat_detected", "op": "eq", "value": true}},
+					{"to": "idle", "when": {"any": [{"key": "drinkable_water", "op": "eq", "value": false}, {"key": "thirst", "op": "lte", "value": 0.15}]}}
+				]},
+				"resting": {"action_id": "rest", "transitions": [
+					{"to": "fleeing", "when": {"key": "threat_detected", "op": "eq", "value": true}},
+					{"to": "idle", "when": {"key": "energy", "op": "gte", "value": 0.7}}
+				]},
+				"fleeing": {"action_id": "flee", "transitions": [
+					{"to": "idle", "when": {"key": "threat_detected", "op": "eq", "value": false}}
+				]}
+			}
+		},
+		"predator": {
+			"simulation_tick_seconds": 0.5,
+			"sensory_abilities": ["prey", "threat"],
+			"initial_state": "resting",
+			"states": {
+				"resting": {"action_id": "rest", "transitions": [
+					{"to": "stalking", "when": {"all": [{"key": "prey_visible", "op": "eq", "value": true}, {"key": "hunger", "op": "gte", "value": 0.5}]}}
+				]},
+				"stalking": {"action_id": "stalk", "transitions": [
+					{"to": "chasing", "when": {"key": "prey_in_range", "op": "eq", "value": true}},
+					{"to": "resting", "when": {"key": "prey_visible", "op": "eq", "value": false}}
+				]},
+				"chasing": {"action_id": "chase", "transitions": [
+					{"to": "feeding", "when": {"key": "prey_caught", "op": "eq", "value": true}},
+					{"to": "stalking", "when": {"key": "prey_in_range", "op": "eq", "value": false}}
+				]},
+				"feeding": {"action_id": "feed", "transitions": [
+					{"to": "resting", "when": {"key": "hunger", "op": "lte", "value": 0.2}}
+				]}
+			}
+		},
+		"raccoon": {
+			"simulation_tick_seconds": 1.0,
+			"sensory_abilities": ["food", "notable_events", "threat"],
+			"initial_state": "idle",
+			"states": {
+				"idle": {"action_id": "rest", "transitions": [
+					{"to": "fleeing", "when": {"key": "threat_detected", "op": "eq", "value": true}},
+					{"to": "investigating", "when": {"key": "_events", "op": "event", "value": "notable_event"}},
+					{"to": "investigating", "when": {"key": "notable_event_known", "op": "eq", "value": true}},
+					{"to": "foraging", "when": {"key": "hunger", "op": "gte", "value": 0.5}}
+				]},
+				"foraging": {"action_id": "forage", "transitions": [{"to": "idle", "when": {"key": "hunger", "op": "lte", "value": 0.2}}]},
+				"investigating": {"action_id": "investigate", "transitions": [{"to": "idle", "when": {"key": "notable_event_known", "op": "eq", "value": false}}]},
+				"fleeing": {"action_id": "flee", "transitions": [{"to": "idle", "when": {"key": "threat_detected", "op": "eq", "value": false}}]}
+			}
+		},
+		"canine": {
+			"simulation_tick_seconds": 0.5,
+			"sensory_abilities": ["threat", "notable_events", "food"],
+			"initial_state": "idle",
+			"states": {
+				"idle": {"action_id": "rest", "transitions": [
+					{"to": "fleeing", "when": {"key": "threat_detected", "op": "eq", "value": true}},
+					{"to": "investigating", "when": {"key": "notable_event_known", "op": "eq", "value": true}},
+					{"to": "foraging", "when": {"key": "hunger", "op": "gte", "value": 0.65}}
+				]},
+				"foraging": {"action_id": "stalk", "transitions": [{"to": "idle", "when": {"key": "hunger", "op": "lte", "value": 0.2}}]},
+				"investigating": {"action_id": "investigate", "transitions": [{"to": "idle", "when": {"key": "notable_event_known", "op": "eq", "value": false}}]},
+				"fleeing": {"action_id": "flee", "transitions": [{"to": "idle", "when": {"key": "threat_detected", "op": "eq", "value": false}}]}
+			}
+		},
+		"windmill": {
+			"simulation_tick_seconds": 1.0,
+			"sensory_abilities": ["wind"],
+			"initial_state": "stopped",
+			"states": {
+				"stopped": {"action_id": "windmill_idle", "transitions": [
+					{"to": "turning", "when": {"key": "wind_usable", "op": "eq", "value": true}}
+				]},
+				"turning": {"action_id": "convert_wind_to_rotation", "transitions": [
+					{"to": "stopped", "when": {"key": "wind_usable", "op": "eq", "value": false}}
+				]}
+			}
+		}
+	},
+	"windmill_parameters": {
+		"alignment_tolerance_deg": 25.0,
+		"cut_in_speed_m_s": 2.0,
+		"cut_out_speed_m_s": 25.0,
+		"blade_radius_m": 3.1,
+		"air_density_kg_m3": 1.225,
+		"torque_coefficient": 0.08,
+		"rotor_inertia_kg_m2": 90.0,
+		"bearing_drag_nm_per_rad_s": 0.5,
+		"generator_load_nm": 70.0,
+		"generator_efficiency": 0.75,
+		"max_rotor_speed_rad_s": 2.5
+	}
+}

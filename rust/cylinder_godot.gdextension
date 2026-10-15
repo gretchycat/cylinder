@@ -1,0 +1,10 @@
+[configuration]
+entry_symbol = "gdext_rust_init"
+compatibility_minimum = "4.2"
+reloadable = true
+
+[libraries]
+linux.debug.x86_64 = "res://target/debug/libcylinder_godot.so"
+linux.release.x86_64 = "res://target/release/libcylinder_godot.so"
+android.debug.arm64 = "res://target/aarch64-linux-android/debug/libcylinder_godot.so"
+android.release.arm64 = "res://target/aarch64-linux-android/release/libcylinder_godot.so"
